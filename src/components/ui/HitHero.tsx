@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getProductPrimaryImage } from '../../utils/productImages'
 import type { Product } from '../../types'
 
 interface HitHeroProps {
@@ -10,7 +11,8 @@ export function HitHero({ hitProduct }: HitHeroProps) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { const t = setTimeout(() => setMounted(true), 100); return () => clearTimeout(t) }, [])
 
-  const hasImage = !!hitProduct?.imageUrl
+  const hitProductImage = getProductPrimaryImage(hitProduct)
+  const hasImage = !!hitProductImage?.url
 
   return (
     <section
@@ -63,8 +65,8 @@ export function HitHero({ hitProduct }: HitHeroProps) {
 
               {hasImage ? (
                 <img
-                  src={hitProduct!.imageUrl!}
-                  alt="Perfume Hit"
+                  src={hitProductImage!.url}
+                  alt={hitProductImage!.alt || 'Perfume Hit'}
                   className="relative z-10 w-full max-w-[280px] md:max-w-[340px] drop-shadow-2xl"
                   style={{ animation: 'float 6s ease-in-out infinite' }}
                 />

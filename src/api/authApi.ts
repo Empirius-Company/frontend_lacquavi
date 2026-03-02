@@ -1,5 +1,5 @@
 import { httpClient } from './httpClient'
-import type { User, AuthTokens } from '../types'
+import type { User } from '../types'
 
 interface LoginInput  { email: string; password: string }
 

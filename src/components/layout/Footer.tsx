@@ -1,4 +1,3 @@
-import React from 'react'
 import { Link } from 'react-router-dom'
 
 export function Footer() {
@@ -125,7 +124,7 @@ export function Footer() {
             Preços e condições de pagamento exclusivos para compras via internet.
           </p>
           <div className="flex items-center gap-1 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
-            <img src="/logo.png" alt="Lacquavi" className="h-9 object-contain" />
+            <img src="/logo.png" alt="Lacquavi" className="h-[43px] object-contain" />
           </div>
         </div>
       </div>

@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { productsApi, categoriesApi } from '../api/catalogApi'
 import { ProductCard } from '../components/product/ProductCard'
-import { ProductCardSkeleton, Button, Select } from '../components/ui'
+import { ProductCardSkeleton, Button } from '../components/ui'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
+import { useProductsReviewStats } from '../hooks/useProductsReviewStats'
 import type { Product, Category } from '../types'
 
 const GENDER_OPTIONS = [
@@ -41,9 +42,9 @@ export function ProductListPage() {
   const [products,   setProducts]   = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading,    setLoading]    = useState(true)
-  const [filterOpen, setFilterOpen] = useState(false)
 
   const selectedCat    = searchParams.get('category') ?? ''
+  const selectedType   = searchParams.get('type')     ?? ''
   const selectedGender = searchParams.get('gender')   ?? ''
   const searchQuery    = searchParams.get('q')        ?? ''
   const sort           = searchParams.get('sort')     ?? 'default'
@@ -57,12 +58,15 @@ export function ProductListPage() {
   useEffect(() => {
     setLoading(true)
     Promise.all([
-      productsApi.list(selectedCat ? { category: selectedCat } : undefined),
+      productsApi.list({
+        ...(selectedCat ? { category: selectedCat } : {}),
+        ...(selectedType ? { type: selectedType } : {}),
+      }),
       categoriesApi.list(),
     ])
       .then(([pd, cd]) => { setProducts(pd.products); setCategories(cd.data) })
       .finally(() => setLoading(false))
-  }, [selectedCat])
+  }, [selectedCat, selectedType])
 
   /* Client-side filter + sort */
   const visible = useMemo(() => {
@@ -80,7 +84,8 @@ export function ProductListPage() {
     return list
   }, [products, selectedGender, searchQuery, sort])
 
-  const totalActive = [selectedCat, selectedGender, searchQuery].filter(Boolean).length
+  const totalActive = [selectedCat, selectedType, selectedGender, searchQuery].filter(Boolean).length
+  const { statsByProduct } = useProductsReviewStats(visible.map((product) => product.id))
 
   return (
     <div className="min-h-screen bg-parchment pt-20">
@@ -162,6 +167,11 @@ export function ProductListPage() {
                 {categories.find(c => c.id === selectedCat)?.name ?? 'Categoria'} <span className="opacity-60">✕</span>
               </button>
             )}
+            {selectedType && (
+              <button onClick={() => setParam('type', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-noir-950 text-pearl text-2xs">
+                {selectedType} <span className="opacity-60">✕</span>
+              </button>
+            )}
             {searchQuery && (
               <button onClick={() => setParam('q', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-noir-950 text-pearl text-2xs">
                 "{searchQuery}" <span className="opacity-60">✕</span>
@@ -191,7 +201,7 @@ export function ProductListPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {visible.map((p, i) => (
               <ScrollReveal key={p.id} delay={Math.min(i * 40, 320)}>
-                <ProductCard product={p} />
+                <ProductCard product={p} reviewStats={statsByProduct[p.id]} />
               </ScrollReveal>
             ))}
           </div>

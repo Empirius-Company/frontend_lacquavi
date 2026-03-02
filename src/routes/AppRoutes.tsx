@@ -1,5 +1,4 @@
-import React from 'react'
-import { Routes, Route, Outlet } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import { MainLayout, AdminLayout } from '../components/layout'
 import { ProtectedRoute, AdminRoute } from './guards'
 
@@ -45,7 +44,7 @@ export function AppRoutes() {
     <Routes>
 
       {/* ── Public routes (within MainLayout) ───────────────── */}
-      <Route element={<MainLayout><Outlet /></MainLayout>}>
+      <Route element={<MainLayout />}>
         <Route path="/"             element={<HomePage />} />
         <Route path="/products"     element={<ProductListPage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
@@ -58,7 +57,7 @@ export function AppRoutes() {
       <Route path="/register" element={<RegisterPage />} />
 
       {/* ── Protected customer routes ──────────────────────────── */}
-      <Route element={<ProtectedRoute><MainLayout><Outlet /></MainLayout></ProtectedRoute>}>
+      <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route path="/account/profile"                    element={<AccountProfilePage />} />
         <Route path="/account/orders"                     element={<MyOrdersPage />} />
         <Route path="/account/orders/:id"                 element={<OrderDetailPage />} />
@@ -68,7 +67,7 @@ export function AppRoutes() {
       </Route>
 
       {/* ── Admin routes ──────────────────────────────────────── */}
-      <Route element={<AdminRoute><AdminLayout><Outlet /></AdminLayout></AdminRoute>}>
+      <Route element={<AdminRoute><AdminLayout /></AdminRoute>}>
         <Route path="/admin"                      element={<AdminDashboardPage />} />
         <Route path="/admin/products"             element={<AdminProductsPage />} />
         <Route path="/admin/products/new"         element={<AdminProductFormPage />} />

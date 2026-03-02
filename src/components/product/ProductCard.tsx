@@ -1,12 +1,19 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { formatCurrency } from '../../utils'
+import { getProductPrimaryImage } from '../../utils/productImages'
 import { QuickAddModal } from './QuickAddModal'
-import type { Product } from '../../types'
+import type { Product, ProductReviewStats } from '../../types'
 
 interface ProductCardProps {
   product: Product
   dark?: boolean
+  reviewStats?: ProductReviewStats
+}
+
+const renderStars = (rating: number) => {
+  const roundedRating = Math.max(0, Math.min(5, Math.round(rating)))
+  return Array.from({ length: 5 }, (_, index) => (index < roundedRating ? '★' : '☆')).join('')
 }
 
 function ImagePlaceholder({ product }: { product: Product }) {
@@ -21,8 +28,9 @@ function ImagePlaceholder({ product }: { product: Product }) {
 function ProductImage({ product }: { product: Product }) {
   const [imgError, setImgError] = useState(false)
   const [imgLoaded, setImgLoaded] = useState(false)
+  const primaryImage = getProductPrimaryImage(product)
 
-  if (!product.imageUrl || imgError) {
+  if (!primaryImage?.url || imgError) {
     return <ImagePlaceholder product={product} />
   }
 
@@ -30,8 +38,8 @@ function ProductImage({ product }: { product: Product }) {
     <>
       {!imgLoaded && <div className="absolute inset-0"><ImagePlaceholder product={product} /></div>}
       <img
-        src={product.imageUrl}
-        alt={product.name}
+        src={primaryImage.url}
+        alt={primaryImage.alt || product.name}
         className={`absolute inset-0 w-full h-full object-contain object-center transition-opacity duration-300 p-2
           ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
         loading="lazy"
@@ -42,12 +50,15 @@ function ProductImage({ product }: { product: Product }) {
   )
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, reviewStats }: ProductCardProps) {
   const isOutOfStock = product.stock === 0
+  const reviewsTotal = reviewStats?.total ?? 0
+  const averageRating = reviewStats?.averageRating ?? 0
 
-  // Fake a discount for aesthetics like the reference images
-  const discount = Math.floor(Math.random() * 30) + 10 // random 10% to 40%
-  const oldPrice = product.price > 0 ? product.price * (1 + (discount / 100)) : 0
+  const discountValue = Math.max(0, Number(product.discount ?? 0))
+  const hasDiscount = product.price > 0 && discountValue > 0
+  const oldPrice = hasDiscount ? product.price + discountValue : 0
+  const discountPercent = hasDiscount ? Math.round((discountValue / oldPrice) * 100) : 0
 
   const [showModal, setShowModal] = useState(false)
 
@@ -68,18 +79,11 @@ export function ProductCard({ product }: ProductCardProps) {
         {/* Usando proporção aspect-square. Essa proporção mantém o cartão mais baixo, mas a imagem ocupa 100% da área sem excesso de espaços em branco (object-contain). */}
         <div className="relative aspect-square w-full bg-white flex items-center justify-center p-0">
           {/* Discount Badge */}
-          {product.price > 0 && (
+          {hasDiscount && (
             <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-[#0B1B3D] text-white z-10 font-bold text-[9px] uppercase tracking-wider rounded-sm shadow-sm">
-              {discount}% OFF
+              {discountPercent}% OFF
             </div>
           )}
-
-          {/* Favorite Icon (Heart) Placeholder */}
-          <div className="absolute top-2 right-2 z-10 text-gray-300 hover:text-[#e6226e] transition-all cursor-pointer">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
-            </svg>
-          </div>
 
           <div className="w-full h-full relative" style={{ padding: '0.25rem' }}>
             <ProductImage product={product} />
@@ -95,7 +99,10 @@ export function ProductCard({ product }: ProductCardProps) {
               {product.brand || 'DIVERSOS'}
             </p>
             <div className="flex items-center gap-0.5 text-[#fcb900] text-[10px] shrink-0 font-medium">
-              ★ 4.9 <span className="text-[9px] text-gray-400 ml-0.5 font-normal">({Math.floor(Math.random() * 300) + 12})</span>
+              {renderStars(averageRating)}
+              <span className="text-[9px] text-gray-400 ml-0.5 font-normal">
+                ({reviewsTotal})
+              </span>
             </div>
           </div>
 
@@ -110,9 +117,11 @@ export function ProductCard({ product }: ProductCardProps) {
             <div className="flex flex-col">
               {product.price > 0 ? (
                 <>
-                  <span className="text-[10px] text-gray-400 line-through leading-none mb-0.5">
-                    {formatCurrency(oldPrice)}
-                  </span>
+                  {hasDiscount && (
+                    <span className="text-[10px] text-gray-400 line-through leading-none mb-0.5">
+                      {formatCurrency(oldPrice)}
+                    </span>
+                  )}
                   <span className="text-[15px] font-black text-black leading-none">
                     {formatCurrency(product.price)}
                   </span>

@@ -1,20 +1,21 @@
-import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { Button, EmptyState } from '../components/ui'
 import { formatCurrency } from '../utils'
+import { getProductPrimaryImage } from '../utils/productImages'
 
 function CartItem({ item }: { item: any }) {
   const { updateQuantity, removeItem } = useCart()
+  const productImage = getProductPrimaryImage(item.product)
 
   return (
     <div className="flex gap-4 py-5 border-b border-nude-100 last:border-0 group">
       {/* Image */}
       <Link to={`/products/${item.productId}`} className="flex-shrink-0">
         <div className="w-20 h-24 rounded-xl overflow-hidden bg-nude-50 border border-nude-100">
-          {item.product?.imageUrl ? (
-            <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+          {productImage?.url ? (
+            <img src={productImage.url} alt={productImage.alt || item.product.name} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <span className="text-2xl text-nude-300">⬟</span>

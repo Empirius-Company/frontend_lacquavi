@@ -50,7 +50,7 @@ export function Header() {
 
           {/* Logo */}
           <Link to="/" className="flex-shrink-0 flex items-center hover:opacity-90 transition-opacity">
-            <img src="/logo.png" alt="Lacquavi" className="h-9 md:h-[45px] object-contain" />
+            <img src="/logo.png" alt="Lacquavi" className="h-[43px] md:h-[54px] object-contain" />
           </Link>
 
           {/* Search Bar - Desktop */}
@@ -107,15 +107,6 @@ export function Header() {
                 </div>
               )}
             </div>
-
-
-
-            {/* Wishlist */}
-            <div className="relative text-gray-500 hover:text-[#e6226e] cursor-pointer hidden md:block">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"></path></svg>
-              <span className="absolute -top-1 -right-1.5 w-4 h-4 rounded-full bg-[#e6226e] text-white text-[9px] font-bold flex items-center justify-center">0</span>
-            </div>
-
             {/* Cart */}
             <button onClick={openCart} className="relative text-[#333] hover:text-[#e6226e] transition-colors">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 01-8 0"></path></svg>

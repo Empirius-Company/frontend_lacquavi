@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { STORE_CONFIG } from '../config/store'
 
@@ -108,14 +108,6 @@ const EXPERIENCES_FULL = [
     desc: 'Comprou online? Retire na loja sem fila. Pedido pronto hoje mesmo! Economize o frete e passe uma experiência completa.',
     tag: 'Compra online · Retirada rápida',
   },
-]
-
-/* ── Trust signals ─────────────────────────────────────────────── */
-const TRUST = [
-  { icon: <Icon.Shield />, label: 'Loja física registrada' },
-  { icon: '✦', label: '100% originais' },
-  { icon: '★', label: '4.9 / 5 no Google' },
-  { icon: <Icon.Shield />, label: 'NF-e em toda compra' },
 ]
 
 /* ══════════════════════════════════════════════════════════════════

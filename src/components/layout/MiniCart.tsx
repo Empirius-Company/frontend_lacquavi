@@ -2,6 +2,7 @@ import { Fragment } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { formatCurrency } from '../../utils'
+import { getProductPrimaryImage } from '../../utils/productImages'
 import { Button } from '../ui'
 
 export function MiniCart() {
@@ -47,12 +48,14 @@ export function MiniCart() {
                         </div>
                     ) : (
                         <div className="space-y-6">
-                            {items.map(item => (
+                            {items.map(item => {
+                                const productImage = getProductPrimaryImage(item.product)
+                                return (
                                 <div key={item.productId} className="flex gap-4 group">
                                     {/* Image */}
                                     <Link to={`/products/${item.productId}`} onClick={closeCart} className="w-20 h-24 flex-shrink-0 border border-nude-100 rounded-xl overflow-hidden bg-nude-50">
-                                        {item.product?.imageUrl ? (
-                                            <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+                                        {productImage?.url ? (
+                                            <img src={productImage.url} alt={productImage.alt || item.product.name} className="w-full h-full object-cover" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-nude-300">⬟</div>
                                         )}
@@ -98,7 +101,8 @@ export function MiniCart() {
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     )}
                 </div>

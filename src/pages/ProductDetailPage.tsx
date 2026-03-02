@@ -1,15 +1,21 @@
-import { useEffect, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { productsApi } from '../api/catalogApi'
+import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
 import { formatCurrency } from '../utils'
-import type { Product } from '../types'
+import { getOrderedGallery, getProductPrimaryImage } from '../utils/productImages'
+import type { ApiError, Product, ProductImage, ProductReview, ProductReviewStats } from '../types'
 
 
 
 function FloatingBuyBar({ product, onAdd }: { product: Product, onAdd: () => void }) {
   const [isVisible, setIsVisible] = useState(false)
+  const discountValue = Math.max(0, Number(product.discount ?? 0))
+  const hasDiscount = product.price > 0 && discountValue > 0
+  const oldPrice = hasDiscount ? product.price + discountValue : 0
+  const primaryImage = getProductPrimaryImage(product)
 
   useEffect(() => {
     const toggleVisibility = () => {
@@ -32,7 +38,7 @@ function FloatingBuyBar({ product, onAdd }: { product: Product, onAdd: () => voi
         <div className="flex justify-between items-center max-w-5xl mx-auto">
           <div className="flex items-center gap-4 hidden md:flex">
             <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center pb-1">
-              {product.imageUrl ? <img src={product.imageUrl} className="max-h-full" alt="" /> : product.name.charAt(0)}
+              {primaryImage?.url ? <img src={primaryImage.url} className="max-h-full" alt={primaryImage.alt || product.name} /> : product.name.charAt(0)}
             </div>
             <div>
               <p className="text-xs font-bold text-gray-500 uppercase">{product.brand || 'DIVERSOS'}</p>
@@ -42,7 +48,7 @@ function FloatingBuyBar({ product, onAdd }: { product: Product, onAdd: () => voi
 
           <div className="flex items-center gap-6 justify-end flex-1 md:flex-none">
             <div className="text-right">
-              <p className="text-xs text-gray-400 line-through">{formatCurrency(product.price * 1.15)}</p>
+              {hasDiscount && <p className="text-xs text-gray-400 line-through">{formatCurrency(oldPrice)}</p>}
               <p className="text-lg font-bold text-black leading-none">{formatCurrency(product.price)} <span className="text-[10px] font-normal text-gray-500">no PIX</span></p>
             </div>
 
@@ -61,23 +67,76 @@ function FloatingBuyBar({ product, onAdd }: { product: Product, onAdd: () => voi
   )
 }
 
+const formatReviewDate = (isoDate: string) =>
+  new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(isoDate))
+
+const renderStars = (rating: number) => {
+  const roundedRating = Math.max(0, Math.min(5, Math.round(rating)))
+  return Array.from({ length: 5 }, (_, index) => (index < roundedRating ? '★' : '☆')).join('')
+}
+
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
   const { addItem } = useCart()
   const { toast } = useToast()
 
   const [product, setProduct] = useState<Product | null>(null)
+  const [productImages, setProductImages] = useState<ProductImage[]>([])
   const [loading, setLoading] = useState(true)
   const [zipCode, setZipCode] = useState('')
+  const [reviews, setReviews] = useState<ProductReview[]>([])
+  const [reviewsStats, setReviewsStats] = useState<ProductReviewStats>({ total: 0, averageRating: 0 })
+  const [reviewsLoading, setReviewsLoading] = useState(true)
+  const [submittingReview, setSubmittingReview] = useState(false)
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' })
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+
+  const loadReviews = useCallback(async () => {
+    if (!id) return
+    setReviewsLoading(true)
+    try {
+      const response = await productsApi.listReviews(id)
+      setReviews(response.reviews)
+      setReviewsStats(response.stats)
+    } catch (error) {
+      const apiError = error as ApiError
+      if (apiError.statusCode === 404 || apiError.statusCode === 500) {
+        setReviews([])
+        setReviewsStats({ total: 0, averageRating: 0 })
+      } else {
+        toast('Não foi possível carregar as avaliações do produto', 'warning')
+      }
+    } finally {
+      setReviewsLoading(false)
+    }
+  }, [id, toast])
 
   useEffect(() => {
     if (!id) return
+    setLoading(true)
     productsApi.getById(id)
-      .then(r => setProduct(r))
+      .then((productResponse) => {
+        const resolvedImages = productResponse.images ?? []
+        setProduct({ ...productResponse, images: resolvedImages })
+        setProductImages(resolvedImages)
+      })
       .catch(() => navigate('/products'))
       .finally(() => setLoading(false))
   }, [id, navigate])
+
+  useEffect(() => {
+    void loadReviews()
+  }, [loadReviews])
+
+  useEffect(() => {
+    setSelectedImageIndex(0)
+  }, [product?.id])
 
   if (loading) {
     return (
@@ -88,8 +147,18 @@ export function ProductDetailPage() {
   }
   if (!product) return null
 
+  const orderedImages = getOrderedGallery(productImages.length > 0 ? productImages : product.images)
+  const primaryImage = getProductPrimaryImage(product)
+  const galleryImages: ProductImage[] = orderedImages.length > 0
+    ? orderedImages
+    : (primaryImage ? [primaryImage] : [])
+  const selectedImage = galleryImages[selectedImageIndex] ?? galleryImages[0] ?? null
+
   const isOutOfStock = product.stock === 0
-  const discount = 12
+  const discountValue = Math.max(0, Number(product.discount ?? 0))
+  const hasDiscount = product.price > 0 && discountValue > 0
+  const oldPrice = hasDiscount ? product.price + discountValue : 0
+  const discountPercent = hasDiscount ? Math.round((discountValue / oldPrice) * 100) : 0
 
   const handleAdd = () => {
     if (isOutOfStock) return
@@ -97,10 +166,65 @@ export function ProductDetailPage() {
     toast(`${product.name} adicionado à sacola`, 'success')
   }
 
-  // Define product images dynamically
-  const productImages: (string | null)[] = (product as any).images?.length
-    ? (product as any).images
-    : (product.imageUrl ? [product.imageUrl] : [null]);
+  const handleReviewSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!id || submittingReview || authLoading) return
+
+    if (!isAuthenticated) {
+      navigate(`/login?redirect=${encodeURIComponent(`/products/${id}`)}`)
+      return
+    }
+
+    const trimmedComment = reviewForm.comment.trim()
+    const validRating = Number.isInteger(reviewForm.rating) && reviewForm.rating >= 1 && reviewForm.rating <= 5
+
+    if (!validRating) {
+      toast('Escolha uma nota inteira entre 1 e 5', 'warning')
+      return
+    }
+
+    if (!trimmedComment) {
+      toast('Comentário é obrigatório', 'warning')
+      return
+    }
+
+    setSubmittingReview(true)
+    try {
+      await productsApi.createReview(id, {
+        rating: reviewForm.rating,
+        comment: trimmedComment,
+      })
+      toast('Avaliação criada com sucesso', 'success')
+      setReviewForm({ rating: 5, comment: '' })
+      await loadReviews()
+    } catch (error) {
+      const apiError = error as ApiError
+      if (apiError.statusCode === 409) {
+        toast('Você já avaliou este produto', 'warning')
+      } else if (apiError.statusCode === 401) {
+        toast('Faça login para avaliar este produto', 'warning')
+        navigate(`/login?redirect=${encodeURIComponent(`/products/${id}`)}`)
+      } else if (apiError.statusCode === 400) {
+        toast(apiError.message || 'Dados inválidos para criar avaliação', 'warning')
+      } else if (apiError.statusCode === 404) {
+        toast('Produto não encontrado para avaliação', 'error')
+      } else {
+        toast(apiError.message || 'Erro ao criar avaliação', 'error')
+      }
+    } finally {
+      setSubmittingReview(false)
+    }
+  }
+
+  const handleNextImage = () => {
+    if (galleryImages.length <= 1) return
+    setSelectedImageIndex((prev) => (prev + 1) % galleryImages.length)
+  }
+
+  const handlePrevImage = () => {
+    if (galleryImages.length <= 1) return
+    setSelectedImageIndex((prev) => (prev === 0 ? galleryImages.length - 1 : prev - 1))
+  }
 
   return (
     <div className="min-h-screen bg-white pb-32">
@@ -121,49 +245,47 @@ export function ProductDetailPage() {
           <div className="w-full md:w-[45%] flex gap-4 sticky top-24">
 
             {/* Thumbnails */}
-            {productImages.length > 1 && (
+            {galleryImages.length > 1 && (
               <div className="flex flex-col gap-2 w-16 md:w-20 shrink-0">
-                {productImages.map((img, idx) => (
-                  <div key={idx} className={`aspect-square border-2 rounded ${idx === 0 ? 'border-[#e6226e]' : 'border-transparent hover:border-gray-200'} cursor-pointer overflow-hidden p-1 bg-white shadow-sm`}>
-                    {img ? (
-                      <img src={img} alt="" className="w-full h-full object-contain" />
-                    ) : (
-                      <div className="w-full h-full bg-gray-100 flex items-center justify-center font-bold text-gray-300">{product.name[0]}</div>
-                    )}
+                {galleryImages.map((img, idx) => (
+                  <div key={img.id} className={`aspect-square border-2 rounded ${idx === selectedImageIndex ? 'border-[#e6226e]' : 'border-transparent hover:border-gray-200'} cursor-pointer overflow-hidden p-1 bg-white shadow-sm`}>
+                    <button type="button" onClick={() => setSelectedImageIndex(idx)} className="w-full h-full">
+                      <img src={img.url} alt={img.alt || `${product.name} ${idx + 1}`} className="w-full h-full object-contain" />
+                    </button>
                   </div>
                 ))}
               </div>
             )}
 
             {/* Main Image */}
-            <div className="flex-1 relative aspect-[3/4] flex items-center justify-center bg-white p-4">
-              {product.price > 0 && (
+            <div className="flex-1 relative h-[250px] sm:h-[300px] md:h-[340px] lg:h-[365px] flex items-center justify-center bg-white p-4">
+              {hasDiscount && (
                 <div className="absolute top-2 right-2 w-14 h-14 bg-[#0B1B3D] rounded-full flex flex-col items-center justify-center text-white z-10 font-bold leading-tight shadow-md">
-                  <span className="text-sm">{discount}%</span>
+                  <span className="text-sm">{discountPercent}%</span>
                   <span className="text-[10px]">OFF</span>
                 </div>
               )}
-              {product.imageUrl ? (
-                <img src={product.imageUrl} alt={product.name} className="max-w-full max-h-full object-contain" />
+              {selectedImage?.url ? (
+                <img src={selectedImage.url} alt={selectedImage.alt || product.name} className="w-full h-full object-contain" />
               ) : (
                 <div className="w-64 h-64 bg-gray-50 flex items-center justify-center rounded-2xl">
                   <span className="text-[#e6226e] text-6xl font-black italic opacity-20">{product.name[0]}</span>
                 </div>
               )}
 
-              {productImages.length > 1 && (
+              {galleryImages.length > 1 && (
                 <>
-                  <button className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-gray-300 hover:text-gray-600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg></button>
-                  <button className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-gray-300 hover:text-gray-600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg></button>
+                  <button onClick={handlePrevImage} className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-gray-300 hover:text-gray-600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg></button>
+                  <button onClick={handleNextImage} className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-gray-300 hover:text-gray-600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg></button>
 
-                  <div className="absolute bottom-2 right-2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded">1/{productImages.length}</div>
+                  <div className="absolute bottom-2 right-2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded">{selectedImageIndex + 1}/{galleryImages.length}</div>
                 </>
               )}
             </div>
           </div>
 
           {/* ── Right: Info ────────────────────────────────── */}
-          <div className="w-full md:w-[55%] flex flex-col pt-4">
+          <div className="w-full md:w-[55%] flex flex-col">
 
             {/* Brand & Stars */}
             <div className="flex justify-between items-start mb-2">
@@ -174,13 +296,18 @@ export function ProductDetailPage() {
             <h1 className="text-2xl font-bold text-gray-900 mb-1 leading-tight">{product.name}</h1>
             <h2 className="text-sm text-gray-500 uppercase tracking-widest mb-4">{product.brand || 'LACQUAVI'} {product.volume && `— ${product.volume}`}</h2>
 
-            <div className="flex items-center gap-1 text-[#fcb900] text-sm mb-6">
-              ★★★★★ <span className="text-gray-400 text-xs ml-2">({Math.floor(Math.random() * 200) + 10})</span>
+            <div className="flex items-center gap-2 text-[#fcb900] text-sm mb-6">
+              <span>{renderStars(reviewsStats.averageRating)}</span>
+              <span className="text-gray-500 text-xs">
+                {reviewsStats.total > 0
+                  ? `${reviewsStats.averageRating.toFixed(1)} (${reviewsStats.total})`
+                  : 'Sem avaliações'}
+              </span>
             </div>
 
             {/* Pricing */}
             <div className="mb-6">
-              <p className="text-sm text-gray-400 line-through mb-1">{formatCurrency(product.price * (1 + (discount / 100)))}</p>
+              {hasDiscount && <p className="text-sm text-gray-400 line-through mb-1">{formatCurrency(oldPrice)}</p>}
               <div className="flex items-end gap-2">
                 <span className="text-3xl font-black text-black leading-none">{formatCurrency(product.price)}</span>
               </div>
@@ -246,6 +373,92 @@ export function ProductDetailPage() {
                   <p className="mb-1"><span className="font-medium">Indicação:</span> Todos os tipos de pele</p>
                   <p className="mb-1"><span className="font-medium">Necessidade:</span> Cuidado Diário</p>
                   {product.volume && <p><span className="font-medium">Tamanho:</span> {product.volume}</p>}
+                </div>
+              </div>
+
+              <div className="mb-12">
+                <div className="flex border-b border-pink-200 mb-4">
+                  <h3 className="uppercase text-sm font-bold text-gray-800 tracking-widest border-b-2 border-[#e6226e] pb-2 -mb-px">Avaliações</h3>
+                </div>
+
+                <div className="border border-gray-200 rounded p-4 bg-white mb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm text-gray-700">Média das avaliações</p>
+                      <p className="text-2xl font-bold text-gray-900 leading-none mt-1">{reviewsStats.averageRating.toFixed(1)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg text-[#fcb900]">{renderStars(reviewsStats.averageRating)}</p>
+                      <p className="text-xs text-gray-500 mt-1">{reviewsStats.total} avaliação(ões)</p>
+                    </div>
+                  </div>
+                </div>
+
+                {isAuthenticated ? (
+                  <form onSubmit={handleReviewSubmit} className="border border-gray-200 rounded p-4 bg-white mb-4 space-y-4">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800 mb-2">Deixe sua avaliação</p>
+                      <div className="flex gap-2" role="radiogroup" aria-label="Nota do produto">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
+                            className={`text-2xl leading-none ${reviewForm.rating >= star ? 'text-[#fcb900]' : 'text-gray-300'}`}
+                            aria-label={`${star} estrela${star > 1 ? 's' : ''}`}
+                          >
+                            ★
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="product-review-comment" className="block text-xs text-gray-600 font-medium mb-2">Comentário</label>
+                      <textarea
+                        id="product-review-comment"
+                        value={reviewForm.comment}
+                        onChange={(event) => setReviewForm(prev => ({ ...prev, comment: event.target.value }))}
+                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
+                        rows={4}
+                        placeholder="Conte como foi sua experiência com este produto"
+                        required
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={submittingReview}
+                      className="bg-[#e6226e] hover:bg-[#cc1d60] text-white px-6 py-2.5 rounded text-sm font-bold uppercase tracking-wide transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {submittingReview ? 'Enviando...' : 'Enviar avaliação'}
+                    </button>
+                  </form>
+                ) : (
+                  <div className="border border-gray-200 rounded p-4 bg-white mb-4 text-sm text-gray-600">
+                    Faça <Link to={`/login?redirect=${encodeURIComponent(`/products/${id}`)}`} className="text-[#e6226e] font-semibold hover:underline">login</Link> para enviar sua avaliação.
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  {reviewsLoading ? (
+                    <div className="border border-gray-200 rounded p-4 bg-white text-sm text-gray-500">Carregando avaliações...</div>
+                  ) : reviews.length === 0 ? (
+                    <div className="border border-gray-200 rounded p-4 bg-white text-sm text-gray-500">Este produto ainda não possui avaliações.</div>
+                  ) : (
+                    reviews.map((review) => (
+                      <div key={review.id} className="border border-gray-200 rounded p-4 bg-white">
+                        <div className="flex flex-wrap justify-between gap-2 mb-2">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">{review.user.name}</p>
+                            <p className="text-xs text-gray-500">{formatReviewDate(review.createdAt)}</p>
+                          </div>
+                          <p className="text-[#fcb900] text-sm">{renderStars(review.rating)}</p>
+                        </div>
+                        <p className="text-sm text-gray-700 whitespace-pre-line">{review.comment}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

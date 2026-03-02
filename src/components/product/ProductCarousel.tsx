@@ -1,9 +1,9 @@
 import { useRef } from 'react'
 import { ProductCard } from './ProductCard'
 import { ProductCardSkeleton } from '../ui'
-import type { Product } from '../../types'
+import type { Product, ProductReviewStats } from '../../types'
 
-export function ProductCarousel({ products, loading, count = 12 }: { products: Product[]; loading: boolean; count?: number }) {
+export function ProductCarousel({ products, loading, count = 12, reviewStatsByProduct }: { products: Product[]; loading: boolean; count?: number; reviewStatsByProduct?: Record<string, ProductReviewStats> }) {
     const scrollRef = useRef<HTMLDivElement>(null)
 
     const scroll = (direction: 'left' | 'right') => {
@@ -48,7 +48,7 @@ export function ProductCarousel({ products, loading, count = 12 }: { products: P
             >
                 {products.slice(0, count).map((p, i) => (
                     <div key={p.id || i} className="snap-start w-[171px] md:w-[205px] lg:w-[231px] flex-shrink-0">
-                        <ProductCard product={p} />
+                        <ProductCard product={p} reviewStats={reviewStatsByProduct?.[p.id]} />
                     </div>
                 ))}
             </div>

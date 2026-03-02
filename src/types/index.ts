@@ -29,6 +29,16 @@ export interface Category {
   slug: string
 }
 
+export interface ProductImage {
+  id: string
+  url: string
+  alt: string | null
+  position: number
+  isPrimary: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 // ─── Product ──────────────────────────────────────────────────────────────────
 export interface Product {
   id: string
@@ -36,14 +46,35 @@ export interface Product {
   slug: string
   description: string
   price: number
+  discount?: number | null
   stock: number
-  imageUrl: string
+  images: ProductImage[]
   brand: string | null
   volume: string | null
   gender: 'masculino' | 'feminino' | 'unissex' | null
   createdAt: string
   createdBy: string
   categoryId: string | null
+}
+
+// ─── Product Reviews ──────────────────────────────────────────────────────────
+export interface ProductReviewUser {
+  id: string
+  name: string
+}
+
+export interface ProductReview {
+  id: string
+  rating: number
+  comment: string
+  createdAt: string
+  updatedAt: string
+  user: ProductReviewUser
+}
+
+export interface ProductReviewStats {
+  total: number
+  averageRating: number
 }
 
 // ─── Order ────────────────────────────────────────────────────────────────────

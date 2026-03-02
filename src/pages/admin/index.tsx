@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { productsApi, categoriesApi } from '../../api/catalogApi'
+import { uploadProductImageToStorage } from '../../api/storageApi'
 import { ordersApi, paymentsApi, couponsApi, healthApi } from '../../api/index'
 import { useToast } from '../../context/ToastContext'
-import { Button, Input, Select, Badge, Spinner, EmptyState, ErrorMessage, Skeleton, Modal } from '../../components/ui'
+import { Button, Input, Select, Spinner, EmptyState, ErrorMessage, Skeleton, Modal } from '../../components/ui'
 import { formatCurrency, formatDateTime, orderStatusLabel, orderStatusColor, paymentStatusLabel, paymentStatusColor, generateIdempotencyKey } from '../../utils'
-import type { Product, Category, Order, Payment, Coupon, HealthStatus, OrderStatus, ApiError } from '../../types'
+import { getOrderedGallery, getProductPrimaryImage } from '../../utils/productImages'
+import { optimizeProductImage } from '../../utils/imagePipeline'
+import type { Product, Category, Order, Payment, Coupon, HealthStatus, OrderStatus, ApiError, ProductImage } from '../../types'
+
+const MAX_PRODUCT_IMAGES = 6
 
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
 export function AdminDashboardPage() {
@@ -137,13 +142,15 @@ export function AdminProductsPage() {
               </tr>
             </thead>
             <tbody>
-              {products.map(product => (
+              {products.map(product => {
+                const productImage = getProductPrimaryImage(product)
+                return (
                 <tr key={product.id} className="border-b border-obsidian-50 last:border-0 hover:bg-obsidian-50/50">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg overflow-hidden bg-obsidian-50 flex-shrink-0">
-                        {product.imageUrl
-                          ? <img src={product.imageUrl} alt="" className="w-full h-full object-cover" />
+                        {productImage?.url
+                          ? <img src={productImage.url} alt={productImage.alt || product.name} className="w-full h-full object-cover" />
                           : <div className="w-full h-full flex items-center justify-center text-obsidian-300 text-sm">⬟</div>
                         }
                       </div>
@@ -170,7 +177,8 @@ export function AdminProductsPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         )}
@@ -188,23 +196,36 @@ export function AdminProductFormPage() {
 
   const [loading, setLoading]   = useState(isEdit)
   const [saving, setSaving]     = useState(false)
-  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([])
+  const [existingImages, setExistingImages] = useState<ProductImage[]>([])
   const [error, setError]       = useState('')
   const [categories, setCategories] = useState<Category[]>([])
 
   const [form, setForm] = useState({
-    name: '', description: '', price: '', stock: '', brand: '', volume: '', gender: '', categoryId: '', imageUrl: ''
+    name: '', description: '', price: '', stock: '', brand: '', volume: '', gender: '', categoryId: ''
   })
+
+  useEffect(() => {
+    const previews = imageFiles.map((file) => URL.createObjectURL(file))
+    setNewImagePreviews(previews)
+    return () => {
+      previews.forEach((previewUrl) => URL.revokeObjectURL(previewUrl))
+    }
+  }, [imageFiles])
 
   useEffect(() => {
     categoriesApi.list().then(r => setCategories(r.data))
     if (isEdit && id) {
       productsApi.getById(id)
-        .then(p => setForm({
-          name: p.name, description: p.description, price: p.price.toString(),
-          stock: p.stock.toString(), brand: p.brand ?? '', volume: p.volume ?? '',
-          gender: p.gender ?? '', categoryId: p.categoryId ?? '', imageUrl: p.imageUrl
-        }))
+        .then(p => {
+          setForm({
+            name: p.name, description: p.description, price: p.price.toString(),
+            stock: p.stock.toString(), brand: p.brand ?? '', volume: p.volume ?? '',
+            gender: p.gender ?? '', categoryId: p.categoryId ?? ''
+          })
+          setExistingImages(getOrderedGallery(p.images))
+        })
         .finally(() => setLoading(false))
     }
   }, [id, isEdit])
@@ -213,10 +234,26 @@ export function AdminProductFormPage() {
     setForm(f => ({ ...f, [key]: e.target.value }))
   }
 
+  const handleImageSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files ?? [])
+    if (selectedFiles.length === 0) return
+
+    setImageFiles((previousFiles) => {
+      return [...previousFiles, ...selectedFiles]
+    })
+
+    event.target.value = ''
+  }
+
+  const removeSelectedImage = (indexToRemove: number) => {
+    setImageFiles((previousFiles) => previousFiles.filter((_, index) => index !== indexToRemove))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError('')
+
     try {
       const data = {
         name: form.name,
@@ -235,13 +272,42 @@ export function AdminProductFormPage() {
         const r = await productsApi.create(data)
         productId = r.product.id
       }
-      if (imageFile && productId) {
-        await productsApi.uploadImage(productId, imageFile)
+
+      if (productId && imageFiles.length > 0) {
+        const currentImagesCount = existingImages.length
+        const totalAfterUpload = currentImagesCount + imageFiles.length
+
+        if (totalAfterUpload > MAX_PRODUCT_IMAGES) {
+          throw new Error(`Limite de ${MAX_PRODUCT_IMAGES} imagens por produto atingido`)
+        }
+
+        const normalizedFiles = await Promise.all(imageFiles.map((file) => optimizeProductImage(file)))
+
+        for (let index = 0; index < normalizedFiles.length; index += 1) {
+          const normalizedFile = normalizedFiles[index]
+          const { url } = await uploadProductImageToStorage(normalizedFile)
+
+          await productsApi.addImage(productId, {
+            url,
+            alt: `${form.name} ${index + 1}`,
+            isPrimary: currentImagesCount === 0 && index === 0,
+          })
+        }
+
+        const confirmedImages = await productsApi.getImages(productId)
+        setExistingImages(getOrderedGallery(confirmedImages))
+
+        toast(
+          `${isEdit ? 'Produto atualizado' : 'Produto criado'}! Galeria confirmada com ${confirmedImages.length} imagem(ns).`,
+          'success'
+        )
+      } else {
+        toast(isEdit ? 'Produto atualizado!' : 'Produto criado!', 'success')
       }
-      toast(isEdit ? 'Produto atualizado!' : 'Produto criado!', 'success')
       navigate('/admin/products')
     } catch (err) {
-      setError((err as ApiError).message)
+      const apiError = err as ApiError
+      setError(apiError.message || 'Não foi possível processar e enviar as imagens')
     } finally {
       setSaving(false)
     }
@@ -306,19 +372,54 @@ export function AdminProductFormPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card p-6 space-y-4">
-          <h2 className="font-display text-lg text-ink">Imagem</h2>
-          {form.imageUrl && (
-            <img src={form.imageUrl} alt="Preview" className="w-28 h-28 rounded-xl object-cover" />
+          <h2 className="font-display text-lg text-ink">Imagens</h2>
+          {existingImages.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-obsidian-600 tracking-wide mb-2">Imagens atuais</p>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {existingImages.map((image) => (
+                  <div key={image.id} className="relative w-full aspect-square rounded-xl border border-obsidian-100 overflow-hidden bg-obsidian-50">
+                    <img src={image.url} alt={image.alt || 'Imagem do produto'} className="w-full h-full object-cover" />
+                    {image.isPrimary && (
+                      <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-ink text-white text-[10px] uppercase">Principal</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
+
+          {newImagePreviews.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-obsidian-600 tracking-wide mb-2">Novas imagens selecionadas</p>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {newImagePreviews.map((previewUrl, index) => (
+                  <div key={`${previewUrl}-${index}`} className="relative w-full aspect-square rounded-xl border border-obsidian-100 overflow-hidden bg-obsidian-50">
+                    <img src={previewUrl} alt={`Nova imagem ${index + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeSelectedImage(index)}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white text-xs flex items-center justify-center hover:bg-black"
+                      aria-label={`Remover imagem ${index + 1}`}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
-            <label className="block text-xs font-medium text-obsidian-600 tracking-wide mb-1.5">Upload de imagem</label>
+            <label className="block text-xs font-medium text-obsidian-600 tracking-wide mb-1.5">Upload de imagens</label>
             <input
               type="file"
+              multiple
               accept="image/jpeg,image/png,image/webp"
-              onChange={e => setImageFile(e.target.files?.[0] ?? null)}
+              onChange={handleImageSelection}
               className="block text-sm text-obsidian-500 file:mr-3 file:px-4 file:py-2 file:rounded-full file:border-0 file:text-xs file:bg-champagne-50 file:text-champagne-700 hover:file:bg-champagne-100"
             />
-            <p className="text-xs text-obsidian-400 mt-1">JPG, PNG ou WebP • máx. 2MB</p>
+            <p className="text-xs text-obsidian-400 mt-1">JPG, PNG ou WebP • até 6 imagens por produto</p>
           </div>
         </div>
 
@@ -748,7 +849,6 @@ export function AdminPaymentDetailPage() {
 // ─── Admin Coupons ─────────────────────────────────────────────────────────────
 export function AdminCouponsPage() {
   const navigate = useNavigate()
-  const { toast } = useToast()
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [loading, setLoading] = useState(true)
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getProductPrimaryImage } from '../../utils/productImages'
 import type { Product } from '../../types'
 
 interface BestSellersHeroProps {
@@ -35,7 +36,8 @@ export function BestSellersHero({ products }: BestSellersHeroProps) {
     }
 
     const activeProduct = products[currentIndex]
-    const hasImage = !!activeProduct?.imageUrl
+    const activeProductImage = getProductPrimaryImage(activeProduct)
+    const hasImage = !!activeProductImage?.url
 
     return (
         <section
@@ -94,8 +96,8 @@ export function BestSellersHero({ products }: BestSellersHeroProps) {
                         >
                             {hasImage ? (
                                 <img
-                                    src={activeProduct.imageUrl!}
-                                    alt={activeProduct.name}
+                                    src={activeProductImage!.url}
+                                    alt={activeProductImage!.alt || activeProduct.name}
                                     className="relative z-10 w-full max-w-[120px] md:max-w-[160px] drop-shadow-[0_15px_15px_rgba(0,0,0,0.15)] object-contain h-full py-2"
                                     style={{ animation: 'float 6s ease-in-out infinite' }}
                                 />

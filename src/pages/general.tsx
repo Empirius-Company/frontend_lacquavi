@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import { ordersApi, paymentsApi } from '../api/index'
 import { authApi } from '../api/authApi'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { Button, Input, Badge, EmptyState, ErrorMessage, Spinner, Skeleton } from '../components/ui'
+import { Button, Input, EmptyState, ErrorMessage, Spinner, Skeleton } from '../components/ui'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
 import {
   formatCurrency, formatDate, formatDateTime,
@@ -15,7 +15,7 @@ import type { Order, Payment, ApiError } from '../types'
 
 // ─── AUTH LAYOUT ──────────────────────────────────────────────────────────────
 function AuthLayout({ children, eyebrow, title, sub }: {
-  children: React.ReactNode
+  children: ReactNode
   eyebrow: string
   title: string
   sub?: string

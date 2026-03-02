@@ -1,4 +1,4 @@
-import React from 'react'
+import type { ReactNode } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
 import { Header } from './Header'
 import { Footer } from './Footer'
@@ -7,12 +7,12 @@ import { ToastContainer } from '../ui'
 /* ════════════════════════════════════════════════════════
    MainLayout — public + customer pages
    ════════════════════════════════════════════════════ */
-export function MainLayout() {
+export function MainLayout({ children }: { children?: ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
-        <Outlet />
+        {children ?? <Outlet />}
       </main>
       <Footer />
       <ToastContainer />
@@ -33,7 +33,7 @@ const ADMIN_LINKS = [
   { to: '/status',            label: 'Status API',   icon: '◐' },
 ]
 
-export function AdminLayout() {
+export function AdminLayout({ children }: { children?: ReactNode }) {
   return (
     <div className="min-h-screen bg-noir-950 flex">
       {/* Sidebar */}
@@ -86,7 +86,7 @@ export function AdminLayout() {
         </header>
 
         <main className="flex-1 p-6 md:p-8">
-          <Outlet />
+          {children ?? <Outlet />}
         </main>
       </div>
 

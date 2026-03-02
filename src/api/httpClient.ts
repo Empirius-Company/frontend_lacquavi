@@ -2,10 +2,13 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios'
 import type { ApiError } from '../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+const ACCESS_KEY = 'lacquavi_access_token'
+const REFRESH_KEY = 'lacquavi_refresh_token'
 
 // Token accessor — will be overridden by AuthContext once mounted
 let _getAccessToken: () => string | null = () => null
 let _onUnauthorized: () => void = () => {}
+let refreshPromise: Promise<string | null> | null = null
 
 export const setTokenAccessor = (fn: () => string | null) => {
   _getAccessToken = fn
@@ -24,6 +27,13 @@ const instance: AxiosInstance = axios.create({
 
 // Request interceptor – inject Authorization
 instance.interceptors.request.use((config) => {
+  const isFormDataPayload = typeof FormData !== 'undefined' && config.data instanceof FormData
+
+  if (isFormDataPayload && config.headers) {
+    delete config.headers['Content-Type']
+    delete config.headers['content-type']
+  }
+
   const token = _getAccessToken()
   if (token && config.headers) {
     config.headers['Authorization'] = `Bearer ${token}`
@@ -34,10 +44,60 @@ instance.interceptors.request.use((config) => {
 // Response interceptor – normalise errors
 instance.interceptors.response.use(
   (res) => res,
-  (err: AxiosError<{ error?: string; message?: string; code?: string; retryAfter?: number }>) => {
-    if (err.response?.status === 401) {
+  async (err: AxiosError<{ error?: string; message?: string; code?: string; retryAfter?: number }>) => {
+    const originalRequest = err.config as (AxiosRequestConfig & { _retry?: boolean }) | undefined
+    const isUnauthorized = err.response?.status === 401
+    const isAuthEndpoint = originalRequest?.url?.includes('/auth/')
+
+    if (isUnauthorized && originalRequest && !originalRequest._retry && !isAuthEndpoint) {
+      originalRequest._retry = true
+
+      const currentRefreshToken = localStorage.getItem(REFRESH_KEY)
+      if (currentRefreshToken) {
+        try {
+          if (!refreshPromise) {
+            refreshPromise = axios
+              .post<{ accessToken?: string; refreshToken?: string; token?: string }>(
+                `${API_BASE_URL}/auth/refresh`,
+                { refreshToken: currentRefreshToken },
+                { headers: { 'Content-Type': 'application/json' } }
+              )
+              .then((response) => {
+                const newAccessToken = response.data.accessToken || response.data.token || null
+                const newRefreshToken = response.data.refreshToken || currentRefreshToken
+
+                if (newAccessToken) {
+                  localStorage.setItem(ACCESS_KEY, newAccessToken)
+                }
+                if (newRefreshToken) {
+                  localStorage.setItem(REFRESH_KEY, newRefreshToken)
+                }
+
+                return newAccessToken
+              })
+              .finally(() => {
+                refreshPromise = null
+              })
+          }
+
+          const renewedAccessToken = await refreshPromise
+          if (renewedAccessToken) {
+            originalRequest.headers = {
+              ...(originalRequest.headers ?? {}),
+              Authorization: `Bearer ${renewedAccessToken}`,
+            }
+            return instance.request(originalRequest)
+          }
+        } catch {
+          // handled below by unauthorized flow
+        }
+      }
+    }
+
+    if (isUnauthorized) {
       _onUnauthorized()
     }
+
     const data = err.response?.data
     const apiError: ApiError = {
       message: data?.error ?? data?.message ?? err.message ?? 'Ocorreu um erro inesperado',
@@ -71,7 +131,7 @@ export const httpClient = {
     instance
       .put<T>(url, formData, {
         ...config,
-        headers: { ...config?.headers, 'Content-Type': 'multipart/form-data' },
+        headers: { ...config?.headers },
       })
       .then((r) => r.data),
 }

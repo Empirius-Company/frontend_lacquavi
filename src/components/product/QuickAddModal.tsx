@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { formatCurrency } from '../../utils'
 import { useCart } from '../../context/CartContext'
+import { getProductPrimaryImage } from '../../utils/productImages'
 import type { Product } from '../../types'
 
 interface QuickAddModalProps {
@@ -13,6 +14,7 @@ interface QuickAddModalProps {
 export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) {
     const { addItem } = useCart()
     const [qty, setQty] = useState(1)
+    const primaryImage = getProductPrimaryImage(product)
 
     if (!isOpen) return null
 
@@ -40,8 +42,8 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                     <div className="flex gap-6 items-center">
                         {/* Image */}
                         <div className="w-24 h-32 flex-shrink-0 bg-gray-50 rounded-lg flex items-center justify-center p-2">
-                            {product.imageUrl ? (
-                                <img src={product.imageUrl} alt={product.name} className="w-full h-full object-contain" />
+                            {primaryImage?.url ? (
+                                <img src={primaryImage.url} alt={primaryImage.alt || product.name} className="w-full h-full object-contain" />
                             ) : (
                                 <div className="text-gray-300 font-bold text-xl">{product.name.charAt(0)}</div>
                             )}

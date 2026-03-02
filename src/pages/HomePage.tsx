@@ -5,6 +5,8 @@ import { ProductCarousel } from '../components/product/ProductCarousel'
 import { Button } from '../components/ui'
 import { BestSellersHero } from '../components/ui/BestSellersHero'
 import { StoreTeaser } from '../components/store/StoreTeaser'
+import { useProductsReviewStats } from '../hooks/useProductsReviewStats'
+import { getProductPrimaryImageUrl } from '../utils/productImages'
 import type { Product, Category } from '../types'
 
 function useReveal(dep?: unknown) {
@@ -90,20 +92,103 @@ function EpicPromoBanner() {
   )
 }
 
-function CategoryTiles({ categories }: { categories: Category[] }) {
-  const colors = ["bg-gray-50", "bg-gray-100", "bg-[#F5F5F5]", "bg-[#FAFAFA]"];
+function CategoryTiles({ categories, products }: { categories: Category[]; products: Product[] }) {
+  const colors = ["bg-gray-50", "bg-gray-100", "bg-[#F5F5F5]", "bg-[#FAFAFA]"]
 
-  if (!categories || categories.length === 0) return null;
+  if (!categories || categories.length === 0) return null
+
+  const normalize = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+
+  const findCategory = (...keywords: string[]) =>
+    categories.find((category) => {
+      const haystack = `${normalize(category.name)} ${normalize(category.slug)}`
+      return keywords.every((keyword) => haystack.includes(normalize(keyword)))
+    })
+
+  const perfumeCategory = findCategory('perfume')
+  const kitsCategory = findCategory('kit')
+  const lotionCategory = categories.find((category) => {
+    const haystack = `${normalize(category.name)} ${normalize(category.slug)}`
+    return (
+      haystack.includes('locao hidratante') ||
+      haystack.includes('locoes hidratantes') ||
+      haystack.includes('locao') ||
+      haystack.includes('hidrat') ||
+      haystack.includes('locion')
+    )
+  })
+
+  const pickImage = (categoryId: string, keyword?: string) => {
+    const normalizedKeyword = keyword ? normalize(keyword) : ''
+    const directMatch = products.find((product) => {
+      if (!getProductPrimaryImageUrl(product) || product.categoryId !== categoryId) return false
+      if (!normalizedKeyword) return true
+      return normalize(product.name).includes(normalizedKeyword)
+    })
+    const directMatchImage = directMatch ? getProductPrimaryImageUrl(directMatch) : null
+    if (directMatchImage) return directMatchImage
+    const fallbackProduct = products.find((product) => getProductPrimaryImageUrl(product) && product.categoryId === categoryId)
+    return fallbackProduct ? getProductPrimaryImageUrl(fallbackProduct) ?? undefined : undefined
+  }
+
+  const tiles: Array<{ key: string; label: string; to: string; imageUrl?: string }> = []
+
+  if (perfumeCategory) {
+    tiles.push(
+      {
+        key: 'perfume-lacqua-di-fiori',
+        label: 'Perfumes Lacqua Di Fiori',
+        to: `/products?category=${perfumeCategory.id}&type=lacqua di fiori`,
+        imageUrl: pickImage(perfumeCategory.id, 'lacqua di fiori'),
+      },
+      {
+        key: 'perfume-arabes',
+        label: 'Perfumes Árabes',
+        to: `/products?category=${perfumeCategory.id}&type=arabe`,
+        imageUrl: pickImage(perfumeCategory.id, 'arabe'),
+      }
+    )
+  }
+
+  if (kitsCategory) {
+    tiles.push({
+      key: 'kits',
+      label: 'Kits',
+      to: `/products?category=${kitsCategory.id}`,
+      imageUrl: pickImage(kitsCategory.id),
+    })
+  }
+
+  if (lotionCategory) {
+    tiles.push({
+      key: 'locoes-hidratantes',
+      label: lotionCategory.name,
+      to: `/products?category=${lotionCategory.id}`,
+      imageUrl: pickImage(lotionCategory.id),
+    })
+  }
+
+  if (tiles.length === 0) return null
 
   return (
     <section className="bg-white py-8">
       <div className="container-page">
         <h3 className="text-center font-bold text-gray-500 text-lg mb-6">Encontre o que você precisa</h3>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-          {categories.map((c, i) => (
-            <Link key={c.id} to={`/products?category=${c.id}`} className={`rounded-xl ${colors[i % colors.length]} flex flex-col items-center justify-center p-6 aspect-square hover:shadow-md transition-shadow hover:-translate-y-1`}>
-              <span className="w-12 h-12 rounded-full bg-white shadow-sm mb-3 flex items-center justify-center text-[#000000] font-bold text-xl">{c.name.charAt(0).toUpperCase()}</span>
-              <span className="font-semibold text-sm text-[#333] text-center line-clamp-2">{c.name}</span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {tiles.map((tile, i) => (
+            <Link key={tile.key} to={tile.to} className={`rounded-xl ${colors[i % colors.length]} flex flex-col items-center justify-center p-6 aspect-square hover:shadow-md transition-shadow hover:-translate-y-1`}>
+              <span className="w-16 h-16 rounded-full bg-white shadow-sm mb-3 overflow-hidden flex items-center justify-center">
+                {tile.imageUrl ? (
+                  <img src={tile.imageUrl} alt={tile.label} className="w-full h-full object-cover" loading="lazy" />
+                ) : (
+                  <span className="text-[#000000] font-bold text-xl">{tile.label.charAt(0).toUpperCase()}</span>
+                )}
+              </span>
+              <span className="font-semibold text-sm text-[#333] text-center line-clamp-2">{tile.label}</span>
             </Link>
           ))}
         </div>
@@ -131,14 +216,17 @@ export function HomePage() {
   }, [])
 
   const sortedProducts = [...products].sort((a, b) => {
-    if (a.imageUrl && !b.imageUrl) return -1
-    if (!a.imageUrl && b.imageUrl) return 1
+    const aImage = getProductPrimaryImageUrl(a)
+    const bImage = getProductPrimaryImageUrl(b)
+    if (aImage && !bImage) return -1
+    if (!aImage && bImage) return 1
     return 0
   })
 
   // Find a hit product to show in the Hero Section. 
   // Top 4 best selling products logic (just grabbing some top products based on id or arbitrary logic if real best-sellers aren't strictly known from API, or we can use sortedProducts sliced to 4)
   const topProducts = sortedProducts.slice(0, 4);
+  const { statsByProduct } = useProductsReviewStats(sortedProducts.map((product) => product.id))
 
   return (
     <div className="bg-[#F5F5F5] min-h-screen pb-16">
@@ -159,13 +247,13 @@ export function HomePage() {
               <Button variant="outline" onClick={() => window.location.reload()}>Tentar novamente</Button>
             </div>
           ) : (
-            <ProductCarousel products={sortedProducts} loading={loading} count={12} />
+            <ProductCarousel products={sortedProducts} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
           )}
         </div>
       </section>
 
       {/* Categories quick nav */}
-      <CategoryTiles categories={categories} />
+      <CategoryTiles categories={categories} products={sortedProducts} />
 
       {/* Dynamic Pink Hero Promo Moved Down */}
       <EpicPromoBanner />
@@ -179,7 +267,7 @@ export function HomePage() {
             linkTo="/products"
           />
           {error ? null : (
-            <ProductCarousel products={[...sortedProducts].reverse()} loading={loading} count={12} />
+            <ProductCarousel products={[...sortedProducts].reverse()} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
           )}
         </div>
       </section>
@@ -192,7 +280,7 @@ export function HomePage() {
             linkTo="/products"
           />
           {error ? null : (
-            <ProductCarousel products={sortedProducts.filter(p => p.name.toLowerCase().includes('perfume') || p.price > 120)} loading={loading} count={12} />
+            <ProductCarousel products={sortedProducts.filter(p => p.name.toLowerCase().includes('perfume') || p.price > 120)} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
           )}
         </div>
       </section>
@@ -205,7 +293,7 @@ export function HomePage() {
             linkTo="/products"
           />
           {error ? null : (
-            <ProductCarousel products={sortedProducts.filter(p => p.name.toLowerCase().includes('kit') || p.price < 120)} loading={loading} count={12} />
+            <ProductCarousel products={sortedProducts.filter(p => p.name.toLowerCase().includes('kit') || p.price < 120)} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
           )}
         </div>
       </section>

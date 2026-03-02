@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
 import { Button, ErrorMessage } from '../components/ui'
 import { formatCurrency, generateIdempotencyKey } from '../utils'
+import { getProductPrimaryImage } from '../utils/productImages'
 import type { CouponValidation, ApiError } from '../types'
 
 /* Step indicator */
@@ -114,6 +115,7 @@ export function CheckoutPage() {
         couponCode: coupon?.coupon.code,
         idempotencyKey: generateIdempotencyKey(),
       })
+      clearCart()
       toast('Pedido criado com sucesso! Direcionando para pagamento...', 'success')
       navigate(`/checkout/payment/${order.id}`)
     } catch (err) {
@@ -139,11 +141,13 @@ export function CheckoutPage() {
                 <h2 className="font-display text-lg text-noir-950">Seu Pedido</h2>
               </div>
               <div className="divide-y divide-nude-50">
-                {items.map(item => (
+                {items.map(item => {
+                  const productImage = getProductPrimaryImage(item.product)
+                  return (
                   <div key={item.productId} className="flex items-center gap-4 px-6 py-4">
                     <div className="w-14 h-16 rounded-xl overflow-hidden bg-nude-50 flex-shrink-0">
-                      {item.product?.imageUrl ? (
-                        <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+                      {productImage?.url ? (
+                        <img src={productImage.url} alt={productImage.alt || item.product.name} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-nude-300 text-lg">⬟</div>
                       )}
@@ -159,7 +163,8 @@ export function CheckoutPage() {
                       {formatCurrency((item.product?.price ?? 0) * item.quantity)}
                     </p>
                   </div>
-                ))}
+                  )
+                })}
               </div>
               <div className="px-6 py-3 bg-nude-50/40 flex justify-between text-sm">
                 <span className="text-nude-600">Subtotal</span>
