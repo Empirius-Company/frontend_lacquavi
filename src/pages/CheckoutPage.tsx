@@ -1,12 +1,63 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { ordersApi, couponsApi } from '../api/index'
+import { ordersApi, couponsApi, shippingApi } from '../api/index'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
 import { Button, ErrorMessage } from '../components/ui'
 import { formatCurrency, generateIdempotencyKey } from '../utils'
 import { getProductPrimaryImage } from '../utils/productImages'
-import type { CouponValidation, ApiError } from '../types'
+import type { CouponValidation, ApiError, Order, ShippingDestination, ShippingQuote } from '../types'
+
+const SHIPPING_DESTINATION_KEY = 'lacquavi_checkout_shipping_destination'
+const SHIPPING_SESSION_KEY = 'lacquavi_checkout_shipping_session'
+
+type ShippingSessionCache = {
+  cartSignature: string
+  orderId: string
+  quotes: ShippingQuote[]
+  selectedQuoteId: string | null
+}
+
+function getEmptyDestination(): ShippingDestination {
+  return {
+    zip: '',
+    street: '',
+    number: '',
+    complement: '',
+    district: '',
+    city: '',
+    state: '',
+  }
+}
+
+function normalizeDestination(destination: ShippingDestination): ShippingDestination {
+  const digitsZip = destination.zip.replace(/\D/g, '').slice(0, 8)
+  const formattedZip = digitsZip.length > 5
+    ? `${digitsZip.slice(0, 5)}-${digitsZip.slice(5)}`
+    : digitsZip
+
+  return {
+    zip: formattedZip,
+    street: destination.street.trim(),
+    number: destination.number.trim(),
+    complement: destination.complement?.trim() ?? '',
+    district: destination.district.trim(),
+    city: destination.city.trim(),
+    state: destination.state.trim().toUpperCase(),
+  }
+}
+
+function isDestinationComplete(destination: ShippingDestination): boolean {
+  const normalized = normalizeDestination(destination)
+  return Boolean(
+    normalized.zip.replace(/\D/g, '').length === 8 &&
+    normalized.street &&
+    normalized.number &&
+    normalized.district &&
+    normalized.city &&
+    normalized.state.length === 2
+  )
+}
 
 /* Step indicator */
 function StepBar({ current }: { current: 1 | 2 | 3 }) {
@@ -89,10 +140,159 @@ export function CheckoutPage() {
   const [validating, setValidating] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [shippingError, setShippingError] = useState('')
+  const [shippingLoading, setShippingLoading] = useState(false)
+  const [selectingShipping, setSelectingShipping] = useState(false)
+  const [zipLookupLoading, setZipLookupLoading] = useState(false)
+  const [destination, setDestination] = useState<ShippingDestination>(() => {
+    try {
+      const raw = localStorage.getItem(SHIPPING_DESTINATION_KEY)
+      if (!raw) return getEmptyDestination()
+      return { ...getEmptyDestination(), ...(JSON.parse(raw) as Partial<ShippingDestination>) }
+    } catch {
+      return getEmptyDestination()
+    }
+  })
+  const [orderDraft, setOrderDraft] = useState<Order | null>(null)
+  const [shippingQuotes, setShippingQuotes] = useState<ShippingQuote[]>([])
+  const [selectedQuoteId, setSelectedQuoteId] = useState<string>('')
+  const [shippingConfirmed, setShippingConfirmed] = useState(false)
+  const [shippingRequired, setShippingRequired] = useState(true)
+  const [shippingAmountCents, setShippingAmountCents] = useState(0)
+  const [shippingDiscountCents, setShippingDiscountCents] = useState(0)
+  const [selectedTotal, setSelectedTotal] = useState<number | null>(null)
+
+  const orderIdempotencyKeyRef = useRef(generateIdempotencyKey())
+
+  const cartSignature = useMemo(() => {
+    const compact = items
+      .map(item => `${item.productId}:${item.quantity}`)
+      .sort()
+      .join('|')
+    return `${compact}::${subtotal.toFixed(2)}`
+  }, [items, subtotal])
 
   const discount = coupon?.discount ?? 0
-  const total = subtotal - discount
+  const shippingAmount = shippingRequired && shippingConfirmed
+    ? (shippingAmountCents - shippingDiscountCents) / 100
+    : 0
+  const total = subtotal - discount + shippingAmount
+  const displayTotal = selectedTotal ?? total
   const [showCouponInput, setShowCouponInput] = useState(false)
+
+  const lastZipLookupRef = useRef<string>('')
+
+  useEffect(() => {
+    localStorage.setItem(SHIPPING_DESTINATION_KEY, JSON.stringify(destination))
+  }, [destination])
+
+  useEffect(() => {
+    const zipDigits = destination.zip.replace(/\D/g, '')
+    if (zipDigits.length !== 8) return
+    if (lastZipLookupRef.current === zipDigits) return
+
+    const timeoutId = window.setTimeout(async () => {
+      setZipLookupLoading(true)
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${zipDigits}/json/`)
+        const data = await response.json() as {
+          erro?: boolean
+          cep?: string
+          logradouro?: string
+          bairro?: string
+          localidade?: string
+          uf?: string
+        }
+
+        if (!response.ok || data.erro) {
+          setShippingError('Não foi possível localizar o CEP informado.')
+          return
+        }
+
+        lastZipLookupRef.current = zipDigits
+        setDestination(prev => ({
+          ...prev,
+          zip: data.cep ?? prev.zip,
+          street: data.logradouro?.trim() || prev.street,
+          district: data.bairro?.trim() || prev.district,
+          city: data.localidade?.trim() || prev.city,
+          state: data.uf?.trim().toUpperCase() || prev.state,
+        }))
+      } catch {
+        setShippingError('Erro ao buscar CEP automaticamente.')
+      } finally {
+        setZipLookupLoading(false)
+      }
+    }, 350)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [destination.zip])
+
+  useEffect(() => {
+    const prevSignature = sessionStorage.getItem('lacquavi_checkout_cart_signature')
+    if (prevSignature && prevSignature !== cartSignature) {
+      setOrderDraft(null)
+      setShippingQuotes([])
+      setSelectedQuoteId('')
+      setShippingConfirmed(false)
+      setShippingRequired(true)
+      setShippingAmountCents(0)
+      setShippingDiscountCents(0)
+      setSelectedTotal(null)
+      localStorage.removeItem(SHIPPING_SESSION_KEY)
+      orderIdempotencyKeyRef.current = generateIdempotencyKey()
+    }
+    sessionStorage.setItem('lacquavi_checkout_cart_signature', cartSignature)
+  }, [cartSignature])
+
+  useEffect(() => {
+    const loadCachedShippingSession = async () => {
+      try {
+        const raw = localStorage.getItem(SHIPPING_SESSION_KEY)
+        if (!raw) return
+        const parsed = JSON.parse(raw) as ShippingSessionCache
+        if (parsed.cartSignature !== cartSignature) return
+        if (!parsed.orderId) return
+
+        const { order } = await ordersApi.getById(parsed.orderId)
+        setOrderDraft(order)
+        setShippingQuotes(parsed.quotes ?? [])
+        setSelectedQuoteId(parsed.selectedQuoteId ?? '')
+        setShippingConfirmed(Boolean(order.shippingQuoteId))
+        setShippingAmountCents(order.shippingAmountCents ?? 0)
+        setShippingDiscountCents(order.shippingDiscountCents ?? 0)
+        setSelectedTotal(order.total)
+      } catch {
+        localStorage.removeItem(SHIPPING_SESSION_KEY)
+      }
+    }
+
+    void loadCachedShippingSession()
+  }, [cartSignature])
+
+  const persistShippingSession = (next: Partial<ShippingSessionCache> = {}) => {
+    if (!orderDraft && !next.orderId) return
+    const payload: ShippingSessionCache = {
+      cartSignature,
+      orderId: next.orderId ?? orderDraft?.id ?? '',
+      quotes: next.quotes ?? shippingQuotes,
+      selectedQuoteId: next.selectedQuoteId ?? selectedQuoteId ?? null,
+    }
+    if (!payload.orderId) return
+    localStorage.setItem(SHIPPING_SESSION_KEY, JSON.stringify(payload))
+  }
+
+  const ensureOrderDraft = async (): Promise<Order> => {
+    if (orderDraft) return orderDraft
+    const { order } = await ordersApi.create({
+      items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
+      couponCode: coupon?.coupon.code,
+      idempotencyKey: orderIdempotencyKeyRef.current,
+    })
+    setOrderDraft(order)
+    persistShippingSession({ orderId: order.id, quotes: [], selectedQuoteId: null })
+    return order
+  }
 
   const validateCoupon = async () => {
     if (!couponCode.trim()) return
@@ -106,18 +306,154 @@ export function CheckoutPage() {
     } finally { setValidating(false) }
   }
 
+  const handleDestinationChange = (field: keyof ShippingDestination, value: string) => {
+    setDestination(prev => ({ ...prev, [field]: value }))
+    setShippingError('')
+
+    if (field === 'zip') {
+      const digits = value.replace(/\D/g, '').slice(0, 8)
+      if (digits.length < 8) {
+        lastZipLookupRef.current = ''
+      }
+    }
+
+    if (shippingConfirmed) {
+      setShippingConfirmed(false)
+      setShippingAmountCents(0)
+      setShippingDiscountCents(0)
+      setSelectedTotal(null)
+    }
+  }
+
+  const handleShippingBusinessError = (apiError: ApiError) => {
+    switch (apiError.code) {
+      case 'SHIPPING_QUOTE_EXPIRED':
+        setShippingConfirmed(false)
+        setSelectedQuoteId('')
+        setShippingQuotes([])
+        setShippingError('A cotação expirou. Calcule novamente e escolha um novo frete.')
+        break
+      case 'SHIPPING_QUOTE_CART_CHANGED':
+        setShippingConfirmed(false)
+        setSelectedQuoteId('')
+        setShippingQuotes([])
+        setShippingError('Seu carrinho mudou desde a cotação. Recalcule o frete.')
+        break
+      case 'SHIPPING_QUOTE_ADDRESS_CHANGED':
+        setShippingConfirmed(false)
+        setSelectedQuoteId('')
+        setShippingQuotes([])
+        setShippingError('O endereço mudou desde a cotação. Recalcule o frete.')
+        break
+      case 'SHIPPING_NO_PHYSICAL_ITEMS':
+        setShippingRequired(false)
+        setShippingConfirmed(true)
+        setShippingQuotes([])
+        setShippingAmountCents(0)
+        setShippingDiscountCents(0)
+        setSelectedTotal(subtotal - discount)
+        setShippingError('Este pedido não possui itens físicos. Frete não é necessário.')
+        break
+      default:
+        setShippingError(apiError.message ?? 'Erro no processo de frete')
+    }
+  }
+
+  const handleQuoteShipping = async () => {
+    if (items.length === 0) return
+    setShippingError('')
+    setShippingRequired(true)
+
+    if (!isDestinationComplete(destination)) {
+      setShippingError('Preencha endereço completo para calcular frete (incluindo UF com 2 letras e CEP válido).')
+      return
+    }
+
+    setShippingLoading(true)
+    try {
+      const draftOrder = await ensureOrderDraft()
+      const normalized = normalizeDestination(destination)
+      const response = await shippingApi.quote({
+        orderId: draftOrder.id,
+        destination: normalized,
+      })
+
+      const validQuotes = response.quotes.filter(q => new Date(q.expiresAt).getTime() > Date.now())
+      setShippingQuotes(validQuotes)
+
+      const bestQuote = validQuotes.reduce<ShippingQuote | null>((best, current) => {
+        if (!best) return current
+        return current.priceCents < best.priceCents ? current : best
+      }, null)
+
+      const nextSelectedQuoteId = bestQuote?.quoteId ?? ''
+      setSelectedQuoteId(nextSelectedQuoteId)
+      setShippingConfirmed(false)
+      persistShippingSession({
+        orderId: draftOrder.id,
+        quotes: validQuotes,
+        selectedQuoteId: nextSelectedQuoteId || null,
+      })
+
+      if (!validQuotes.length) {
+        setShippingError('Nenhuma opção de frete disponível para este endereço no momento.')
+      } else {
+        toast('Frete calculado com sucesso. Selecione e confirme o serviço.', 'success')
+      }
+    } catch (err) {
+      handleShippingBusinessError(err as ApiError)
+    } finally {
+      setShippingLoading(false)
+    }
+  }
+
+  const handleConfirmShipping = async () => {
+    if (!orderDraft || !selectedQuoteId) {
+      setShippingError('Selecione um serviço de frete antes de continuar.')
+      return
+    }
+    if (!isDestinationComplete(destination)) {
+      setShippingError('Endereço inválido para seleção de frete.')
+      return
+    }
+
+    setSelectingShipping(true)
+    setShippingError('')
+    try {
+      const selectionResponse = await shippingApi.select({
+        orderId: orderDraft.id,
+        quoteId: selectedQuoteId,
+        destination: normalizeDestination(destination),
+      })
+      const freshOrder = await ordersApi.getById(orderDraft.id)
+      setOrderDraft(freshOrder.order)
+      setShippingConfirmed(true)
+      setShippingRequired(true)
+      setShippingAmountCents(selectionResponse.selection.shippingAmountCents)
+      setShippingDiscountCents(selectionResponse.selection.shippingDiscountCents)
+      setSelectedTotal(selectionResponse.selection.total)
+      persistShippingSession({ selectedQuoteId })
+      toast('Frete selecionado com sucesso!', 'success')
+    } catch (err) {
+      handleShippingBusinessError(err as ApiError)
+      setShippingConfirmed(false)
+    } finally {
+      setSelectingShipping(false)
+    }
+  }
+
   const handleSubmit = async () => {
     if (items.length === 0) return
+    const draftOrder = orderDraft ?? await ensureOrderDraft()
+    if (shippingRequired && (!shippingConfirmed || !draftOrder.shippingQuoteId)) {
+      setError('Calcule e confirme o frete antes de seguir para o pagamento.')
+      return
+    }
     setSubmitting(true); setError('')
     try {
-      const { order } = await ordersApi.create({
-        items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
-        couponCode: coupon?.coupon.code,
-        idempotencyKey: generateIdempotencyKey(),
-      })
       clearCart()
       toast('Pedido criado com sucesso! Direcionando para pagamento...', 'success')
-      navigate(`/checkout/payment/${order.id}`)
+      navigate(`/checkout/payment/${draftOrder.id}`)
     } catch (err) {
       setError((err as ApiError).message ?? 'Erro ao criar pedido')
     } finally { setSubmitting(false) }
@@ -220,6 +556,135 @@ export function CheckoutPage() {
               )}
             </div>
 
+            {/* Shipping */}
+            {shippingRequired && (
+            <div className="bg-pearl rounded-2xl border border-nude-100 p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-display text-base text-noir-950">Entrega</h3>
+                <span className="text-xs text-nude-500">Frete via Melhor Envio</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={destination.zip}
+                  onChange={e => {
+                    const digits = e.target.value.replace(/\D/g, '').slice(0, 8)
+                    const masked = digits.length > 5
+                      ? `${digits.slice(0, 5)}-${digits.slice(5)}`
+                      : digits
+                    handleDestinationChange('zip', masked)
+                  }}
+                  placeholder="CEP"
+                  className="input-luxury text-sm"
+                />
+                <input
+                  type="text"
+                  value={destination.state}
+                  onChange={e => handleDestinationChange('state', e.target.value.toUpperCase().slice(0, 2))}
+                  placeholder="UF"
+                  className="input-luxury text-sm"
+                />
+                <input
+                  type="text"
+                  value={destination.street}
+                  onChange={e => handleDestinationChange('street', e.target.value)}
+                  placeholder="Rua"
+                  className="input-luxury text-sm sm:col-span-2"
+                />
+                <input
+                  type="text"
+                  value={destination.number}
+                  onChange={e => handleDestinationChange('number', e.target.value)}
+                  placeholder="Número"
+                  className="input-luxury text-sm"
+                />
+                <input
+                  type="text"
+                  value={destination.complement ?? ''}
+                  onChange={e => handleDestinationChange('complement', e.target.value)}
+                  placeholder="Complemento (opcional)"
+                  className="input-luxury text-sm"
+                />
+                <input
+                  type="text"
+                  value={destination.district}
+                  onChange={e => handleDestinationChange('district', e.target.value)}
+                  placeholder="Bairro"
+                  className="input-luxury text-sm"
+                />
+                <input
+                  type="text"
+                  value={destination.city}
+                  onChange={e => handleDestinationChange('city', e.target.value)}
+                  placeholder="Cidade"
+                  className="input-luxury text-sm"
+                />
+              </div>
+
+              {zipLookupLoading && (
+                <p className="text-xs text-nude-500">Buscando endereço pelo CEP...</p>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleQuoteShipping} loading={shippingLoading} className="flex-1">
+                  Calcular frete
+                </Button>
+                <Button variant="primary" onClick={handleConfirmShipping} loading={selectingShipping} className="flex-1">
+                  Confirmar frete
+                </Button>
+              </div>
+
+              {shippingQuotes.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-nude-500 uppercase tracking-wide">Selecione o serviço</p>
+                  {shippingQuotes.map(quote => {
+                    const checked = selectedQuoteId === quote.quoteId
+                    return (
+                      <label
+                        key={quote.quoteId}
+                        className={`flex items-center justify-between rounded-xl border px-3 py-2 cursor-pointer transition-colors ${checked ? 'border-[#e6226e] bg-[#e6226e]/5' : 'border-nude-200'}`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <input
+                            type="radio"
+                            name="shipping-quote"
+                            checked={checked}
+                            onChange={() => {
+                              setSelectedQuoteId(quote.quoteId)
+                              setShippingConfirmed(false)
+                              persistShippingSession({ selectedQuoteId: quote.quoteId })
+                            }}
+                            className="mt-1"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-noir-950">{quote.serviceName}</p>
+                            <p className="text-xs text-nude-500">Entrega em até {quote.deliveryDays} dias</p>
+                          </div>
+                        </div>
+                        <p className="text-sm font-medium text-noir-950">{formatCurrency(quote.priceCents / 100)}</p>
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+
+              {shippingConfirmed && (
+                <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+                  Frete confirmado para este pedido.
+                </div>
+              )}
+
+              {shippingError && <p className="text-xs text-red-500">{shippingError}</p>}
+            </div>
+            )}
+
+            {!shippingRequired && (
+              <div className="bg-pearl rounded-2xl border border-nude-100 p-5 shadow-sm">
+                <p className="text-sm text-green-700">Este pedido não possui itens físicos. Frete não aplicável.</p>
+              </div>
+            )}
+
             {error && <ErrorMessage message={error} />}
           </div>
 
@@ -234,13 +699,17 @@ export function CheckoutPage() {
                 {discount > 0 && (
                   <Row label="Desconto" value={`−${formatCurrency(discount)}`} valueClass="text-green-600" />
                 )}
-                <Row label="Frete" value="A calcular" valueClass="text-nude-500 text-xs" />
+                <Row
+                  label="Frete"
+                  value={!shippingRequired ? 'Não aplicável' : shippingConfirmed ? formatCurrency(shippingAmount) : 'A calcular'}
+                  valueClass={!shippingRequired ? 'text-green-700 text-xs' : shippingConfirmed ? 'text-noir-950' : 'text-nude-500 text-xs'}
+                />
                 <div className="h-px bg-nude-100 my-1" />
                 <div className="flex justify-between items-end">
                   <span className="font-medium text-noir-950">Total</span>
                   <div className="text-right">
-                    <p className="font-display text-2xl text-noir-950">{formatCurrency(total)}</p>
-                    <p className="text-2xs text-nude-400">10× {formatCurrency(total / 10)}</p>
+                    <p className="font-display text-2xl text-noir-950">{formatCurrency(displayTotal)}</p>
+                    <p className="text-2xs text-nude-400">10× {formatCurrency(displayTotal / 10)}</p>
                   </div>
                 </div>
               </div>
@@ -270,7 +739,7 @@ export function CheckoutPage() {
       {/* Floating Total Bar */}
       {items.length > 0 && (
         <FloatingTotalBar
-          total={total}
+          total={displayTotal}
           onSubmit={handleSubmit}
           loading={submitting}
         />

@@ -1,5 +1,5 @@
 import { httpClient } from './httpClient'
-import type { Category, Product, ProductImage, ProductReview, ProductReviewStats } from '../types'
+import type { Category, Product, ProductImage, ProductReview, ProductReviewStats, Subcategory } from '../types'
 
 // ─── Categories ───────────────────────────────────────────────────────────────
 interface CategoriesResponse { success: boolean; data: Category[] }
@@ -12,14 +12,35 @@ export const categoriesApi = {
   getById: (id: string): Promise<CategoryResponse> =>
     httpClient.get<CategoryResponse>(`/api/categories/${id}`),
 
-  create: (data: { name: string; slug?: string }): Promise<CategoryResponse> =>
+  create: (data: { name: string; slug?: string; packagingCategory?: string }): Promise<CategoryResponse> =>
     httpClient.post<CategoryResponse>('/api/categories', data),
 
-  update: (id: string, data: { name?: string; slug?: string }): Promise<CategoryResponse> =>
+  update: (id: string, data: { name?: string; slug?: string; packagingCategory?: string }): Promise<CategoryResponse> =>
     httpClient.put<CategoryResponse>(`/api/categories/${id}`, data),
 
   remove: (id: string): Promise<{ success: boolean; message: string }> =>
     httpClient.delete<{ success: boolean; message: string }>(`/api/categories/${id}`),
+}
+
+// ─── Subcategories ───────────────────────────────────────────────────────────
+interface SubcategoriesResponse { success?: boolean; data?: Subcategory[]; subcategories?: Subcategory[] }
+interface SubcategoryResponse { success?: boolean; data?: Subcategory; subcategory?: Subcategory }
+
+export const subcategoriesApi = {
+  list: (params?: { categoryId?: string }): Promise<SubcategoriesResponse> =>
+    httpClient.get<SubcategoriesResponse>('/api/subcategories', { params }),
+
+  getById: (id: string): Promise<SubcategoryResponse> =>
+    httpClient.get<SubcategoryResponse>(`/api/subcategories/${id}`),
+
+  create: (data: { name: string; categoryId: string; slug?: string }): Promise<SubcategoryResponse> =>
+    httpClient.post<SubcategoryResponse>('/api/subcategories', data),
+
+  update: (id: string, data: { name?: string; categoryId?: string; slug?: string }): Promise<SubcategoryResponse> =>
+    httpClient.put<SubcategoryResponse>(`/api/subcategories/${id}`, data),
+
+  remove: (id: string): Promise<{ success?: boolean; message?: string }> =>
+    httpClient.delete<{ success?: boolean; message?: string }>(`/api/subcategories/${id}`),
 }
 
 // ─── Products ─────────────────────────────────────────────────────────────────
@@ -37,9 +58,13 @@ type CreateProductInput = {
   price: number
   stock: number
   categoryId?: string
+  subcategoryId?: string
   brand?: string
   volume?: string
   gender?: string
+  isActive?: boolean
+  requiresShipping?: boolean
+  weightGrams?: number
 }
 type UpdateProductInput = Partial<CreateProductInput>
 const buildLegacyUploadFormData = (file: File) => {
@@ -49,7 +74,7 @@ const buildLegacyUploadFormData = (file: File) => {
 }
 
 export const productsApi = {
-  list: (params?: { category?: string; type?: string }): Promise<ProductsResponse> =>
+  list: (params?: { category?: string; subcategory?: string; type?: string }): Promise<ProductsResponse> =>
     httpClient.get<ProductsResponse>('/products', { params }),
 
   getById: (id: string): Promise<Product> =>
@@ -94,6 +119,9 @@ export const productsApi = {
 
   setPrimaryImage: (id: string, imageId: string): Promise<{ message?: string; image: ProductImage }> =>
     httpClient.put<{ message?: string; image: ProductImage }>(`/products/${id}/images/${imageId}/primary`),
+
+  removeImage: (id: string, imageId: string): Promise<{ message?: string }> =>
+    httpClient.delete<{ message?: string }>(`/products/${id}/images/${imageId}`),
 
   myProducts: (): Promise<ProductsResponse> =>
     httpClient.get<ProductsResponse>('/products/my/products'),

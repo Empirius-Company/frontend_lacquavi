@@ -1,11 +1,11 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { productsApi, categoriesApi } from '../api/catalogApi'
+import { productsApi, categoriesApi, subcategoriesApi } from '../api/catalogApi'
 import { ProductCard } from '../components/product/ProductCard'
 import { ProductCardSkeleton, Button } from '../components/ui'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
 import { useProductsReviewStats } from '../hooks/useProductsReviewStats'
-import type { Product, Category } from '../types'
+import type { Product, Category, Subcategory } from '../types'
 
 const GENDER_OPTIONS = [
   { value: '',          label: 'Todos' },
@@ -41,9 +41,11 @@ export function ProductListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [products,   setProducts]   = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([])
   const [loading,    setLoading]    = useState(true)
 
   const selectedCat    = searchParams.get('category') ?? ''
+  const selectedSubcategory = searchParams.get('subcategory') ?? ''
   const selectedType   = searchParams.get('type')     ?? ''
   const selectedGender = searchParams.get('gender')   ?? ''
   const searchQuery    = searchParams.get('q')        ?? ''
@@ -60,13 +62,28 @@ export function ProductListPage() {
     Promise.all([
       productsApi.list({
         ...(selectedCat ? { category: selectedCat } : {}),
+        ...(selectedSubcategory ? { subcategory: selectedSubcategory } : {}),
         ...(selectedType ? { type: selectedType } : {}),
       }),
       categoriesApi.list(),
     ])
       .then(([pd, cd]) => { setProducts(pd.products); setCategories(cd.data) })
       .finally(() => setLoading(false))
-  }, [selectedCat, selectedType])
+  }, [selectedCat, selectedSubcategory, selectedType])
+
+  useEffect(() => {
+    if (!selectedCat) {
+      setSubcategories([])
+      return
+    }
+
+    subcategoriesApi
+      .list({ categoryId: selectedCat })
+      .then((response) => {
+        setSubcategories(response.data ?? response.subcategories ?? [])
+      })
+      .catch(() => setSubcategories([]))
+  }, [selectedCat])
 
   /* Client-side filter + sort */
   const visible = useMemo(() => {
@@ -84,7 +101,7 @@ export function ProductListPage() {
     return list
   }, [products, selectedGender, searchQuery, sort])
 
-  const totalActive = [selectedCat, selectedType, selectedGender, searchQuery].filter(Boolean).length
+  const totalActive = [selectedCat, selectedSubcategory, selectedType, selectedGender, searchQuery].filter(Boolean).length
   const { statsByProduct } = useProductsReviewStats(visible.map((product) => product.id))
 
   return (
@@ -135,12 +152,28 @@ export function ProductListPage() {
             <div className="md:ml-auto flex items-center gap-3">
               <select
                 value={selectedCat}
-                onChange={e => setParam('category', e.target.value)}
+                onChange={e => {
+                  setParam('category', e.target.value)
+                  setParam('subcategory', '')
+                }}
                 className="input-luxury text-sm py-2.5 pr-8 !rounded-full cursor-pointer min-w-[160px]"
               >
                 <option value="">Todas Categorias</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
+
+              {selectedCat && (
+                <select
+                  value={selectedSubcategory}
+                  onChange={e => setParam('subcategory', e.target.value)}
+                  className="input-luxury text-sm py-2.5 pr-8 !rounded-full cursor-pointer min-w-[180px]"
+                >
+                  <option value="">Todas Subcategorias</option>
+                  {subcategories.map((subcategory) => (
+                    <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>
+                  ))}
+                </select>
+              )}
 
               <select
                 value={sort}
@@ -165,6 +198,11 @@ export function ProductListPage() {
             {selectedCat && (
               <button onClick={() => setParam('category', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-noir-950 text-pearl text-2xs">
                 {categories.find(c => c.id === selectedCat)?.name ?? 'Categoria'} <span className="opacity-60">✕</span>
+              </button>
+            )}
+            {selectedSubcategory && (
+              <button onClick={() => setParam('subcategory', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-noir-950 text-pearl text-2xs">
+                {subcategories.find((subcategory) => subcategory.id === selectedSubcategory)?.name ?? 'Subcategoria'} <span className="opacity-60">✕</span>
               </button>
             )}
             {selectedType && (

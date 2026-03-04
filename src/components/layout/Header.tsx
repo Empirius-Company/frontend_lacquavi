@@ -34,7 +34,7 @@ export function Header() {
 
   return (
     <>
-      <header className="fixed top-0 inset-x-0 z-40 bg-white shadow-sm flex flex-col">
+      <header className="sticky top-0 inset-x-0 z-40 bg-white shadow-sm flex flex-col">
         {/* Tier 1: Top Promo Bar */}
         <div className="bg-[#e6226e] py-1.5 text-center px-4 flex justify-center items-center gap-2 shadow-sm">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white drop-shadow-sm">
@@ -191,9 +191,6 @@ export function Header() {
           </div>
         </div>
       </header>
-
-      {/* Spacer to prevent content from hiding behind fixed header */}
-      <div className="h-[124px] md:h-[108px]" />
 
       {/* Mobile drawer ... */}
       {menuOpen && (

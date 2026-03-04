@@ -27,6 +27,14 @@ export interface Category {
   id: string
   name: string
   slug: string
+  packagingCategory?: string | null
+}
+
+export interface Subcategory {
+  id: string
+  name: string
+  slug: string
+  categoryId: string
 }
 
 export interface ProductImage {
@@ -52,9 +60,39 @@ export interface Product {
   brand: string | null
   volume: string | null
   gender: 'masculino' | 'feminino' | 'unissex' | null
+  requiresShipping?: boolean
+  weightGrams?: number | null
+  packagingCategory?: string | null
   createdAt: string
   createdBy: string
   categoryId: string | null
+  subcategoryId?: string | null
+  isActive?: boolean
+}
+
+export interface BoxType {
+  id: string
+  name: string
+  lengthCm: number
+  widthCm: number
+  heightCm: number
+  maxWeightGrams: number
+  isActive: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface BoxCategoryRule {
+  id: string
+  packagingCategory: string
+  boxTypeId: string
+  maxItems: number
+  priority: number
+  allowMix: boolean
+  isActive: boolean
+  boxType?: BoxType
+  createdAt?: string
+  updatedAt?: string
 }
 
 // ─── Product Reviews ──────────────────────────────────────────────────────────
@@ -99,8 +137,86 @@ export interface Order {
   status: OrderStatus
   paymentId: string | null
   paymentStatus: PaymentStatus | null
+  shippingProvider?: string | null
+  shippingServiceCode?: string | null
+  shippingServiceName?: string | null
+  shippingQuoteId?: string | null
+  shippingAmountCents?: number | null
+  shippingDiscountCents?: number | null
+  shippingDestinationZip?: string | null
+  shippingAddressHash?: string | null
   createdAt: string
   items: OrderItem[]
+}
+
+export interface ShippingDestination {
+  zip: string
+  street: string
+  number: string
+  complement?: string
+  district: string
+  city: string
+  state: string
+}
+
+export interface ShippingQuote {
+  quoteId: string
+  provider: string
+  serviceCode: string
+  serviceName: string
+  priceCents: number
+  deliveryDays: number
+  expiresAt: string
+}
+
+export interface ShippingQuoteListResponse {
+  quotes: ShippingQuote[]
+}
+
+export interface ShippingSelectionResponse {
+  message: string
+  selection: {
+    orderId: string
+    quoteId: string
+    serviceCode: string
+    serviceName: string
+    shippingAmountCents: number
+    shippingDiscountCents: number
+    total: number
+  }
+}
+
+export type ShipmentStatus =
+  | 'pending'
+  | 'label_purchased'
+  | 'posted'
+  | 'in_transit'
+  | 'delivered'
+  | 'failed'
+  | 'cancelled'
+
+export interface ShipmentEvent {
+  id: string
+  provider?: string
+  providerEventId?: string
+  eventType: string
+  description?: string | null
+  occurredAt: string
+}
+
+export interface Shipment {
+  id: string
+  orderId: string
+  provider: string
+  status: ShipmentStatus
+  trackingCode?: string | null
+  labelUrl?: string | null
+  labelPdfUrl?: string | null
+  lastError?: string | null
+  retryCount?: number
+  nextRetryAt?: string | null
+  dlqAt?: string | null
+  events?: ShipmentEvent[]
 }
 
 // ─── Payment ──────────────────────────────────────────────────────────────────
@@ -168,6 +284,45 @@ export interface CouponValidation {
   subtotal: number
   discount: number
   finalTotal: number
+}
+
+// ─── Banner ───────────────────────────────────────────────────────────────────
+export type BannerType = 'flash_sale' | string
+export type BannerStatus = 'active' | 'paused' | string
+
+export interface BannerProduct {
+  id: string
+  name: string
+  slug?: string | null
+  price: number
+  promotionalPrice?: number | null
+  images: ProductImage[]
+}
+
+export interface Banner {
+  id: string
+  title: string
+  productId?: string
+  subtitle?: string | null
+  imageUrl?: string | null
+  backgroundColor?: string | null
+  textColor?: string | null
+  ctaText?: string | null
+  ctaLink?: string | null
+  startDate: string
+  endDate: string
+  showTimer: boolean
+  hasDiscount?: boolean
+  discountType?: 'percentage' | 'fixed' | null
+  discountValue?: number | null
+  priority?: number
+  type: BannerType
+  status: BannerStatus
+  viewCount?: number
+  clickCount?: number
+  product?: BannerProduct | null
+  createdAt?: string
+  updatedAt?: string
 }
 
 // ─── Cart ─────────────────────────────────────────────────────────────────────

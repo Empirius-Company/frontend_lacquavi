@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getProductPrimaryImage } from '../../utils/productImages'
-import type { Product } from '../../types'
+import type { Product, ProductReviewStats } from '../../types'
 
 interface BestSellersHeroProps {
     products: Product[]
+    reviewStatsByProduct?: Record<string, ProductReviewStats>
 }
 
-export function BestSellersHero({ products }: BestSellersHeroProps) {
+export function BestSellersHero({ products, reviewStatsByProduct = {} }: BestSellersHeroProps) {
     const [mounted, setMounted] = useState(false)
     const [currentIndex, setCurrentIndex] = useState(0)
 
@@ -38,77 +39,98 @@ export function BestSellersHero({ products }: BestSellersHeroProps) {
     const activeProduct = products[currentIndex]
     const activeProductImage = getProductPrimaryImage(activeProduct)
     const hasImage = !!activeProductImage?.url
+    const activeReviewStats = reviewStatsByProduct[activeProduct.id]
+    const reviewTotal = activeReviewStats?.total ?? 0
+    const averageRating = activeReviewStats?.averageRating ?? 0
+    const formattedPrice = activeProduct.price.toFixed(2).replace('.', ',')
+    const [priceInteger, priceDecimal] = formattedPrice.split(',')
+    const installmentValue = (activeProduct.price / 3).toFixed(2).replace('.', ',')
+    const displayedRating = averageRating.toFixed(1).replace('.', ',')
 
     return (
         <section
             aria-label="Nossos produtos mais vendidos"
-            className="bg-gradient-to-r from-gray-50 to-white relative flex items-center pt-6 pb-8 md:pt-8 md:pb-10 group mt-4 mb-4 rounded-xl mx-auto shadow-sm border border-gray-100 overflow-hidden"
-            style={{ minHeight: 'clamp(240px, 30vw, 320px)', maxWidth: 'calc(100% - 2rem)' }}
+            className="group relative mt-4 mb-4 mx-auto overflow-hidden rounded-2xl border border-rose-100 bg-gradient-to-r from-rose-50/80 via-white to-rose-50/70 shadow-sm"
+            style={{ minHeight: 'clamp(280px, 34vw, 410px)', maxWidth: 'calc(100% - 2rem)' }}
         >
-            <div className="container-page relative z-10 w-full px-12 md:px-24">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-16">
+            <div className="pointer-events-none absolute right-[13%] top-1/2 h-[220px] w-[220px] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(244,114,182,0.2)_0%,rgba(244,114,182,0.1)_45%,rgba(255,255,255,0)_76%)] blur-[2px] md:h-[340px] md:w-[340px]" />
 
-                    {/* LEFT: Copy */}
-                    <div className="flex-1 max-w-xl">
-                        <div
-                            className={`transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
-                            key={activeProduct.id} // Re-animate text when product changes
-                        >
-                            <p className="font-bold tracking-widest uppercase text-xs mb-2 text-[#e6226e]">
-                                Mais Vendidos
-                            </p>
-                            <h1 className="text-3xl md:text-4xl font-black text-[#000000] leading-tight mb-2 font-display">
-                                <span className="text-[#000000]">{activeProduct.name}</span>
-                            </h1>
+            <div className="container-page relative z-10 w-full px-5 py-7 md:px-10 md:py-9">
+                <div className="grid items-center gap-6 md:grid-cols-[0.62fr_1.38fr] md:gap-3">
 
-                            <p className="text-sm md:text-base text-gray-500 mb-6 font-medium leading-relaxed line-clamp-2">
-                                {activeProduct.description || 'Descubra a fragrância perfeita para a sua pele com um dos nossos produtos mais amados pelos clientes.'}
-                            </p>
+                    <div
+                        className={`max-w-sm transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
+                        key={activeProduct.id}
+                    >
+                        <span className="mb-2 inline-flex rounded-full border border-rose-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-rose-500 md:text-[11px]">
+                            Seleção Premium
+                        </span>
 
-                            <div className="flex gap-4">
-                                <Link
-                                    to={`/products/${activeProduct.id}`}
-                                    className="bg-[#e6226e] text-white px-6 py-2.5 rounded-md font-bold text-sm hover:bg-[#cc1d60] transition-colors shadow-md hover:shadow-[0_4px_12px_rgba(230,34,110,0.4)] inline-block"
-                                >
-                                    Comprar Agora
-                                </Link>
-                            </div>
+                        <p className="mb-4 text-sm font-semibold uppercase tracking-[0.26em] text-rose-600 md:text-base">
+                            Destaque da Semana
+                        </p>
 
-                            {activeProduct.price > 0 && (
-                                <div className="mt-4 flex items-center gap-3 text-xs font-bold text-gray-400">
-                                    <span className="text-[#333] text-xl font-black">
-                                        R$ {activeProduct.price.toFixed(2).replace('.', ',')}
-                                    </span>
-                                    {activeProduct.volume && <span>| {activeProduct.volume}</span>}
+                        <h1 className="font-display text-3xl font-semibold leading-tight tracking-[0.01em] text-neutral-900 md:text-5xl">
+                            {activeProduct.name}
+                        </h1>
+
+                        <p className="mt-3 max-w-sm text-sm leading-relaxed text-rose-900/70 md:text-base">
+                            Um toque de luxo que transforma presença em assinatura.
+                        </p>
+
+                        {activeProduct.price > 0 && (
+                            <>
+                                <div className="mt-5 flex items-end gap-1.5 text-neutral-900">
+                                    <span className="pb-1 text-base font-medium md:text-lg">R$</span>
+                                    <span className="text-4xl font-semibold leading-none tracking-tight md:text-5xl">{priceInteger}</span>
+                                    <span className="pb-1 text-xl font-medium leading-none md:text-2xl">,{priceDecimal}</span>
+                                    {activeProduct.volume && <span className="ml-3 text-xs font-medium uppercase tracking-wide text-neutral-500 md:text-sm">{activeProduct.volume}</span>}
                                 </div>
+                                <p className="mt-1 text-xs text-neutral-500 md:text-sm">ou 3x de R$ {installmentValue}</p>
+                            </>
+                        )}
+
+                        <div className="mt-5 flex flex-wrap items-center gap-3">
+                            <Link
+                                to={`/products/${activeProduct.id}`}
+                                className="inline-flex items-center justify-center rounded-full bg-rose-500 px-8 py-3 text-sm font-semibold tracking-[0.04em] text-white shadow-[0_14px_28px_rgba(244,63,94,0.32)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-rose-600 hover:shadow-[0_18px_34px_rgba(244,63,94,0.36)] md:text-base"
+                            >
+                                Comprar agora
+                            </Link>
+
+                            {reviewTotal > 0 ? (
+                                <span className="w-full text-sm font-medium text-neutral-600 md:text-[15px]">
+                                    ★★★★★ {displayedRating} ({reviewTotal} {reviewTotal === 1 ? 'avaliação' : 'avaliações'})
+                                </span>
+                            ) : (
+                                <span className="w-full text-sm font-medium text-neutral-500 md:text-[15px]">
+                                    Sem avaliações ainda
+                                </span>
                             )}
                         </div>
                     </div>
 
-                    {/* RIGHT: Image */}
-                    <div className="flex-1 flex justify-center w-full relative h-[200px] md:h-[260px]">
-                        {/* Decorative Circle Background */}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[180px] h-[180px] md:w-[240px] md:h-[240px] bg-white rounded-full shadow-lg opacity-70 z-0 border-2 border-gray-100 transition-all duration-500"></div>
+                    <div className="relative flex h-[270px] items-center justify-center md:h-[380px]">
+                        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[210px] w-[210px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(251,113,133,0.34)_0%,rgba(251,113,133,0.2)_44%,rgba(255,255,255,0)_76%)] md:h-[320px] md:w-[320px]" />
 
                         <div
-                            key={`img-${activeProduct.id}`} // Re-animate image when product changes
-                            className="absolute inset-0 flex items-center justify-center animate-fade-in-up"
+                            key={`img-${activeProduct.id}`}
+                            className="relative z-10 flex items-center justify-center animate-fade-in-up"
                         >
                             {hasImage ? (
                                 <img
                                     src={activeProductImage!.url}
                                     alt={activeProductImage!.alt || activeProduct.name}
-                                    className="relative z-10 w-full max-w-[120px] md:max-w-[160px] drop-shadow-[0_15px_15px_rgba(0,0,0,0.15)] object-contain h-full py-2"
+                                    className="soft-edge-image relative h-[132%] w-auto max-w-none object-contain drop-shadow-[0_26px_40px_rgba(41,20,33,0.28)] md:h-[150%] lg:h-[160%]"
                                     style={{ animation: 'float 6s ease-in-out infinite' }}
                                 />
                             ) : (
-                                <div className="relative z-10 w-[240px] h-[360px] bg-white border border-gray-100 shadow-xl rounded-lg flex items-center justify-center text-[#e6226e] font-bold text-4xl italic text-center p-4">
+                                <div className="flex h-[290px] w-[200px] items-center justify-center rounded-[34px] bg-gradient-to-b from-rose-100 to-rose-300 text-center font-display text-2xl font-medium text-rose-800 shadow-[0_24px_40px_rgba(41,20,33,0.2)] md:h-[360px] md:w-[240px] lg:h-[410px] lg:w-[260px]">
                                     {activeProduct.name}
                                 </div>
                             )}
                         </div>
                     </div>
-
                 </div>
             </div>
 
@@ -117,7 +139,7 @@ export function BestSellersHero({ products }: BestSellersHeroProps) {
                 <>
                     <button
                         onClick={handlePrev}
-                        className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-xl border border-gray-100 flex items-center justify-center text-[#e6226e] opacity-0 md:group-hover:opacity-100 transition-all z-20 hover:bg-[#e6226e] hover:text-white transform hover:scale-110"
+                        className="absolute left-4 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-rose-200 bg-white/90 text-[#c31f61] opacity-100 shadow-lg transition-all hover:scale-105 hover:bg-[#e6226e] hover:text-white md:left-6 md:opacity-0 md:group-hover:opacity-100"
                         aria-label="Produto Anterior"
                     >
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
@@ -125,19 +147,19 @@ export function BestSellersHero({ products }: BestSellersHeroProps) {
 
                     <button
                         onClick={handleNext}
-                        className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-xl border border-gray-100 flex items-center justify-center text-[#e6226e] opacity-0 md:group-hover:opacity-100 transition-all z-20 hover:bg-[#e6226e] hover:text-white transform hover:scale-110"
+                        className="absolute right-4 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-rose-200 bg-white/90 text-[#c31f61] opacity-100 shadow-lg transition-all hover:scale-105 hover:bg-[#e6226e] hover:text-white md:right-6 md:opacity-0 md:group-hover:opacity-100"
                         aria-label="Próximo Produto"
                     >
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </button>
 
                     {/* Indicators */}
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+                    <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5">
                         {products.map((_, idx) => (
                             <button
                                 key={idx}
                                 onClick={() => setCurrentIndex(idx)}
-                                className={`w-2 h-2 rounded-full transition-all ${idx === currentIndex ? 'bg-[#e6226e] w-6' : 'bg-gray-300 hover:bg-gray-400'}`}
+                                className={`h-2 rounded-full transition-all ${idx === currentIndex ? 'w-6 bg-[#e6226e]' : 'w-2 bg-rose-200 hover:bg-rose-300'}`}
                                 aria-label={`Ir para o produto ${idx + 1}`}
                             />
                         ))}
@@ -163,6 +185,10 @@ export function BestSellersHero({ products }: BestSellersHeroProps) {
         .animate-fade-in-up {
           animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+                .soft-edge-image {
+                    -webkit-mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0.68) 86%, rgba(0, 0, 0, 0) 100%);
+                    mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0.68) 86%, rgba(0, 0, 0, 0) 100%);
+                }
       `}</style>
         </section>
     )

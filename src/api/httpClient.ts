@@ -6,7 +6,10 @@ const ACCESS_KEY = 'lacquavi_access_token'
 const REFRESH_KEY = 'lacquavi_refresh_token'
 
 // Token accessor — will be overridden by AuthContext once mounted
-let _getAccessToken: () => string | null = () => null
+let _getAccessToken: () => string | null = () => {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem(ACCESS_KEY)
+}
 let _onUnauthorized: () => void = () => {}
 let refreshPromise: Promise<string | null> | null = null
 

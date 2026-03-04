@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { productsApi, categoriesApi } from '../api/catalogApi'
+import { bannersApi } from '../api'
 import { ProductCarousel } from '../components/product/ProductCarousel'
 import { Button } from '../components/ui'
 import { BestSellersHero } from '../components/ui/BestSellersHero'
 import { StoreTeaser } from '../components/store/StoreTeaser'
 import { useProductsReviewStats } from '../hooks/useProductsReviewStats'
 import { getProductPrimaryImageUrl } from '../utils/productImages'
-import type { Product, Category } from '../types'
+import type { Product, Category, Banner } from '../types'
 
 function useReveal(dep?: unknown) {
   useEffect(() => {
@@ -44,57 +45,220 @@ function SectionHeader({ eyebrow, title, linkTo, linkLabel }: { eyebrow?: string
   )
 }
 
-/* ─── Hero Banner "Oferta 24H" ────────────────────────────── */
-function EpicPromoBanner() {
+function FlashSaleBanner() {
+  const DEFAULT_TITLE = 'OFERTA RELÂMPAGO'
+  const DEFAULT_SUBTITLE = 'Aproveite os preços especiais por tempo limitado.'
+  const DEFAULT_BG = '#1A1A1A'
+  const DEFAULT_TEXT = '#FFFFFF'
+  const DEFAULT_CTA = 'COMPRAR'
+
+  const navigate = useNavigate()
+  const [banner, setBanner] = useState<Banner | null>(null)
+  const [now, setNow] = useState(Date.now())
+
+  const loadBanner = useCallback(async () => {
+    try {
+      const response = await bannersApi.listActive({ type: 'flash_sale', limit: 1 })
+      const nextBanner = response.total > 0 ? response.banners?.[0] ?? null : null
+      setBanner(nextBanner)
+    } catch {
+      setBanner(null)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadBanner()
+    const intervalId = window.setInterval(loadBanner, 60_000)
+    return () => window.clearInterval(intervalId)
+  }, [loadBanner])
+
+  useEffect(() => {
+    if (!banner?.showTimer) return
+    const timerId = window.setInterval(() => setNow(Date.now()), 1_000)
+    return () => window.clearInterval(timerId)
+  }, [banner?.showTimer])
+
+  useEffect(() => {
+    if (!banner?.endDate) return
+    const endAt = new Date(banner.endDate).getTime()
+    if (Number.isNaN(endAt)) return
+
+    const msUntilEnd = endAt - Date.now()
+    if (msUntilEnd <= 0) {
+      setBanner(null)
+      loadBanner()
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setBanner(null)
+      loadBanner()
+    }, msUntilEnd + 100)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [banner?.id, banner?.endDate, loadBanner])
+
+  const product = banner?.product ?? null
+  const productImage = useMemo(() => {
+    if (!product?.images?.length) return null
+    return product.images.find((image) => image.isPrimary)?.url ?? product.images[0]?.url ?? null
+  }, [product?.images])
+
+  const pricing = useMemo(() => {
+    if (!product) return null
+    const currentPrice = product.promotionalPrice ?? product.price
+    const showOriginal = typeof product.promotionalPrice === 'number' && product.promotionalPrice < product.price
+    return { currentPrice, showOriginal }
+  }, [product])
+
+  const remainingTime = useMemo(() => {
+    if (!banner?.endDate) return null
+    const endAt = new Date(banner.endDate).getTime()
+    if (Number.isNaN(endAt)) return null
+
+    const diff = Math.max(0, endAt - now)
+    const days = Math.floor(diff / 86_400_000)
+    const hours = Math.floor((diff % 86_400_000) / 3_600_000)
+    const minutes = Math.floor((diff % 3_600_000) / 60_000)
+    const seconds = Math.floor((diff % 60_000) / 1_000)
+
+    return {
+      days,
+      hours: String(hours).padStart(2, '0'),
+      minutes: String(minutes).padStart(2, '0'),
+      seconds: String(seconds).padStart(2, '0'),
+      mode: days > 0 ? 'days' : 'clock',
+      isOver: diff <= 0,
+    }
+  }, [banner?.endDate, now])
+
+  const dynamicTitleLines = useMemo(() => {
+    if (!remainingTime) return [DEFAULT_TITLE]
+    if (remainingTime.isOver) return ['OFERTA ENCERRADA']
+    if (remainingTime.days > 0) return ['OFERTA IMPERDÍVEL', `${remainingTime.days} DIA${remainingTime.days > 1 ? 'S' : ''} RESTANTE${remainingTime.days > 1 ? 'S' : ''}`]
+    if (Number(remainingTime.hours) >= 1) return ['É HOJE', 'OFERTA 24H']
+    return ['ÚLTIMOS MINUTOS', 'APROVEITE AGORA']
+  }, [remainingTime])
+
+  if (!banner || (remainingTime?.isOver ?? false)) return null
+
+  const formatPrice = (value: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+
+  const destination = product ? `/products/${product.id}` : ''
+
+  const handleCtaClick = async () => {
+    if (!destination) return
+    try {
+      await bannersApi.registerClick(banner.id)
+    } catch {
+      // navegação segue mesmo com falha no tracking
+    }
+
+    if (destination.startsWith('http://') || destination.startsWith('https://')) {
+      window.location.assign(destination)
+      return
+    }
+    navigate(destination)
+  }
+
   return (
-    <div className="w-full bg-[#1A1A1A] relative overflow-hidden flex flex-col items-center justify-center p-8 md:p-12 mb-12">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 right-0 w-1/2 h-full bg-[#222222] mix-blend-multiply opacity-50 transform skew-x-12 translate-x-1/4"></div>
+    <div
+      className="w-full relative overflow-hidden flex flex-col items-center justify-center p-8 md:p-12 mb-12"
+      style={{
+        backgroundColor: DEFAULT_BG,
+        color: DEFAULT_TEXT,
+      }}
+    >
+      <div className="absolute top-0 right-0 w-1/2 h-full bg-black/10 mix-blend-multiply opacity-50 transform skew-x-12 translate-x-1/4" />
 
       <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16 z-10 w-full max-w-5xl justify-between">
-
-        {/* Left Side: Text and Countdown */}
-        <div className="text-center md:text-left text-white flex flex-col items-center md:items-start gap-4">
-          <div className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-none text-white drop-shadow-md">
-            É HOJE
-            <br />
-            <span className="text-3xl md:text-5xl">OFERTA 24H</span>
+        <div className="text-center md:text-left flex flex-col items-center md:items-start gap-4">
+          <div className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-none drop-shadow-md">
+            {dynamicTitleLines.map((line, index) => {
+              const isHighlightLine = index === dynamicTitleLines.length - 1
+              return (
+                <span
+                  key={line}
+                  className={isHighlightLine ? 'text-[#e6226e] [text-shadow:0_0_18px_rgba(230,34,110,0.35)]' : 'text-white'}
+                >
+                  {line}
+                  {index < dynamicTitleLines.length - 1 ? <br /> : null}
+                </span>
+              )
+            })}
           </div>
+          <p className="text-sm md:text-base opacity-90 max-w-md">{DEFAULT_SUBTITLE}</p>
 
-          <div className="flex gap-2 text-[#111111] font-bold">
-            <div className="bg-white rounded px-2 md:px-3 py-1 text-xl md:text-3xl min-w-[3rem] md:min-w-[4rem] flex flex-col items-center justify-center shadow-lg"><span className="leading-none">14</span><span className="text-[8px] md:text-[10px] uppercase font-bold text-[#000000] mt-1">Horas</span></div>
-            <div className="text-white text-2xl md:text-4xl flex items-center mb-4">:</div>
-            <div className="bg-white rounded px-2 md:px-3 py-1 text-xl md:text-3xl min-w-[3rem] md:min-w-[4rem] flex flex-col items-center justify-center shadow-lg"><span className="leading-none">55</span><span className="text-[8px] md:text-[10px] uppercase font-bold text-[#000000] mt-1">Minutos</span></div>
-            <div className="text-white text-2xl md:text-4xl flex items-center mb-4">:</div>
-            <div className="bg-white rounded px-2 md:px-3 py-1 text-xl md:text-3xl min-w-[3rem] md:min-w-[4rem] flex flex-col items-center justify-center shadow-lg"><span className="leading-none">29</span><span className="text-[8px] md:text-[10px] uppercase font-bold text-[#000000] mt-1">Segundos</span></div>
-          </div>
+          {banner.showTimer && remainingTime && (
+            <div className="flex gap-2 md:gap-3 p-2 md:p-3 rounded-2xl bg-black/20 border border-white/20 backdrop-blur-sm">
+              {remainingTime.mode === 'days' ? (
+                <>
+                  <div className="rounded-xl px-2.5 md:px-3.5 py-2 min-w-[3.5rem] md:min-w-[4.25rem] flex flex-col items-center justify-center bg-white text-[#111111] shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+                    <span className="leading-none text-2xl md:text-3xl font-black tabular-nums">{String(remainingTime.days).padStart(2, '0')}</span>
+                    <span className="text-[9px] md:text-[10px] uppercase tracking-wide font-semibold text-[#555] mt-1">Dias</span>
+                  </div>
+                  <div className="rounded-xl px-2.5 md:px-3.5 py-2 min-w-[3.5rem] md:min-w-[4.25rem] flex flex-col items-center justify-center bg-white text-[#111111] shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+                    <span className="leading-none text-2xl md:text-3xl font-black tabular-nums">{remainingTime.hours}</span>
+                    <span className="text-[9px] md:text-[10px] uppercase tracking-wide font-semibold text-[#555] mt-1">Horas</span>
+                  </div>
+                  <div className="rounded-xl px-2.5 md:px-3.5 py-2 min-w-[3.5rem] md:min-w-[4.25rem] flex flex-col items-center justify-center bg-white text-[#111111] shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+                    <span className="leading-none text-2xl md:text-3xl font-black tabular-nums">{remainingTime.minutes}</span>
+                    <span className="text-[9px] md:text-[10px] uppercase tracking-wide font-semibold text-[#555] mt-1">Min</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="rounded-xl px-2.5 md:px-3.5 py-2 min-w-[3.5rem] md:min-w-[4.25rem] flex flex-col items-center justify-center bg-white text-[#111111] shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+                    <span className="leading-none text-2xl md:text-3xl font-black tabular-nums">{remainingTime.hours}</span>
+                    <span className="text-[9px] md:text-[10px] uppercase tracking-wide font-semibold text-[#555] mt-1">Horas</span>
+                  </div>
+                  <div className="rounded-xl px-2.5 md:px-3.5 py-2 min-w-[3.5rem] md:min-w-[4.25rem] flex flex-col items-center justify-center bg-white text-[#111111] shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+                    <span className="leading-none text-2xl md:text-3xl font-black tabular-nums">{remainingTime.minutes}</span>
+                    <span className="text-[9px] md:text-[10px] uppercase tracking-wide font-semibold text-[#555] mt-1">Min</span>
+                  </div>
+                  <div className="rounded-xl px-2.5 md:px-3.5 py-2 min-w-[3.5rem] md:min-w-[4.25rem] flex flex-col items-center justify-center bg-white text-[#111111] shadow-[0_8px_24px_rgba(0,0,0,0.22)] ring-1 ring-[#e6226e]/25">
+                    <span className="leading-none text-2xl md:text-3xl font-black tabular-nums text-[#e6226e]">{remainingTime.seconds}</span>
+                    <span className="text-[9px] md:text-[10px] uppercase tracking-wide font-semibold text-[#9f2054] mt-1">Seg</span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Right Side: Demo Deal Card overlay */}
-        <div className="bg-white rounded-xl shadow-2xl p-4 md:p-6 flex max-w-sm w-full gap-4 items-center relative transform md:rotate-2 hover:rotate-0 transition-transform">
-          <div className="absolute -top-3 -left-3 bg-[#0B1B3D] text-white font-bold text-xs rounded-full w-12 h-12 flex items-center justify-center border-2 border-white shadow-md">
-            41%<br /><span className="text-[8px]">OFF</span>
+        <div className="bg-white rounded-xl shadow-2xl p-4 md:p-6 flex max-w-sm w-full gap-4 items-center relative">
+          {banner.hasDiscount && banner.discountValue ? (
+            <div className="absolute -top-3 -left-3 bg-[#0B1B3D] text-white font-bold text-xs rounded-full w-12 h-12 flex items-center justify-center border-2 border-white shadow-md">
+              {banner.discountType === 'fixed' ? `${formatPrice(banner.discountValue)}` : `${banner.discountValue}%`}<br /><span className="text-[8px]">OFF</span>
+            </div>
+          ) : null}
+          <div className="w-1/3 bg-gray-100 rounded-lg aspect-square flex items-center justify-center text-gray-300 font-bold text-2xl overflow-hidden">
+            {productImage ? (
+              <img src={productImage} alt={product?.name || 'Flash Sale'} className="w-full h-full object-cover" />
+            ) : (
+              'L'
+            )}
           </div>
-          <div className="w-1/3 bg-gray-100 rounded-lg aspect-square flex items-center justify-center text-gray-300 font-bold text-2xl">
-            L
-          </div>
-          <div className="flex-1 flex flex-col">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">LACQUAVI</span>
-            <span className="text-sm font-semibold text-[#333] leading-tight mb-2">Perfume Feminino - Eau de Parfum</span>
-            <span className="text-xs text-gray-400 line-through">de R$ 559,00</span>
-            <span className="text-lg font-black text-[#000000]">R$ 305,97</span>
-            <button className="bg-[#e6226e] hover:bg-[#cc1d60] transition-colors text-white text-xs font-bold py-2 mt-2 rounded">COMPRAR ›</button>
+          <div className="flex-1 flex flex-col text-[#222]">
+            {product?.name && <span className="text-sm font-semibold leading-tight mb-2">{product.name}</span>}
+            {pricing?.showOriginal && <span className="text-xs text-gray-400 line-through">de {formatPrice(product!.price)}</span>}
+            {pricing && <span className="text-lg font-black text-[#000000]">{formatPrice(pricing.currentPrice)}</span>}
+            <button
+              className="bg-[#e6226e] hover:bg-[#cc1d60] transition-colors text-white text-xs font-bold py-2 mt-2 rounded disabled:opacity-50"
+              onClick={handleCtaClick}
+              disabled={!destination}
+            >
+              {DEFAULT_CTA} ›
+            </button>
           </div>
         </div>
-
       </div>
     </div>
   )
 }
 
 function CategoryTiles({ categories, products }: { categories: Category[]; products: Product[] }) {
-  const colors = ["bg-gray-50", "bg-gray-100", "bg-[#F5F5F5]", "bg-[#FAFAFA]"]
-
   if (!categories || categories.length === 0) return null
 
   const normalize = (value: string) =>
@@ -141,13 +305,13 @@ function CategoryTiles({ categories, products }: { categories: Category[]; produ
     tiles.push(
       {
         key: 'perfume-lacqua-di-fiori',
-        label: 'Perfumes Lacqua Di Fiori',
+        label: 'Perfumes Femininos',
         to: `/products?category=${perfumeCategory.id}&type=lacqua di fiori`,
         imageUrl: pickImage(perfumeCategory.id, 'lacqua di fiori'),
       },
       {
         key: 'perfume-arabes',
-        label: 'Perfumes Árabes',
+        label: 'Perfumes Masculinos',
         to: `/products?category=${perfumeCategory.id}&type=arabe`,
         imageUrl: pickImage(perfumeCategory.id, 'arabe'),
       }
@@ -157,7 +321,7 @@ function CategoryTiles({ categories, products }: { categories: Category[]; produ
   if (kitsCategory) {
     tiles.push({
       key: 'kits',
-      label: 'Kits',
+      label: 'Kits & Presentes',
       to: `/products?category=${kitsCategory.id}`,
       imageUrl: pickImage(kitsCategory.id),
     })
@@ -166,7 +330,7 @@ function CategoryTiles({ categories, products }: { categories: Category[]; produ
   if (lotionCategory) {
     tiles.push({
       key: 'locoes-hidratantes',
-      label: lotionCategory.name,
+      label: 'Cuidados Pessoais',
       to: `/products?category=${lotionCategory.id}`,
       imageUrl: pickImage(lotionCategory.id),
     })
@@ -175,20 +339,27 @@ function CategoryTiles({ categories, products }: { categories: Category[]; produ
   if (tiles.length === 0) return null
 
   return (
-    <section className="bg-white py-8">
+    <section className="bg-gradient-to-b from-white to-[#fff5f8] py-10 md:py-12">
       <div className="container-page">
-        <h3 className="text-center font-bold text-gray-500 text-lg mb-6">Encontre o que você precisa</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {tiles.map((tile, i) => (
-            <Link key={tile.key} to={tile.to} className={`rounded-xl ${colors[i % colors.length]} flex flex-col items-center justify-center p-6 aspect-square hover:shadow-md transition-shadow hover:-translate-y-1`}>
-              <span className="w-16 h-16 rounded-full bg-white shadow-sm mb-3 overflow-hidden flex items-center justify-center">
+        <h3 className="text-center font-semibold text-[#1A1A1A] text-2xl mb-6 md:mb-8">Explore nossas categorias</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
+          {tiles.map((tile) => (
+            <Link
+              key={tile.key}
+              to={tile.to}
+              className="group rounded-2xl bg-white flex flex-col items-center justify-between p-6 min-h-[210px] md:min-h-[230px] shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.10)] active:scale-[0.98]"
+            >
+              <span className="w-full h-[68%] rounded-xl bg-[#FAFAFA] mb-3 overflow-hidden flex items-center justify-center shadow-[0_6px_16px_rgba(0,0,0,0.06)]">
                 {tile.imageUrl ? (
-                  <img src={tile.imageUrl} alt={tile.label} className="w-full h-full object-cover" loading="lazy" />
+                  <img src={tile.imageUrl} alt={tile.label} className="w-[90px] md:w-[108px] h-auto object-contain transition-transform duration-300 group-hover:scale-105" loading="lazy" />
                 ) : (
-                  <span className="text-[#000000] font-bold text-xl">{tile.label.charAt(0).toUpperCase()}</span>
+                  <span className="text-[#000000] font-bold text-2xl">{tile.label.charAt(0).toUpperCase()}</span>
                 )}
               </span>
-              <span className="font-semibold text-sm text-[#333] text-center line-clamp-2">{tile.label}</span>
+              <div className="flex flex-col items-center">
+                <span className="font-semibold text-sm md:text-[15px] text-[#333] text-center line-clamp-2">{tile.label}</span>
+                <span className="mt-2 block h-[2px] w-14 rounded-full bg-[#e6226e]/75"></span>
+              </div>
             </Link>
           ))}
         </div>
@@ -232,7 +403,7 @@ export function HomePage() {
     <div className="bg-[#F5F5F5] min-h-screen pb-16">
 
       {/* Hero Section at the top */}
-      <BestSellersHero products={topProducts} />
+      <BestSellersHero products={topProducts} reviewStatsByProduct={statsByProduct} />
 
       {/* Main product showcase - Tudo para o verão (White Background) */}
       <section className="py-12 bg-white">
@@ -255,8 +426,8 @@ export function HomePage() {
       {/* Categories quick nav */}
       <CategoryTiles categories={categories} products={sortedProducts} />
 
-      {/* Dynamic Pink Hero Promo Moved Down */}
-      <EpicPromoBanner />
+      {/* Flash sale banner */}
+      <FlashSaleBanner />
 
       {/* Mais vendidos da semana */}
       <section className="py-12 bg-[#F5F5F5]">

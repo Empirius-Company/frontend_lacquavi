@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ordersApi, paymentsApi } from '../api/index'
 import { useToast } from '../context/ToastContext'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 import { Button, Spinner, ErrorMessage } from '../components/ui'
 import { formatCurrency, generateIdempotencyKey } from '../utils'
 import type { Order, Payment, ApiError } from '../types'
@@ -81,16 +82,20 @@ export function PaymentPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { clearCart } = useCart()
+  const { isAuthenticated, accessToken } = useAuth()
 
   const [order, setOrder] = useState<Order | null>(null)
   const [payment, setPayment] = useState<Payment | null>(null)
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [checking, setChecking] = useState(false)
+  const [waitingPixData, setWaitingPixData] = useState(false)
   const [error, setError] = useState('')
   const [method, setMethod] = useState('pix')
   const [copied, setCopied] = useState(false)
-  const idempotencyKey = useRef(generateIdempotencyKey())
+  const isCreatingRef = useRef(false)
+  const lastAttemptKeyRef = useRef<string | null>(null)
+  const canReuseLastAttemptKeyRef = useRef(false)
 
   // Form states for credit card
   const [cardForm, setCardForm] = useState({
@@ -109,9 +114,91 @@ export function PaymentPage() {
       .finally(() => setLoading(false))
   }, [orderId])
 
+  const shouldReuseKeyForRetry = (apiError: ApiError): boolean => {
+    if (apiError.statusCode) return false
+    const normalizedMessage = apiError.message.toLowerCase()
+    return /timeout|timed out|network|conex|conexão|internet/.test(normalizedMessage)
+  }
+
+  const hasPixPayload = (p?: Payment | null): boolean => Boolean(p?.qr_code || p?.qr_code_base64)
+
+  const waitForPixPayload = async (paymentId: string): Promise<Payment | null> => {
+    const maxAttempts = 10
+    const intervalMs = 1500
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, intervalMs))
+
+      try {
+        const refreshed = await paymentsApi.getById(paymentId)
+        const refreshedPayment = refreshed.payment
+        if (!refreshedPayment) {
+          continue
+        }
+
+        setPayment(refreshedPayment)
+
+        if (hasPixPayload(refreshedPayment)) {
+          return refreshedPayment
+        }
+
+        if (refreshedPayment.status === 'paid' || refreshedPayment.status === 'authorized' || refreshedPayment.isExpired) {
+          return refreshedPayment
+        }
+      } catch {
+        // ignore transient polling errors
+      }
+    }
+
+    return null
+  }
+
+  const recoverPaymentFromOrder = async (targetOrderId: string): Promise<Payment | null> => {
+    try {
+      const orderResponse = await ordersApi.getById(targetOrderId)
+      setOrder(orderResponse.order)
+
+      if (!orderResponse.order.paymentId) {
+        return null
+      }
+
+      const paymentResponse = await paymentsApi.getById(orderResponse.order.paymentId)
+      if (!paymentResponse.payment) {
+        return null
+      }
+
+      setPayment(paymentResponse.payment)
+      return paymentResponse.payment
+    } catch {
+      return null
+    }
+  }
+
   const createPayment = async () => {
     if (!orderId) return
+    if (isCreatingRef.current) return
+
+    const effectiveToken = accessToken || localStorage.getItem('lacquavi_access_token')
+    if (!isAuthenticated || !effectiveToken) {
+      toast('Sua sessão expirou. Faça login novamente para gerar o PIX.', 'error')
+      navigate('/login', { replace: true })
+      return
+    }
+
+    isCreatingRef.current = true
+
+    const idempotencyKey = canReuseLastAttemptKeyRef.current && lastAttemptKeyRef.current
+      ? lastAttemptKeyRef.current
+      : generateIdempotencyKey()
+
+    if (!canReuseLastAttemptKeyRef.current) {
+      lastAttemptKeyRef.current = idempotencyKey
+    }
+
+    canReuseLastAttemptKeyRef.current = false
+
     setCreating(true); setError('')
+
     try {
       let cardTokenStr = ''
 
@@ -155,26 +242,71 @@ export function PaymentPage() {
       const res = await paymentsApi.create({
         orderId,
         paymentMethodId: method === 'credit_card' ? 'master' : method,
-        idempotencyKey: idempotencyKey.current,
+        idempotencyKey,
         ...(cardTokenStr ? { cardToken: cardTokenStr } : {})
       })
-      setPayment(res.payment)
+      const createdPayment = res.payment ?? await recoverPaymentFromOrder(orderId)
+      if (!createdPayment) {
+        throw new Error('Pagamento solicitado, mas o backend ainda não retornou os dados. Tente novamente em alguns segundos.')
+      }
+
+      setPayment(createdPayment)
+      canReuseLastAttemptKeyRef.current = false
 
       if (method === 'credit_card') {
-        if (res.payment.status === 'paid' || res.payment.status === 'authorized') {
+        if (createdPayment.status === 'paid' || createdPayment.status === 'authorized') {
           clearCart() // Order effectively confirmed
           toast('Pagamento aprovado!', 'success')
-          navigate(`/checkout/payment/${orderId}/result?paymentId=${res.payment.id}`)
+          navigate(`/checkout/payment/${orderId}/result?paymentId=${createdPayment.id}`)
         } else {
           toast('Pagamento sendo processado...', 'info')
         }
       } else {
+        if (!hasPixPayload(createdPayment)) {
+          setWaitingPixData(true)
+          const refreshedPix = await waitForPixPayload(createdPayment.id)
+          setWaitingPixData(false)
+
+          if (!refreshedPix) {
+            toast('Pagamento criado, mas o QR Code ainda está sendo preparado. Clique em "Verificar Pagamento" em alguns segundos.', 'info')
+          } else if (hasPixPayload(refreshedPix)) {
+            toast('QR Code PIX pronto! Escaneie para pagar.', 'success')
+          } else {
+            toast('Pagamento criado! Acompanhe o status abaixo.', 'info')
+          }
+        } else {
+          toast('Pagamento criado! Escaneie o QR Code.', 'success')
+        }
+
         clearCart() // Pix generated/processing
-        toast('Pagamento criado! Escaneie o QR Code.', 'success')
       }
     } catch (err) {
-      setError((err as ApiError).message ?? 'Erro ao criar pagamento')
-    } finally { setCreating(false) }
+      const apiError = err as ApiError
+
+      if (apiError.statusCode === 409) {
+        setError('Pagamento já está em processamento. Aguarde alguns segundos e tente novamente.')
+        toast('Já existe uma tentativa de pagamento em processamento.', 'info')
+
+        await recoverPaymentFromOrder(orderId)
+      } else if (apiError.statusCode === 401) {
+        if (/Unauthorized use of live credentials/i.test(apiError.message)) {
+          setError('Falha na integração de pagamento (credenciais do provedor inválidas no backend).')
+          toast('Falha no provedor de pagamento. Avise o suporte para ajustar credenciais do backend.', 'error')
+        } else {
+          setError('Sua sessão expirou. Faça login novamente para gerar o PIX.')
+          toast('Sessão inválida para pagamento. Entre novamente.', 'error')
+          navigate('/login', { replace: true })
+        }
+      } else {
+        setError(apiError.message ?? 'Erro ao criar pagamento')
+      }
+
+      canReuseLastAttemptKeyRef.current = shouldReuseKeyForRetry(apiError)
+    } finally {
+      setWaitingPixData(false)
+      setCreating(false)
+      isCreatingRef.current = false
+    }
   }
 
   const checkStatus = async () => {
@@ -182,6 +314,11 @@ export function PaymentPage() {
     setChecking(true)
     try {
       const res = await paymentsApi.getById(payment.id)
+      if (!res.payment) {
+        toast('Pagamento ainda está sendo criado. Tente novamente em alguns segundos.', 'info')
+        return
+      }
+
       setPayment(res.payment)
       if (res.payment.status === 'paid' || res.payment.status === 'authorized') {
         toast('Pagamento confirmado!', 'success')
@@ -285,6 +422,7 @@ export function PaymentPage() {
                         value={m.id}
                         checked={method === m.id}
                         onChange={() => setMethod(m.id)}
+                        disabled={creating}
                         className="accent-gold-500"
                       />
                       <span className="text-2xl">{m.icon}</span>
@@ -397,6 +535,16 @@ export function PaymentPage() {
                     <Button variant="outline" className="mt-4" fullWidth onClick={checkStatus} loading={checking}>
                       Atualizar Status
                     </Button>
+                  </div>
+                ) : waitingPixData ? (
+                  <div className="text-center py-10 space-y-4">
+                    <div className="flex justify-center">
+                      <Spinner size="lg" />
+                    </div>
+                    <div>
+                      <h3 className="font-display text-xl text-noir-950">Gerando QR Code PIX</h3>
+                      <p className="text-sm text-nude-600 mt-1">Aguarde alguns segundos enquanto o provedor finaliza os dados do pagamento.</p>
+                    </div>
                   </div>
                 ) : (
                   <>

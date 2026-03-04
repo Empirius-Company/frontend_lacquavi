@@ -8,10 +8,20 @@ import { Button, Input, EmptyState, ErrorMessage, Spinner, Skeleton } from '../c
 import { ScrollReveal } from '../components/ui/ScrollReveal'
 import {
   formatCurrency, formatDate, formatDateTime,
-  orderStatusLabel, orderStatusColor,
+  getOrderDisplayStatusLabel, getOrderDisplayStatusColor,
   paymentStatusLabel, paymentStatusColor,
 } from '../utils'
-import type { Order, Payment, ApiError } from '../types'
+import type { Order, Payment, ApiError, Shipment, ShipmentStatus } from '../types'
+
+const shipmentStatusLabel: Record<ShipmentStatus, string> = {
+  pending: 'Pendente',
+  label_purchased: 'Etiqueta gerada',
+  posted: 'Postado',
+  in_transit: 'Em trânsito',
+  delivered: 'Entregue',
+  failed: 'Falhou',
+  cancelled: 'Cancelado',
+}
 
 // ─── AUTH LAYOUT ──────────────────────────────────────────────────────────────
 function AuthLayout({ children, eyebrow, title, sub }: {
@@ -223,6 +233,9 @@ export function PaymentResultPage() {
   if (loading) return <div className="min-h-screen bg-parchment pt-20 flex items-center justify-center"><Spinner size="lg" /></div>
 
   const isPaid = payment?.status === 'paid' || payment?.status === 'authorized'
+  const orderForDisplay = order
+    ? { ...order, paymentStatus: order.paymentStatus ?? payment?.status ?? null }
+    : null
 
   return (
     <div className="min-h-screen bg-parchment pt-20">
@@ -252,8 +265,8 @@ export function PaymentResultPage() {
               <div className="bg-pearl rounded-2xl border border-nude-100 p-6 text-left shadow-card-light mb-8">
                 <Row2 label="Pedido" value={`#${order.id.slice(-8).toUpperCase()}`} mono />
                 <Row2 label="Status" value={
-                  <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${orderStatusColor[order.status] ?? ''}`}>
-                    {orderStatusLabel[order.status]}
+                  <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${orderForDisplay ? getOrderDisplayStatusColor(orderForDisplay) : ''}`}>
+                    {orderForDisplay ? getOrderDisplayStatusLabel(orderForDisplay) : '—'}
                   </span>
                 } />
                 <Row2 label="Total" value={formatCurrency(order.total)} bold />
@@ -328,8 +341,8 @@ export function MyOrdersPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1.5">
                           <p className="font-mono text-sm font-medium text-noir-950">#{order.id.slice(-8).toUpperCase()}</p>
-                          <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${orderStatusColor[order.status] ?? ''}`}>
-                            {orderStatusLabel[order.status]}
+                          <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${getOrderDisplayStatusColor(order)}`}>
+                            {getOrderDisplayStatusLabel(order)}
                           </span>
                         </div>
                         <p className="text-xs text-nude-500">{formatDate(order.createdAt)}</p>
@@ -357,7 +370,9 @@ export function OrderDetailPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const [order,    setOrder]    = useState<Order | null>(null)
+  const [shipment, setShipment] = useState<Shipment | null>(null)
   const [loading,  setLoading]  = useState(true)
+  const [shipmentLoading, setShipmentLoading] = useState(false)
   const [canceling, setCanceling] = useState(false)
 
   useEffect(() => {
@@ -366,6 +381,15 @@ export function OrderDetailPage() {
       .then(r => setOrder(r.order))
       .catch(() => navigate('/account/orders'))
       .finally(() => setLoading(false))
+  }, [id])
+
+  useEffect(() => {
+    if (!id) return
+    setShipmentLoading(true)
+    ordersApi.getShipment(id)
+      .then(r => setShipment(r.shipment))
+      .catch(() => setShipment(null))
+      .finally(() => setShipmentLoading(false))
   }, [id])
 
   const handleCancel = async () => {
@@ -399,8 +423,8 @@ export function OrderDetailPage() {
               </h1>
               <p className="text-nude-500 text-sm mt-1">{formatDateTime(order.createdAt)}</p>
             </div>
-            <span className={`badge-status border rounded-full text-sm px-3 py-1 ${orderStatusColor[order.status] ?? ''}`}>
-              {orderStatusLabel[order.status]}
+            <span className={`badge-status border rounded-full text-sm px-3 py-1 ${getOrderDisplayStatusColor(order, shipment)}`}>
+              {getOrderDisplayStatusLabel(order, shipment)}
             </span>
           </div>
         </div>
@@ -439,6 +463,9 @@ export function OrderDetailPage() {
               {order.discountTotal > 0 && (
                 <Row2 label={`Desconto${order.couponCode ? ` (${order.couponCode})` : ''}`} value={`−${formatCurrency(order.discountTotal)}`} />
               )}
+              {typeof order.shippingAmountCents === 'number' && order.shippingAmountCents > 0 && (
+                <Row2 label={`Frete${order.shippingServiceName ? ` (${order.shippingServiceName})` : ''}`} value={formatCurrency(order.shippingAmountCents / 100)} />
+              )}
               <div className="border-t border-nude-100 pt-3 mt-3">
                 <Row2 label="Total" value={formatCurrency(order.total)} bold />
               </div>
@@ -449,6 +476,38 @@ export function OrderDetailPage() {
                     {paymentStatusLabel[order.paymentStatus]}
                   </span>
                 </div>
+              )}
+            </div>
+
+            <div className="bg-pearl rounded-3xl border border-nude-100 p-6 shadow-card-light space-y-3">
+              <h2 className="font-display text-lg text-noir-950 mb-2">Entrega e Rastreio</h2>
+              {shipmentLoading ? (
+                <p className="text-sm text-nude-500">Carregando rastreio...</p>
+              ) : !shipment ? (
+                <p className="text-sm text-nude-500">Ainda não há envio vinculado a este pedido.</p>
+              ) : (
+                <>
+                  <Row2 label="Status" value={shipmentStatusLabel[shipment.status] ?? shipment.status} />
+                  {shipment.trackingCode && <Row2 label="Código" value={shipment.trackingCode} mono />}
+                  {shipment.status === 'failed' && (
+                    <p className="text-sm text-nude-600">
+                      Tivemos uma instabilidade no envio. Nossa equipe já foi acionada e o status será atualizado em breve.
+                    </p>
+                  )}
+                  {shipment.events && shipment.events.length > 0 && (
+                    <div className="pt-2 space-y-2">
+                      <p className="text-xs text-nude-500 uppercase tracking-wide">Eventos</p>
+                      <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                        {shipment.events.slice(0, 10).map(event => (
+                          <div key={event.id} className="rounded-xl border border-nude-100 bg-white/70 p-2.5">
+                            <p className="text-xs font-medium text-noir-900">{event.description || event.eventType}</p>
+                            <p className="text-2xs text-nude-500 mt-0.5">{formatDateTime(event.occurredAt)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

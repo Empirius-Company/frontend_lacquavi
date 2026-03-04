@@ -26,7 +26,11 @@ export function MainLayout({ children }: { children?: ReactNode }) {
 const ADMIN_LINKS = [
   { to: '/admin',             label: 'Dashboard',   icon: '◈', exact: true },
   { to: '/admin/products',    label: 'Produtos',     icon: '◇' },
+  { to: '/admin/banners',     label: 'Banners',      icon: '◬' },
   { to: '/admin/categories',  label: 'Categorias',   icon: '⊞' },
+  { to: '/admin/subcategories',  label: 'Subcategorias', icon: '⊟' },
+  { to: '/admin/box-types',   label: 'Caixas',       icon: '▣' },
+  { to: '/admin/box-rules',   label: 'Regras Caixa', icon: '▤' },
   { to: '/admin/orders',      label: 'Pedidos',      icon: '◎' },
   { to: '/admin/payments',    label: 'Pagamentos',   icon: '◑' },
   { to: '/admin/coupons',     label: 'Cupons',       icon: '⊛' },
@@ -35,15 +39,15 @@ const ADMIN_LINKS = [
 
 export function AdminLayout({ children }: { children?: ReactNode }) {
   return (
-    <div className="min-h-screen bg-noir-950 flex">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50/40 via-white to-rose-100/30 flex">
       {/* Sidebar */}
-      <aside className="hidden md:flex w-60 flex-col fixed left-0 top-0 bottom-0 border-r border-white/8 z-30 bg-noir-950">
+      <aside className="hidden md:flex w-60 flex-col fixed left-0 top-0 bottom-0 border-r border-brand.border z-30 bg-white/95 backdrop-blur-md">
         {/* Logo */}
-        <div className="px-6 py-7 border-b border-white/8">
-          <NavLink to="/" className="font-display text-xl text-pearl tracking-[0.06em] hover:text-gold-400 transition-colors">
+        <div className="px-6 py-7 border-b border-brand.border">
+          <NavLink to="/" className="font-display text-xl text-brand.dark tracking-[0.06em] hover:text-rose-600 transition-colors">
             LACQUAVI
           </NavLink>
-          <p className="text-2xs text-nude-700 mt-1 uppercase tracking-ultra">Admin Panel</p>
+          <p className="text-2xs text-rose-500/80 mt-1 uppercase tracking-ultra">Admin Panel</p>
         </div>
 
         {/* Nav */}
@@ -57,20 +61,20 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
                 flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm
                 transition-all duration-200
                 ${isActive
-                  ? 'bg-gold-500/10 text-gold-400 border border-gold-600/20'
-                  : 'text-nude-500 hover:bg-white/5 hover:text-nude-300'
+                  ? 'bg-rose-50 text-rose-700 border border-rose-200 shadow-sm'
+                  : 'text-brand.text hover:bg-rose-50/70 hover:text-rose-700'
                 }
               `}
             >
-              <span className="text-base opacity-70">{link.icon}</span>
+              <span className="text-base opacity-80">{link.icon}</span>
               {link.label}
             </NavLink>
           ))}
         </nav>
 
         {/* Bottom */}
-        <div className="px-6 py-5 border-t border-white/8">
-          <NavLink to="/" className="flex items-center gap-2 text-xs text-nude-600 hover:text-nude-300 transition-colors">
+        <div className="px-6 py-5 border-t border-brand.border">
+          <NavLink to="/" className="flex items-center gap-2 text-xs text-brand.textLight hover:text-rose-600 transition-colors">
             <span>←</span>
             Ir para a Loja
           </NavLink>
@@ -80,9 +84,9 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
       {/* Main content */}
       <div className="flex-1 md:ml-60 flex flex-col min-h-screen">
         {/* Mobile header */}
-        <header className="md:hidden bg-noir-900 border-b border-white/8 px-4 py-4 flex items-center justify-between">
-          <span className="font-display text-lg text-pearl">LACQUAVI Admin</span>
-          <NavLink to="/" className="text-xs text-nude-500 hover:text-nude-300">← Loja</NavLink>
+        <header className="md:hidden bg-white border-b border-brand.border px-4 py-4 flex items-center justify-between">
+          <span className="font-display text-lg text-brand.dark">LACQUAVI Admin</span>
+          <NavLink to="/" className="text-xs text-brand.textLight hover:text-rose-600">← Loja</NavLink>
         </header>
 
         <main className="flex-1 p-6 md:p-8">

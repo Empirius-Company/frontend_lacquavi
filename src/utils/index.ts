@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
+import type { Order, Shipment } from '../types'
 
 // ─── UUID ─────────────────────────────────────────────────────────────────────
 export const generateIdempotencyKey = (): string => uuidv4()
@@ -76,6 +77,78 @@ export const paymentStatusColor: Record<string, string> = {
   refunded:   'bg-purple-50 text-purple-700 border-purple-200',
   chargeback: 'bg-orange-50 text-orange-700 border-orange-200',
 }
+
+export type OrderDisplayStatus =
+  | Order['status']
+  | 'paid_waiting_shipment'
+  | 'paid_label_purchased'
+  | 'paid_posted'
+  | 'paid_in_transit'
+
+const orderDisplayStatusLabel: Record<OrderDisplayStatus, string> = {
+  pending: 'Pendente',
+  processing: 'Em processamento',
+  shipped: 'Enviado',
+  delivered: 'Entregue',
+  cancelled: 'Cancelado',
+  paid_waiting_shipment: 'Pago · aguardando envio',
+  paid_label_purchased: 'Pago · etiqueta gerada',
+  paid_posted: 'Pago · postado',
+  paid_in_transit: 'Pago · em trânsito',
+}
+
+const orderDisplayStatusColor: Record<OrderDisplayStatus, string> = {
+  pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  processing: 'bg-blue-50 text-blue-700 border-blue-200',
+  shipped: 'bg-purple-50 text-purple-700 border-purple-200',
+  delivered: 'bg-green-50 text-green-700 border-green-200',
+  cancelled: 'bg-red-50 text-red-700 border-red-200',
+  paid_waiting_shipment: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  paid_label_purchased: 'bg-teal-50 text-teal-700 border-teal-200',
+  paid_posted: 'bg-sky-50 text-sky-700 border-sky-200',
+  paid_in_transit: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+}
+
+const isPaidOrder = (order: Pick<Order, 'paymentStatus'>): boolean =>
+  order.paymentStatus === 'paid' || order.paymentStatus === 'authorized'
+
+export const getOrderDisplayStatus = (
+  order: Pick<Order, 'status' | 'paymentStatus'>,
+  shipment?: Pick<Shipment, 'status'> | null,
+): OrderDisplayStatus => {
+  if (order.status === 'cancelled') return 'cancelled'
+  if (order.status === 'delivered' || shipment?.status === 'delivered') return 'delivered'
+
+  if (!isPaidOrder(order)) {
+    return order.status
+  }
+
+  switch (shipment?.status) {
+    case 'label_purchased':
+      return 'paid_label_purchased'
+    case 'posted':
+      return 'paid_posted'
+    case 'in_transit':
+      return 'paid_in_transit'
+    case 'pending':
+      return 'paid_waiting_shipment'
+    case 'failed':
+    case 'cancelled':
+      return 'processing'
+    default:
+      return order.status === 'shipped' ? 'shipped' : 'paid_waiting_shipment'
+  }
+}
+
+export const getOrderDisplayStatusLabel = (
+  order: Pick<Order, 'status' | 'paymentStatus'>,
+  shipment?: Pick<Shipment, 'status'> | null,
+): string => orderDisplayStatusLabel[getOrderDisplayStatus(order, shipment)]
+
+export const getOrderDisplayStatusColor = (
+  order: Pick<Order, 'status' | 'paymentStatus'>,
+  shipment?: Pick<Shipment, 'status'> | null,
+): string => orderDisplayStatusColor[getOrderDisplayStatus(order, shipment)]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 export const truncate = (str: string, max: number): string =>

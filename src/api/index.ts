@@ -1,5 +1,19 @@
 import { httpClient } from './httpClient'
-import type { Order, OrderStatus, Payment, Coupon, CouponValidation, HealthStatus, Refund } from '../types'
+import type {
+  Order,
+  OrderStatus,
+  Payment,
+  Coupon,
+  CouponValidation,
+  HealthStatus,
+  Refund,
+  ShippingDestination,
+  ShippingQuoteListResponse,
+  ShippingSelectionResponse,
+  Shipment,
+} from '../types'
+export { bannersApi } from './bannerApi'
+export { boxTypesApi, boxRulesApi } from './boxConfigApi'
 
 // ─── Orders API ───────────────────────────────────────────────────────────────
 interface CreateOrderInput {
@@ -29,6 +43,9 @@ export const ordersApi = {
 
   cancel: (id: string): Promise<OrderResponse> =>
     httpClient.delete<OrderResponse>(`/orders/${id}`),
+
+  getShipment: (id: string): Promise<{ shipment: Shipment | null }> =>
+    httpClient.get<{ shipment: Shipment | null }>(`/orders/${id}/shipment`),
 }
 
 // ─── Payments API ─────────────────────────────────────────────────────────────
@@ -110,4 +127,30 @@ export const couponsApi = {
 export const healthApi = {
   get: (): Promise<HealthStatus> =>
     httpClient.get<HealthStatus>('/health'),
+}
+
+// ─── Shipping API ─────────────────────────────────────────────────────────────
+interface ShippingQuoteInput {
+  orderId: string
+  destination: ShippingDestination
+}
+
+interface ShippingSelectionInput {
+  orderId: string
+  quoteId: string
+  destination: ShippingDestination
+}
+
+export const shippingApi = {
+  quote: (data: ShippingQuoteInput): Promise<ShippingQuoteListResponse> =>
+    httpClient.post<ShippingQuoteListResponse>('/shipping/quotes', data),
+
+  select: (data: ShippingSelectionInput): Promise<ShippingSelectionResponse> =>
+    httpClient.post<ShippingSelectionResponse>('/shipping/selection', data),
+
+  createLabel: (orderId: string): Promise<{ message?: string; shipment?: Shipment }> =>
+    httpClient.post<{ message?: string; shipment?: Shipment }>(`/shipping/orders/${orderId}/label`),
+
+  getOrderShipment: (orderId: string): Promise<{ shipment: Shipment | null }> =>
+    httpClient.get<{ shipment: Shipment | null }>(`/shipping/orders/${orderId}/shipment`),
 }

@@ -1,13 +1,16 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { productsApi } from '../api/catalogApi'
+import { ordersApi, shippingApi } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
+import { Button } from '../components/ui'
 import { formatCurrency } from '../utils'
 import { getOrderedGallery, getProductPrimaryImage } from '../utils/productImages'
-import type { ApiError, Product, ProductImage, ProductReview, ProductReviewStats } from '../types'
+import type { ApiError, Product, ProductImage, ProductReview, ProductReviewStats, ShippingDestination, ShippingQuote } from '../types'
 
+const PRODUCT_DETAIL_ZIP_CACHE_KEY = 'lacquavi_product_detail_zip'
 
 
 function FloatingBuyBar({ product, onAdd }: { product: Product, onAdd: () => void }) {
@@ -89,13 +92,49 @@ export function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [productImages, setProductImages] = useState<ProductImage[]>([])
   const [loading, setLoading] = useState(true)
-  const [zipCode, setZipCode] = useState('')
+  const [zipCode, setZipCode] = useState(() => {
+    try {
+      return localStorage.getItem(PRODUCT_DETAIL_ZIP_CACHE_KEY) ?? ''
+    } catch {
+      return ''
+    }
+  })
   const [reviews, setReviews] = useState<ProductReview[]>([])
   const [reviewsStats, setReviewsStats] = useState<ProductReviewStats>({ total: 0, averageRating: 0 })
   const [reviewsLoading, setReviewsLoading] = useState(true)
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' })
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [shippingLoading, setShippingLoading] = useState(false)
+  const [shippingError, setShippingError] = useState('')
+  const [shippingQuotes, setShippingQuotes] = useState<ShippingQuote[]>([])
+
+  const resolveDestinationByZip = async (zipInput: string): Promise<ShippingDestination> => {
+    const zipDigits = zipInput.replace(/\D/g, '')
+    const response = await fetch(`https://viacep.com.br/ws/${zipDigits}/json/`)
+    const data = await response.json() as {
+      erro?: boolean
+      cep?: string
+      logradouro?: string
+      bairro?: string
+      localidade?: string
+      uf?: string
+    }
+
+    if (!response.ok || data.erro) {
+      throw new Error('CEP não encontrado. Verifique e tente novamente.')
+    }
+
+    return {
+      zip: data.cep ?? zipInput,
+      street: data.logradouro?.trim() || 'Endereço não informado',
+      number: 'S/N',
+      complement: '',
+      district: data.bairro?.trim() || 'Centro',
+      city: data.localidade?.trim() || '',
+      state: data.uf?.trim().toUpperCase() || '',
+    }
+  }
 
   const loadReviews = useCallback(async () => {
     if (!id) return
@@ -126,9 +165,18 @@ export function ProductDetailPage() {
         setProduct({ ...productResponse, images: resolvedImages })
         setProductImages(resolvedImages)
       })
-      .catch(() => navigate('/products'))
+      .catch((error) => {
+        const apiError = error as ApiError
+        if (apiError.statusCode === 404) {
+          navigate('/products')
+          return
+        }
+
+        toast('Não foi possível carregar o produto', 'error')
+        navigate('/products')
+      })
       .finally(() => setLoading(false))
-  }, [id, navigate])
+  }, [id, navigate, toast])
 
   useEffect(() => {
     void loadReviews()
@@ -137,6 +185,18 @@ export function ProductDetailPage() {
   useEffect(() => {
     setSelectedImageIndex(0)
   }, [product?.id])
+
+  useEffect(() => {
+    try {
+      if (zipCode.trim()) {
+        localStorage.setItem(PRODUCT_DETAIL_ZIP_CACHE_KEY, zipCode)
+      } else {
+        localStorage.removeItem(PRODUCT_DETAIL_ZIP_CACHE_KEY)
+      }
+    } catch {
+      // ignore localStorage failures
+    }
+  }, [zipCode])
 
   if (loading) {
     return (
@@ -164,6 +224,53 @@ export function ProductDetailPage() {
     if (isOutOfStock) return
     addItem(product, 1)
     toast(`${product.name} adicionado à sacola`, 'success')
+  }
+
+  const handleCalculateShipping = async () => {
+    if (!id || !product) return
+
+    const zipDigits = zipCode.replace(/\D/g, '')
+    if (zipDigits.length !== 8) {
+      setShippingError('Informe um CEP válido com 8 dígitos.')
+      setShippingQuotes([])
+      return
+    }
+
+    if (!isAuthenticated) {
+      toast('Faça login para calcular o frete.', 'warning')
+      navigate(`/login?redirect=${encodeURIComponent(`/products/${id}`)}`)
+      return
+    }
+
+    setShippingLoading(true)
+    setShippingError('')
+
+    try {
+      const destination = await resolveDestinationByZip(zipDigits)
+      const { order } = await ordersApi.create({
+        items: [{ productId: product.id, quantity: 1 }],
+      })
+
+      const result = await shippingApi.quote({
+        orderId: order.id,
+        destination,
+      })
+
+      if (!result.quotes?.length) {
+        setShippingError('Nenhuma opção de frete disponível para este CEP no momento.')
+        setShippingQuotes([])
+        return
+      }
+
+      const sortedQuotes = [...result.quotes].sort((a, b) => a.priceCents - b.priceCents)
+      setShippingQuotes(sortedQuotes)
+      toast('Frete calculado com sucesso!', 'success')
+    } catch (error) {
+      setShippingQuotes([])
+      setShippingError((error as ApiError).message ?? 'Não foi possível calcular o frete agora.')
+    } finally {
+      setShippingLoading(false)
+    }
   }
 
   const handleReviewSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -333,14 +440,44 @@ export function ProductDetailPage() {
                   type="text"
                   placeholder="Informe seu CEP"
                   value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '').slice(0, 8)
+                    const masked = digits.length > 5
+                      ? `${digits.slice(0, 5)}-${digits.slice(5)}`
+                      : digits
+                    setZipCode(masked)
+                    setShippingError('')
+                  }}
                   className="flex-1 border border-r-0 border-gray-300 rounded-l px-4 text-sm focus:outline-none focus:border-gray-400"
                 />
-                <button className="bg-white border border-gray-300 rounded-r px-6 text-xs font-bold text-gray-700 hover:bg-gray-50 uppercase tracking-widest transition-colors">
+                <Button
+                  variant="outline"
+                  className="!rounded-l-none !rounded-r !h-full !px-6 !text-xs !tracking-widest"
+                  onClick={handleCalculateShipping}
+                  loading={shippingLoading}
+                >
                   Calcular
-                </button>
+                </Button>
               </div>
-              <a href="#" className="text-[10px] text-gray-400 hover:underline mt-2 inline-block">Não sei meu CEP</a>
+              <a href="https://buscacepinter.correios.com.br/app/endereco/index.php" target="_blank" rel="noreferrer" className="text-[10px] text-gray-400 hover:underline mt-2 inline-block">Não sei meu CEP</a>
+
+              {shippingError && (
+                <p className="text-xs text-red-500 mt-3">{shippingError}</p>
+              )}
+
+              {shippingQuotes.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {shippingQuotes.map((quote) => (
+                    <div key={quote.quoteId} className="flex items-center justify-between rounded border border-gray-200 bg-gray-50 px-3 py-2">
+                      <div>
+                        <p className="text-xs font-semibold text-gray-800 uppercase tracking-wide">{quote.serviceName}</p>
+                        <p className="text-[11px] text-gray-500">Entrega em até {quote.deliveryDays} dias</p>
+                      </div>
+                      <p className="text-sm font-semibold text-gray-900">{formatCurrency(quote.priceCents / 100)}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
