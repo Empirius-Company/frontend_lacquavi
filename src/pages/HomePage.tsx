@@ -10,6 +10,12 @@ import { useProductsReviewStats } from '../hooks/useProductsReviewStats'
 import { getProductPrimaryImageUrl } from '../utils/productImages'
 import type { Product, Category, Banner } from '../types'
 
+const normalizeText = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+
 function useReveal(dep?: unknown) {
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -399,6 +405,51 @@ export function HomePage() {
   const topProducts = sortedProducts.slice(0, 4);
   const { statsByProduct } = useProductsReviewStats(sortedProducts.map((product) => product.id))
 
+  const productsByCategory = useMemo(() => {
+    const grouped = new Map<string, Product[]>()
+
+    sortedProducts.forEach((product) => {
+      if (!product.categoryId) return
+      const current = grouped.get(product.categoryId) ?? []
+      current.push(product)
+      grouped.set(product.categoryId, current)
+    })
+
+    return grouped
+  }, [sortedProducts])
+
+  const categorySections = useMemo(
+    () => categories
+      .map((category) => ({
+        category,
+        products: productsByCategory.get(category.id) ?? [],
+      }))
+      .filter((section) => section.products.length > 0),
+    [categories, productsByCategory]
+  )
+
+  const hydratedAndDeodorantProducts = useMemo(() => {
+    const hydratedOrDeodorantCategoryIds = categories
+      .filter((category) => {
+        const haystack = `${normalizeText(category.name)} ${normalizeText(category.slug)}`
+        return haystack.includes('hidrat') || haystack.includes('desodor')
+      })
+      .map((category) => category.id)
+
+    const fromCategories = sortedProducts.filter(
+      (product) => product.categoryId && hydratedOrDeodorantCategoryIds.includes(product.categoryId)
+    )
+
+    if (fromCategories.length > 0) {
+      return fromCategories
+    }
+
+    return sortedProducts.filter((product) => {
+      const haystack = normalizeText(`${product.name} ${product.description || ''} ${product.brand || ''}`)
+      return haystack.includes('hidrat') || haystack.includes('desodor')
+    })
+  }, [categories, sortedProducts])
+
   return (
     <div className="bg-[#F5F5F5] min-h-screen pb-16">
 
@@ -443,28 +494,28 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Perfumes */}
+      {categorySections.map((section, index) => (
+        <section key={section.category.id} className={`py-12 ${index % 2 === 0 ? 'bg-white' : 'bg-[#F5F5F5]'}`}>
+          <div className="container-page">
+            <SectionHeader
+              title={section.category.name}
+              linkTo={`/products?category=${section.category.id}`}
+            />
+            {error ? null : (
+              <ProductCarousel products={section.products} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
+            )}
+          </div>
+        </section>
+      ))}
+
       <section className="py-12 bg-white">
         <div className="container-page">
           <SectionHeader
-            title="Perfumes"
-            linkTo="/products"
+            title="Hidratantes e Desodorantes"
+            linkTo="/products?q=hidratante"
           />
           {error ? null : (
-            <ProductCarousel products={sortedProducts.filter(p => p.name.toLowerCase().includes('perfume') || p.price > 120)} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
-          )}
-        </div>
-      </section>
-
-      {/* Kits */}
-      <section className="py-12 bg-[#F5F5F5]">
-        <div className="container-page">
-          <SectionHeader
-            title="Kits e Presentes"
-            linkTo="/products"
-          />
-          {error ? null : (
-            <ProductCarousel products={sortedProducts.filter(p => p.name.toLowerCase().includes('kit') || p.price < 120)} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
+            <ProductCarousel products={hydratedAndDeodorantProducts} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
           )}
         </div>
       </section>

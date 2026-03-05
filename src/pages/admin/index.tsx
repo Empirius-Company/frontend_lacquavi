@@ -77,7 +77,7 @@ export function AdminDashboardPage() {
     Promise.all([
       ordersApi.list(),
       paymentsApi.list(),
-      productsApi.list(),
+      productsApi.myProducts(),
     ]).then(([o, pay, p]) => {
       setOrders(o.orders)
       setPayments(pay.payments)
@@ -2170,7 +2170,7 @@ export function AdminBannersPage() {
   useEffect(load, [])
 
   useEffect(() => {
-    productsApi.list().then((response) => setProducts(response.products)).catch(() => {})
+    productsApi.myProducts().then((response) => setProducts(response.products)).catch(() => {})
   }, [])
 
   const productNameById = useMemo(
@@ -2304,8 +2304,13 @@ export function AdminBannerFormPage() {
     productId: '',
   })
 
+  const activeProducts = useMemo(
+    () => products.filter((product) => product.isActive !== false),
+    [products]
+  )
+
   useEffect(() => {
-    productsApi.list().then((response) => setProducts(response.products)).catch(() => {})
+    productsApi.myProducts().then((response) => setProducts(response.products)).catch(() => {})
 
     if (!isEdit || !id) {
       const now = new Date()
@@ -2428,7 +2433,7 @@ export function AdminBannerFormPage() {
               value={form.productId}
               onChange={setValue('productId')}
               placeholder="Selecione"
-              options={products.map((product) => ({ value: product.id, label: product.name }))}
+              options={activeProducts.map((product) => ({ value: product.id, label: product.name }))}
             />
           </div>
 
