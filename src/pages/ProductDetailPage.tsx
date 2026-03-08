@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
 import { Button } from '../components/ui'
-import { formatCurrency } from '../utils'
+import { formatCurrency, getProductPriceSummary } from '../utils'
 import { getOrderedGallery, getProductPrimaryImage } from '../utils/productImages'
 import type { ApiError, Product, ProductImage, ProductReview, ProductReviewStats, ShippingDestination, ShippingQuote } from '../types'
 
@@ -15,9 +15,7 @@ const PRODUCT_DETAIL_ZIP_CACHE_KEY = 'lacquavi_product_detail_zip'
 
 function FloatingBuyBar({ product, onAdd }: { product: Product, onAdd: () => void }) {
   const [isVisible, setIsVisible] = useState(false)
-  const discountValue = Math.max(0, Number(product.discount ?? 0))
-  const hasDiscount = product.price > 0 && discountValue > 0
-  const oldPrice = hasDiscount ? product.price + discountValue : 0
+  const pricing = getProductPriceSummary(product)
   const primaryImage = getProductPrimaryImage(product)
 
   useEffect(() => {
@@ -51,8 +49,8 @@ function FloatingBuyBar({ product, onAdd }: { product: Product, onAdd: () => voi
 
           <div className="flex items-center gap-6 justify-end flex-1 md:flex-none">
             <div className="text-right">
-              {hasDiscount && <p className="text-xs text-gray-400 line-through">{formatCurrency(oldPrice)}</p>}
-              <p className="text-lg font-bold text-black leading-none">{formatCurrency(product.price)} <span className="text-[10px] font-normal text-gray-500">no PIX</span></p>
+              {pricing.hasDiscount && <p className="text-xs text-gray-400 line-through">{formatCurrency(pricing.basePrice)}</p>}
+              <p className="text-lg font-bold text-black leading-none">{formatCurrency(pricing.finalPrice)} <span className="text-[10px] font-normal text-gray-500">no PIX</span></p>
             </div>
 
             <div className="flex items-center gap-4">
@@ -215,10 +213,7 @@ export function ProductDetailPage() {
   const selectedImage = galleryImages[selectedImageIndex] ?? galleryImages[0] ?? null
 
   const isOutOfStock = product.stock === 0
-  const discountValue = Math.max(0, Number(product.discount ?? 0))
-  const hasDiscount = product.price > 0 && discountValue > 0
-  const oldPrice = hasDiscount ? product.price + discountValue : 0
-  const discountPercent = hasDiscount ? Math.round((discountValue / oldPrice) * 100) : 0
+  const pricing = getProductPriceSummary(product)
 
   const handleAdd = () => {
     if (isOutOfStock) return
@@ -366,9 +361,9 @@ export function ProductDetailPage() {
 
             {/* Main Image */}
             <div className="flex-1 relative h-[250px] sm:h-[300px] md:h-[340px] lg:h-[365px] flex items-center justify-center bg-white p-4">
-              {hasDiscount && (
+              {pricing.hasDiscount && (
                 <div className="absolute top-2 right-2 w-14 h-14 bg-[#0B1B3D] rounded-full flex flex-col items-center justify-center text-white z-10 font-bold leading-tight shadow-md">
-                  <span className="text-sm">{discountPercent}%</span>
+                  <span className="text-sm">{pricing.discountPercent}%</span>
                   <span className="text-[10px]">OFF</span>
                 </div>
               )}
@@ -414,9 +409,9 @@ export function ProductDetailPage() {
 
             {/* Pricing */}
             <div className="mb-6">
-              {hasDiscount && <p className="text-sm text-gray-400 line-through mb-1">{formatCurrency(oldPrice)}</p>}
+              {pricing.hasDiscount && <p className="text-sm text-gray-400 line-through mb-1">{formatCurrency(pricing.basePrice)}</p>}
               <div className="flex items-end gap-2">
-                <span className="text-3xl font-black text-black leading-none">{formatCurrency(product.price)}</span>
+                <span className="text-3xl font-black text-black leading-none">{formatCurrency(pricing.finalPrice)}</span>
               </div>
               <p className="text-xs text-gray-500 mt-2">Vendido e entregue por <span className="text-[#e6226e] font-bold">Lacquavi ›</span></p>
             </div>
@@ -484,10 +479,10 @@ export function ProductDetailPage() {
 
         {/* ── Ext Info Layout: Description + Right Sidebar ────────────────────────────────── */}
         <div className="mt-16 border-t border-gray-200 pt-10">
-          <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
+          <div className="max-w-6xl mx-auto">
 
             {/* Main Content Area */}
-            <div className="flex-1 max-w-3xl">
+            <div className="w-full">
               {/* Description */}
               <div className="mb-10 text-sm text-gray-600 leading-relaxed font-sans" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                 <div className="flex border-b border-gray-200 mb-6">
@@ -598,28 +593,6 @@ export function ProductDetailPage() {
                   )}
                 </div>
               </div>
-            </div>
-
-            {/* Right Sidebar */}
-            <div className="w-full lg:w-[320px]">
-              <div className="flex border-b border-pink-200 mb-4">
-                <h3 className="uppercase text-sm font-bold text-gray-800 tracking-widest border-b-2 border-[#e6226e] pb-2 -mb-px">Informações da Loja</h3>
-              </div>
-
-              <div className="border border-gray-200 rounded p-4 mb-6 shadow-sm bg-white">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-[#FF4170] rounded-lg flex items-center justify-center text-white font-bold text-2xl tracking-tighter">L</div>
-                  <div>
-                    <p className="font-bold text-gray-900 text-sm">Lacquavi Oficial</p>
-                    <p className="text-xs text-gray-500">Loja oficial</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button className="flex-1 py-2 px-2 border border-gray-200 rounded text-[10px] text-gray-600 font-semibold uppercase hover:bg-gray-50 flex items-center justify-center gap-1">Ver mais infomações ›</button>
-                  <button className="flex-1 py-2 px-2 border border-gray-200 rounded text-[10px] text-gray-600 font-semibold uppercase hover:bg-gray-50 flex items-center justify-center gap-1">Ver mais da marca ›</button>
-                </div>
-              </div>
-
             </div>
           </div>
         </div>

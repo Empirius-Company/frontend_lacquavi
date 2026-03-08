@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { productsApi, categoriesApi, subcategoriesApi } from '../../api/catalogApi'
 import { uploadProductImageToStorage } from '../../api/storageApi'
-import { ordersApi, paymentsApi, couponsApi, healthApi, bannersApi, boxTypesApi, boxRulesApi } from '../../api/index'
+import { ordersApi, paymentsApi, couponsApi, healthApi, bannersApi, boxTypesApi, boxRulesApi, shippingApi } from '../../api/index'
 import { useToast } from '../../context/ToastContext'
 import { Button, Input, Select, Spinner, EmptyState, ErrorMessage, Skeleton, Modal } from '../../components/ui'
 import {
@@ -33,6 +33,8 @@ import type {
   Banner,
   Shipment,
   ShipmentStatus,
+  ShipmentSelection,
+  ShippingDestination,
   BoxType,
   BoxCategoryRule,
 } from '../../types'
@@ -64,6 +66,22 @@ const shipmentStatusLabel: Record<ShipmentStatus, string> = {
   delivered: 'Entregue',
   failed: 'Falhou',
   cancelled: 'Cancelado',
+}
+
+const formatZipCode = (zip?: string | null) => {
+  const digits = (zip ?? '').replace(/\D/g, '')
+  if (digits.length !== 8) return zip ?? '—'
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`
+}
+
+const formatAddressLine = (destination?: ShippingDestination | null) => {
+  if (!destination) return 'Endereço não informado'
+  const street = destination.street?.trim()
+  const number = destination.number?.trim()
+  const complement = destination.complement?.trim()
+  const base = [street, number].filter(Boolean).join(', ')
+  if (!base) return 'Endereço não informado'
+  return complement ? `${base} · ${complement}` : base
 }
 
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
@@ -301,6 +319,7 @@ export function AdminProductFormPage() {
     name: '',
     description: '',
     price: '',
+    discount: '0',
     stock: '',
     brand: '',
     volume: '',
@@ -327,6 +346,7 @@ export function AdminProductFormPage() {
         .then(p => {
           setForm({
             name: p.name, description: p.description, price: p.price.toString(),
+            discount: (p.discount ?? 0).toString(),
             stock: p.stock.toString(), brand: p.brand ?? '', volume: p.volume ?? '',
             gender: p.gender ?? '', categoryId: p.categoryId ?? '',
             subcategoryId: p.subcategoryId ?? '',
@@ -419,6 +439,7 @@ export function AdminProductFormPage() {
         name: form.name,
         description: form.description,
         price: parseFloat(form.price),
+        discount: parseFloat(form.discount || '0'),
         stock: parseInt(form.stock),
         brand: form.brand || undefined,
         volume: form.volume || undefined,
@@ -497,8 +518,9 @@ export function AdminProductFormPage() {
         <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card p-6 space-y-4">
           <h2 className="font-display text-lg text-ink">Informações Gerais</h2>
           <Input label="Nome *" value={form.name} onChange={set('name')} required />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Input label="Preço (R$) *" type="number" step="0.01" min="0" value={form.price} onChange={set('price')} required />
+            <Input label="Desconto (R$)" type="number" step="0.01" min="0" value={form.discount} onChange={set('discount')} />
             <Input label="Estoque *" type="number" min="0" value={form.stock} onChange={set('stock')} required />
           </div>
           <div>
@@ -1282,7 +1304,10 @@ export function AdminOrdersPage() {
         if (searchTerm) {
           const orderCode = order.id.slice(-8).toLowerCase()
           const couponCode = order.couponCode?.toLowerCase() ?? ''
-          if (!orderCode.includes(searchTerm) && !couponCode.includes(searchTerm)) return false
+          const customerName = order.user?.name?.toLowerCase() ?? ''
+          const customerEmail = order.user?.email?.toLowerCase() ?? ''
+          const destinationZip = order.shippingDestinationZip?.toLowerCase() ?? ''
+          if (!orderCode.includes(searchTerm) && !couponCode.includes(searchTerm) && !customerName.includes(searchTerm) && !customerEmail.includes(searchTerm) && !destinationZip.includes(searchTerm)) return false
         }
         return true
       })
@@ -1393,10 +1418,10 @@ export function AdminOrdersPage() {
           <EmptyState title="Nenhum pedido" />
         ) : (
           <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px]">
+          <table className="w-full min-w-[1080px]">
             <thead>
               <tr className="border-b border-rose-100 text-left bg-rose-50/60">
-                {['Pedido','Data','Total','Status','Pagamento','Ações'].map(h => (
+                {['Pedido','Cliente','Data','Entrega','Total','Status','Pagamento','Ações'].map(h => (
                   <th key={h} className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -1405,7 +1430,15 @@ export function AdminOrdersPage() {
               {filteredOrders.map(order => (
                 <tr key={order.id} className="border-b border-obsidian-50 last:border-0 hover:bg-rose-50/60 transition-colors duration-200">
                   <td className="px-5 py-4 font-mono text-sm text-ink">#{order.id.slice(-8).toUpperCase()}</td>
+                  <td className="px-5 py-4 text-sm text-ink">
+                    <p className="font-medium">{order.user?.name || 'Cliente não identificado'}</p>
+                    <p className="text-xs text-obsidian-500">{order.user?.email || `ID: ${order.userId.slice(-8).toUpperCase()}`}</p>
+                  </td>
                   <td className="px-5 py-4 text-xs text-obsidian-500">{formatDateTime(order.createdAt)}</td>
+                  <td className="px-5 py-4 text-xs text-obsidian-600">
+                    <p>{formatZipCode(order.shippingDestinationZip)}</p>
+                    <p className="text-obsidian-500">{order.shippingServiceName || 'Sem serviço selecionado'}</p>
+                  </td>
                   <td className="px-5 py-4 text-sm font-medium">{formatCurrency(order.total)}</td>
                   <td className="px-5 py-4">
                     <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${getOrderDisplayStatusColor(order)}`}>
@@ -1418,6 +1451,7 @@ export function AdminOrdersPage() {
                         {paymentStatusLabel[order.paymentStatus]}
                       </span>
                     )}
+                    {!order.paymentStatus && <span className="text-xs text-obsidian-400">—</span>}
                   </td>
                   <td className="px-5 py-4">
                     <Link to={`/admin/orders/${order.id}`}>
@@ -1441,6 +1475,8 @@ export function AdminOrderDetailPage() {
   const { toast } = useToast()
   const [order, setOrder]       = useState<Order | null>(null)
   const [shipment, setShipment] = useState<Shipment | null>(null)
+  const [shipmentSelection, setShipmentSelection] = useState<ShipmentSelection | null>(null)
+  const [shippingDestination, setShippingDestination] = useState<ShippingDestination | null>(null)
   const [loading, setLoading]   = useState(true)
   const [shipmentLoading, setShipmentLoading] = useState(false)
   const [status, setStatus]     = useState<OrderStatus>('pending')
@@ -1456,8 +1492,16 @@ export function AdminOrderDetailPage() {
     if (!id) return
     setShipmentLoading(true)
     ordersApi.getShipment(id)
-      .then(r => setShipment(r.shipment))
-      .catch(() => setShipment(null))
+      .then(r => {
+        setShipment(r.shipment)
+        setShipmentSelection(r.selection ?? null)
+        setShippingDestination(r.destination ?? r.selection?.destination ?? null)
+      })
+      .catch(() => {
+        setShipment(null)
+        setShipmentSelection(null)
+        setShippingDestination(null)
+      })
       .finally(() => setShipmentLoading(false))
   }, [id])
 
@@ -1481,8 +1525,12 @@ export function AdminOrderDetailPage() {
     try {
       const response = await ordersApi.getShipment(id)
       setShipment(response.shipment)
+      setShipmentSelection(response.selection ?? null)
+      setShippingDestination(response.destination ?? response.selection?.destination ?? null)
     } catch {
       setShipment(null)
+      setShipmentSelection(null)
+      setShippingDestination(null)
     } finally {
       setShipmentLoading(false)
     }
@@ -1521,9 +1569,13 @@ export function AdminOrderDetailPage() {
           <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card p-6">
             <h2 className="font-display text-lg text-ink mb-4">Itens do Pedido</h2>
             {order.items.map(item => (
-              <div key={item.id} className="flex justify-between py-2.5 border-b border-obsidian-50 last:border-0 text-sm">
-                <span className="text-obsidian-700">{item.quantity}× item</span>
-                <span>{formatCurrency(item.price * item.quantity)}</span>
+              <div key={item.id} className="flex justify-between items-start gap-4 py-2.5 border-b border-obsidian-50 last:border-0 text-sm">
+                <div>
+                  <p className="text-obsidian-700 font-medium">{item.product?.name || `Produto ${item.productId.slice(-8).toUpperCase()}`}</p>
+                  <p className="text-xs text-obsidian-500">SKU: {item.productId.slice(-8).toUpperCase()}</p>
+                  <p className="text-xs text-obsidian-500 mt-0.5">{item.quantity} × {formatCurrency(item.price)}</p>
+                </div>
+                <span className="font-medium text-ink">{formatCurrency(item.price * item.quantity)}</span>
               </div>
             ))}
             {typeof order.shippingAmountCents === 'number' && order.shippingAmountCents > 0 && (
@@ -1550,6 +1602,12 @@ export function AdminOrderDetailPage() {
                   <span className="text-obsidian-500">Status</span>
                   <span className="font-medium text-ink">{shipmentStatusLabel[shipment.status] ?? shipment.status}</span>
                 </div>
+                {(shipment.serviceName || shipmentSelection?.serviceName || order.shippingServiceName) && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-obsidian-500">Serviço</span>
+                    <span className="font-medium text-ink">{shipment.serviceName || shipmentSelection?.serviceName || order.shippingServiceName}</span>
+                  </div>
+                )}
                 {shipment.trackingCode && (
                   <div className="flex justify-between text-sm">
                     <span className="text-obsidian-500">Tracking</span>
@@ -1579,7 +1637,7 @@ export function AdminOrderDetailPage() {
                     <p className="text-xs uppercase tracking-wide text-obsidian-400">Eventos</p>
                     <div className="space-y-2 max-h-44 overflow-y-auto">
                       {shipment.events.slice(0, 10).map(event => (
-                        <div key={event.id} className="rounded-lg border border-obsidian-100 p-2.5 bg-obsidian-50/40">
+                        <div key={`${event.id || event.eventType}-${event.occurredAt}`} className="rounded-lg border border-obsidian-100 p-2.5 bg-obsidian-50/40">
                           <p className="text-xs font-medium text-ink">{event.description || event.eventType}</p>
                           <p className="text-2xs text-obsidian-500 mt-0.5">{formatDateTime(event.occurredAt)}</p>
                         </div>
@@ -1618,11 +1676,47 @@ export function AdminOrderDetailPage() {
               <span>{formatDateTime(order.createdAt)}</span>
             </div>
             <div className="flex justify-between">
+              <span className="text-obsidian-500">Cliente</span>
+              <span className="text-right">{order.user?.name || `ID ${order.userId.slice(-8).toUpperCase()}`}</span>
+            </div>
+            {order.user?.email && (
+              <div className="flex justify-between gap-2">
+                <span className="text-obsidian-500">E-mail</span>
+                <span className="text-right break-all">{order.user.email}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
               <span className="text-obsidian-500">Status atual</span>
               <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${getOrderDisplayStatusColor(order, shipment)}`}>
                 {getOrderDisplayStatusLabel(order, shipment)}
               </span>
             </div>
+            <div className="flex justify-between">
+              <span className="text-obsidian-500">CEP</span>
+              <span>{formatZipCode(shippingDestination?.zip || order.shippingDestinationZip)}</span>
+            </div>
+            <div className="flex justify-between gap-2">
+              <span className="text-obsidian-500">Endereço</span>
+              <span className="text-right">{formatAddressLine(shippingDestination)}</span>
+            </div>
+            {shippingDestination?.district && (
+              <div className="flex justify-between gap-2">
+                <span className="text-obsidian-500">Bairro</span>
+                <span className="text-right">{shippingDestination.district}</span>
+              </div>
+            )}
+            {(shippingDestination?.city || shippingDestination?.state) && (
+              <div className="flex justify-between gap-2">
+                <span className="text-obsidian-500">Cidade/UF</span>
+                <span className="text-right">{[shippingDestination?.city, shippingDestination?.state].filter(Boolean).join(' / ')}</span>
+              </div>
+            )}
+            {(order.shippingServiceName || shipmentSelection?.serviceName) && (
+              <div className="flex justify-between gap-2">
+                <span className="text-obsidian-500">Serviço</span>
+                <span className="text-right">{order.shippingServiceName || shipmentSelection?.serviceName}</span>
+              </div>
+            )}
             {order.couponCode && (
               <div className="flex justify-between">
                 <span className="text-obsidian-500">Cupom</span>
@@ -2295,9 +2389,6 @@ export function AdminBannerFormPage() {
     startDate: '',
     endDate: '',
     showTimer: true,
-    hasDiscount: true,
-    discountType: 'percentage',
-    discountValue: '',
     priority: '0',
     type: 'flash_sale',
     status: 'paused',
@@ -2331,9 +2422,6 @@ export function AdminBannerFormPage() {
           startDate: toDateTimeLocalValue(banner.startDate),
           endDate: toDateTimeLocalValue(banner.endDate),
           showTimer: banner.showTimer,
-          hasDiscount: !!banner.hasDiscount,
-          discountType: banner.discountType ?? 'percentage',
-          discountValue: banner.discountValue?.toString() ?? '',
           priority: (banner.priority ?? 0).toString(),
           type: banner.type || 'flash_sale',
           status: banner.status || 'paused',
@@ -2368,9 +2456,6 @@ export function AdminBannerFormPage() {
         startDate: form.startDate ? new Date(form.startDate).toISOString() : undefined,
         endDate: new Date(form.endDate).toISOString(),
         showTimer: form.showTimer,
-        hasDiscount: form.hasDiscount,
-        discountType: form.hasDiscount ? (form.discountType as 'percentage' | 'fixed') : undefined,
-        discountValue: form.hasDiscount && form.discountValue ? Number(form.discountValue) : undefined,
         priority: Number(form.priority) || 0,
         type: form.type,
         status: form.status,
@@ -2447,35 +2532,6 @@ export function AdminBannerFormPage() {
             />
             <label htmlFor="showTimer" className="text-sm text-ink">Mostrar timer</label>
           </div>
-
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="hasDiscount"
-              checked={form.hasDiscount}
-              onChange={setValue('hasDiscount')}
-              className="w-4 h-4 rounded border-obsidian-300 text-champagne-600"
-            />
-            <label htmlFor="hasDiscount" className="text-sm text-ink">Exibir desconto</label>
-          </div>
-
-          {form.hasDiscount && (
-            <div className="grid grid-cols-2 gap-4">
-              <Select
-                label="Tipo de desconto"
-                value={form.discountType}
-                onChange={setValue('discountType')}
-                options={[{ value: 'percentage', label: 'Percentual (%)' }, { value: 'fixed', label: 'Valor fixo (R$)' }]}
-              />
-              <Input
-                label="Valor do desconto"
-                type="number"
-                step="0.01"
-                value={form.discountValue}
-                onChange={setValue('discountValue')}
-              />
-            </div>
-          )}
         </div>
 
         {error && <ErrorMessage message={error} />}

@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { Button, EmptyState } from '../components/ui'
-import { formatCurrency } from '../utils'
+import { formatCurrency, getProductFinalPrice } from '../utils'
 import { getProductPrimaryImage } from '../utils/productImages'
 
 function CartItem({ item }: { item: any }) {
@@ -57,7 +57,7 @@ function CartItem({ item }: { item: any }) {
 
           {/* Price */}
           <p className="font-body font-medium text-sm text-noir-950">
-            {formatCurrency((item.product?.price ?? 0) * item.quantity)}
+            {formatCurrency(getProductFinalPrice(item.product) * item.quantity)}
           </p>
         </div>
       </div>

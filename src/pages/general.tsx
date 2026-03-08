@@ -23,6 +23,13 @@ const shipmentStatusLabel: Record<ShipmentStatus, string> = {
   cancelled: 'Cancelado',
 }
 
+const buildCustomerTrackingUrl = (trackingCode?: string | null): string | null => {
+  if (!trackingCode) return null
+  const normalized = trackingCode.trim().toUpperCase()
+  if (!normalized) return null
+  return `https://rastreamento.correios.com.br/app/index.php?objeto=${encodeURIComponent(normalized)}`
+}
+
 // ─── AUTH LAYOUT ──────────────────────────────────────────────────────────────
 function AuthLayout({ children, eyebrow, title, sub }: {
   children: ReactNode
@@ -302,10 +309,42 @@ function Row2({ label, value, mono = false, bold = false }: any) {
 // ─── MY ORDERS ────────────────────────────────────────────────────────────────
 export function MyOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
+  const [shipmentByOrder, setShipmentByOrder] = useState<Record<string, Shipment | null>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    ordersApi.list().then(r => setOrders(r.orders)).finally(() => setLoading(false))
+    let active = true
+
+    const loadOrdersAndShipments = async () => {
+      try {
+        const ordersResponse = await ordersApi.list()
+        if (!active) return
+
+        setOrders(ordersResponse.orders)
+
+        const shipmentEntries = await Promise.all(
+          ordersResponse.orders.map(async (order) => {
+            try {
+              const shipmentResponse = await ordersApi.getShipment(order.id)
+              return [order.id, shipmentResponse.shipment ?? null] as const
+            } catch {
+              return [order.id, null] as const
+            }
+          }),
+        )
+
+        if (!active) return
+        setShipmentByOrder(Object.fromEntries(shipmentEntries))
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    loadOrdersAndShipments()
+
+    return () => {
+      active = false
+    }
   }, [])
 
   return (
@@ -335,6 +374,11 @@ export function MyOrdersPage() {
           <div className="space-y-4">
             {orders.map((order, i) => (
               <ScrollReveal key={order.id} delay={i * 60}>
+                {(() => {
+                  const trackingCode = shipmentByOrder[order.id]?.trackingCode
+                  const customerTrackingUrl = buildCustomerTrackingUrl(trackingCode)
+
+                  return (
                 <Link to={`/account/orders/${order.id}`} className="group block">
                   <div className="bg-pearl rounded-2xl border border-nude-100 px-6 py-5 shadow-card-light hover:border-gold-500/20 hover:shadow-card-hover transition-all duration-300">
                     <div className="flex items-start justify-between gap-4">
@@ -347,6 +391,26 @@ export function MyOrdersPage() {
                         </div>
                         <p className="text-xs text-nude-500">{formatDate(order.createdAt)}</p>
                         <p className="text-xs text-nude-500 mt-0.5">{order.items.length} {order.items.length === 1 ? 'item' : 'itens'}</p>
+                        {trackingCode && (
+                          <div className="mt-2 flex items-center gap-3">
+                            <p className="text-2xs text-nude-600">
+                              Rastreio: <span className="font-mono text-noir-900">{trackingCode}</span>
+                            </p>
+                            {customerTrackingUrl && (
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.preventDefault()
+                                  event.stopPropagation()
+                                  window.open(customerTrackingUrl, '_blank', 'noopener,noreferrer')
+                                }}
+                                className="text-2xs font-medium text-gold-600 hover:text-gold-500 underline underline-offset-2"
+                              >
+                                Acompanhar entrega
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="font-display text-xl text-noir-950">{formatCurrency(order.total)}</p>
@@ -355,6 +419,8 @@ export function MyOrdersPage() {
                     </div>
                   </div>
                 </Link>
+                  )
+                })()}
               </ScrollReveal>
             ))}
           </div>
@@ -408,6 +474,7 @@ export function OrderDetailPage() {
   if (!order)  return null
 
   const canCancel = !['delivered', 'cancelled'].includes(order.status)
+  const customerTrackingUrl = buildCustomerTrackingUrl(shipment?.trackingCode)
 
   return (
     <div className="min-h-screen bg-parchment pt-20">
@@ -489,6 +556,21 @@ export function OrderDetailPage() {
                 <>
                   <Row2 label="Status" value={shipmentStatusLabel[shipment.status] ?? shipment.status} />
                   {shipment.trackingCode && <Row2 label="Código" value={shipment.trackingCode} mono />}
+                  {customerTrackingUrl && (
+                    <Row2
+                      label="Acompanhar"
+                      value={
+                        <a
+                          href={customerTrackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-gold-600 hover:text-gold-500 underline underline-offset-2"
+                        >
+                          Ver rastreio
+                        </a>
+                      }
+                    />
+                  )}
                   {shipment.status === 'failed' && (
                     <p className="text-sm text-nude-600">
                       Tivemos uma instabilidade no envio. Nossa equipe já foi acionada e o status será atualizado em breve.

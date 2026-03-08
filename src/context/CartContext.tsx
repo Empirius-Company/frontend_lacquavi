@@ -2,6 +2,7 @@ import React, {
   createContext, useContext, useEffect, useReducer, useCallback, ReactNode
 } from 'react'
 import type { CartItem, Product } from '../types'
+import { getProductFinalPrice } from '../utils'
 
 const CART_KEY = 'lacquavi_cart'
 
@@ -132,7 +133,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   )
 
   const totalItems = state.items.reduce((s, i) => s + i.quantity, 0)
-  const subtotal = state.items.reduce((s, i) => s + i.product.price * i.quantity, 0)
+  const subtotal = state.items.reduce((s, i) => s + getProductFinalPrice(i.product) * i.quantity, 0)
 
   return (
     <CartContext.Provider value={{

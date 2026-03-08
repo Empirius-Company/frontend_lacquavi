@@ -56,6 +56,7 @@ type CreateProductInput = {
   name: string
   description?: string
   price: number
+  discount?: number
   stock: number
   categoryId?: string
   subcategoryId?: string

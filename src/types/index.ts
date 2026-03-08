@@ -124,11 +124,23 @@ export interface OrderItem {
   productId: string
   quantity: number
   price: number
+  product?: {
+    id: string
+    name: string
+    slug?: string | null
+    brand?: string | null
+  }
 }
 
 export interface Order {
   id: string
   userId: string
+  user?: {
+    id: string
+    name: string
+    email: string
+    phone?: string | null
+  }
   subtotal: number
   discountTotal: number
   couponCode: string | null
@@ -209,14 +221,39 @@ export interface Shipment {
   orderId: string
   provider: string
   status: ShipmentStatus
+  serviceCode?: string | null
+  serviceName?: string | null
+  priceCents?: number | null
   trackingCode?: string | null
   labelUrl?: string | null
   labelPdfUrl?: string | null
+  packageWeightGrams?: number | null
+  packageLengthCm?: number | null
+  packageWidthCm?: number | null
+  packageHeightCm?: number | null
   lastError?: string | null
   retryCount?: number
   nextRetryAt?: string | null
   dlqAt?: string | null
   events?: ShipmentEvent[]
+}
+
+export interface ShipmentSelection {
+  quoteId?: string | null
+  quoteCreatedAt?: string | null
+  provider?: string | null
+  serviceCode?: string | null
+  serviceName?: string | null
+  shippingAmountCents?: number | null
+  shippingDiscountCents?: number | null
+  destination?: ShippingDestination | null
+}
+
+export interface OrderShipmentResponse {
+  orderId: string
+  shipment: Shipment | null
+  selection?: ShipmentSelection | null
+  destination?: ShippingDestination | null
 }
 
 // ─── Payment ──────────────────────────────────────────────────────────────────
@@ -295,6 +332,7 @@ export interface BannerProduct {
   name: string
   slug?: string | null
   price: number
+  discount?: number
   promotionalPrice?: number | null
   images: ProductImage[]
 }
@@ -312,9 +350,6 @@ export interface Banner {
   startDate: string
   endDate: string
   showTimer: boolean
-  hasDiscount?: boolean
-  discountType?: 'percentage' | 'fixed' | null
-  discountValue?: number | null
   priority?: number
   type: BannerType
   status: BannerStatus

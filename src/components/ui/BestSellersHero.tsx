@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getProductPrimaryImage } from '../../utils/productImages'
+import { getProductFinalPrice } from '../../utils'
 import type { Product, ProductReviewStats } from '../../types'
 
 interface BestSellersHeroProps {
@@ -37,14 +38,15 @@ export function BestSellersHero({ products, reviewStatsByProduct = {} }: BestSel
     }
 
     const activeProduct = products[currentIndex]
+    const activeProductFinalPrice = getProductFinalPrice(activeProduct)
     const activeProductImage = getProductPrimaryImage(activeProduct)
     const hasImage = !!activeProductImage?.url
     const activeReviewStats = reviewStatsByProduct[activeProduct.id]
     const reviewTotal = activeReviewStats?.total ?? 0
     const averageRating = activeReviewStats?.averageRating ?? 0
-    const formattedPrice = activeProduct.price.toFixed(2).replace('.', ',')
+    const formattedPrice = activeProductFinalPrice.toFixed(2).replace('.', ',')
     const [priceInteger, priceDecimal] = formattedPrice.split(',')
-    const installmentValue = (activeProduct.price / 3).toFixed(2).replace('.', ',')
+    const installmentValue = (activeProductFinalPrice / 3).toFixed(2).replace('.', ',')
     const displayedRating = averageRating.toFixed(1).replace('.', ',')
 
     return (
@@ -78,7 +80,7 @@ export function BestSellersHero({ products, reviewStatsByProduct = {} }: BestSel
                             Um toque de luxo que transforma presença em assinatura.
                         </p>
 
-                        {activeProduct.price > 0 && (
+                        {activeProductFinalPrice > 0 && (
                             <>
                                 <div className="mt-5 flex items-end gap-1.5 text-neutral-900">
                                     <span className="pb-1 text-base font-medium md:text-lg">R$</span>

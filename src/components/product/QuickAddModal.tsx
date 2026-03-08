@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { formatCurrency } from '../../utils'
+import { formatCurrency, getProductFinalPrice } from '../../utils'
 import { useCart } from '../../context/CartContext'
 import { getProductPrimaryImage } from '../../utils/productImages'
 import type { Product } from '../../types'
@@ -54,7 +54,7 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                             <p className="text-sm text-gray-600 mb-1">{product.name} {product.volume && `— ${product.volume}`}</p>
 
                             <div className="flex items-center justify-between mt-4">
-                                <span className="text-xl font-black text-black">{formatCurrency(product.price)}</span>
+                                <span className="text-xl font-black text-black">{formatCurrency(getProductFinalPrice(product))}</span>
 
                                 {/* Stepper */}
                                 <div className="flex items-center border border-gray-200 rounded-full h-10">

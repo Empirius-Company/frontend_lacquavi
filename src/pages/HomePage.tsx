@@ -7,6 +7,7 @@ import { Button } from '../components/ui'
 import { BestSellersHero } from '../components/ui/BestSellersHero'
 import { StoreTeaser } from '../components/store/StoreTeaser'
 import { useProductsReviewStats } from '../hooks/useProductsReviewStats'
+import { getProductPriceSummary } from '../utils'
 import { getProductPrimaryImageUrl } from '../utils/productImages'
 import type { Product, Category, Banner } from '../types'
 
@@ -112,10 +113,19 @@ function FlashSaleBanner() {
 
   const pricing = useMemo(() => {
     if (!product) return null
-    const currentPrice = product.promotionalPrice ?? product.price
-    const showOriginal = typeof product.promotionalPrice === 'number' && product.promotionalPrice < product.price
-    return { currentPrice, showOriginal }
+    const summary = getProductPriceSummary(product)
+    return {
+      currentPrice: summary.finalPrice,
+      showOriginal: summary.hasDiscount,
+      originalPrice: summary.basePrice,
+      discountPercent: summary.discountPercent,
+    }
   }, [product])
+
+  const bannerDiscountInfo = useMemo(() => {
+    if (!pricing || !pricing.showOriginal) return null
+    return { discountPercent: Math.max(0, pricing.discountPercent) }
+  }, [pricing])
 
   const remainingTime = useMemo(() => {
     if (!banner?.endDate) return null
@@ -234,9 +244,9 @@ function FlashSaleBanner() {
         </div>
 
         <div className="bg-white rounded-xl shadow-2xl p-4 md:p-6 flex max-w-sm w-full gap-4 items-center relative">
-          {banner.hasDiscount && banner.discountValue ? (
+          {bannerDiscountInfo ? (
             <div className="absolute -top-3 -left-3 bg-[#0B1B3D] text-white font-bold text-xs rounded-full w-12 h-12 flex items-center justify-center border-2 border-white shadow-md">
-              {banner.discountType === 'fixed' ? `${formatPrice(banner.discountValue)}` : `${banner.discountValue}%`}<br /><span className="text-[8px]">OFF</span>
+              {bannerDiscountInfo.discountPercent}%<br /><span className="text-[8px]">OFF</span>
             </div>
           ) : null}
           <div className="w-1/3 bg-gray-100 rounded-lg aspect-square flex items-center justify-center text-gray-300 font-bold text-2xl overflow-hidden">
@@ -248,7 +258,7 @@ function FlashSaleBanner() {
           </div>
           <div className="flex-1 flex flex-col text-[#222]">
             {product?.name && <span className="text-sm font-semibold leading-tight mb-2">{product.name}</span>}
-            {pricing?.showOriginal && <span className="text-xs text-gray-400 line-through">de {formatPrice(product!.price)}</span>}
+            {pricing?.showOriginal && <span className="text-xs text-gray-400 line-through">de {formatPrice(pricing.originalPrice)}</span>}
             {pricing && <span className="text-lg font-black text-[#000000]">{formatPrice(pricing.currentPrice)}</span>}
             <button
               className="bg-[#e6226e] hover:bg-[#cc1d60] transition-colors text-white text-xs font-bold py-2 mt-2 rounded disabled:opacity-50"

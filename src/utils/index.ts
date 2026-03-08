@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import type { Order, Shipment } from '../types'
+import type { Order, Product, Shipment } from '../types'
 
 // ─── UUID ─────────────────────────────────────────────────────────────────────
 export const generateIdempotencyKey = (): string => uuidv4()
@@ -10,6 +10,43 @@ export const formatCurrency = (value: number): string =>
     style: 'currency',
     currency: 'BRL',
   }).format(value)
+
+export const getProductBasePrice = (product: Pick<Product, 'price'>): number => {
+  const basePrice = Number(product.price)
+  if (!Number.isFinite(basePrice) || basePrice <= 0) return 0
+  return basePrice
+}
+
+export const getProductDiscount = (product: Pick<Product, 'discount'>): number => {
+  const discount = Math.max(0, Number(product.discount ?? 0))
+  if (!Number.isFinite(discount) || discount <= 0) return 0
+  return discount
+}
+
+export const getProductFinalPrice = (product: Pick<Product, 'price' | 'discount'>): number => {
+  const basePrice = getProductBasePrice(product)
+  if (basePrice <= 0) return 0
+  const discount = getProductDiscount(product)
+  return Math.max(0, basePrice - discount)
+}
+
+export const getProductPriceSummary = (product: Pick<Product, 'price' | 'discount'>) => {
+  const basePrice = getProductBasePrice(product)
+  const discount = getProductDiscount(product)
+  const finalPrice = getProductFinalPrice(product)
+  const hasDiscount = discount > 0 && finalPrice < basePrice
+  const discountPercent = hasDiscount && basePrice > 0
+    ? Math.round((discount / basePrice) * 100)
+    : 0
+
+  return {
+    basePrice,
+    discount,
+    finalPrice,
+    hasDiscount,
+    discountPercent,
+  }
+}
 
 // ─── Date Formatting ──────────────────────────────────────────────────────────
 export const formatDate = (dateStr: string): string =>

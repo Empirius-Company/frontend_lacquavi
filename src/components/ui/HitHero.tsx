@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getProductPrimaryImage } from '../../utils/productImages'
+import { getProductFinalPrice } from '../../utils'
 import type { Product } from '../../types'
 
 interface HitHeroProps {
@@ -12,6 +13,7 @@ export function HitHero({ hitProduct }: HitHeroProps) {
   useEffect(() => { const t = setTimeout(() => setMounted(true), 100); return () => clearTimeout(t) }, [])
 
   const hitProductImage = getProductPrimaryImage(hitProduct)
+  const hitProductFinalPrice = hitProduct ? getProductFinalPrice(hitProduct) : 0
   const hasImage = !!hitProductImage?.url
 
   return (
@@ -46,9 +48,9 @@ export function HitHero({ hitProduct }: HitHeroProps) {
                 </Link>
               </div>
 
-              {hitProduct && hitProduct.price > 0 && (
+              {hitProduct && hitProductFinalPrice > 0 && (
                 <div className="mt-8 flex items-center gap-4 text-sm font-bold text-gray-400">
-                  <span className="text-[#333] text-xl">R$ {hitProduct.price.toFixed(2).replace('.', ',')}</span>
+                  <span className="text-[#333] text-xl">R$ {hitProductFinalPrice.toFixed(2).replace('.', ',')}</span>
                   {hitProduct.volume && <span>| {hitProduct.volume}</span>}
                 </div>
               )}

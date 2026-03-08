@@ -11,6 +11,7 @@ import type {
   ShippingQuoteListResponse,
   ShippingSelectionResponse,
   Shipment,
+  OrderShipmentResponse,
 } from '../types'
 export { bannersApi } from './bannerApi'
 export { boxTypesApi, boxRulesApi } from './boxConfigApi'
@@ -44,8 +45,8 @@ export const ordersApi = {
   cancel: (id: string): Promise<OrderResponse> =>
     httpClient.delete<OrderResponse>(`/orders/${id}`),
 
-  getShipment: (id: string): Promise<{ shipment: Shipment | null }> =>
-    httpClient.get<{ shipment: Shipment | null }>(`/orders/${id}/shipment`),
+  getShipment: (id: string): Promise<OrderShipmentResponse> =>
+    httpClient.get<OrderShipmentResponse>(`/orders/${id}/shipment`),
 }
 
 // ─── Payments API ─────────────────────────────────────────────────────────────
@@ -151,6 +152,6 @@ export const shippingApi = {
   createLabel: (orderId: string): Promise<{ message?: string; shipment?: Shipment }> =>
     httpClient.post<{ message?: string; shipment?: Shipment }>(`/shipping/orders/${orderId}/label`),
 
-  getOrderShipment: (orderId: string): Promise<{ shipment: Shipment | null }> =>
-    httpClient.get<{ shipment: Shipment | null }>(`/shipping/orders/${orderId}/shipment`),
+  getOrderShipment: (orderId: string): Promise<OrderShipmentResponse> =>
+    httpClient.get<OrderShipmentResponse>(`/shipping/orders/${orderId}/shipment`),
 }

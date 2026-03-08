@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
-import { formatCurrency } from '../../utils'
+import { formatCurrency, getProductFinalPrice } from '../../utils'
 import { getProductPrimaryImage } from '../../utils/productImages'
 import { Button } from '../ui'
 
@@ -96,7 +96,7 @@ export function MiniCart() {
                                                 >+</button>
                                             </div>
                                             <p className="text-sm font-medium text-noir-950">
-                                                {formatCurrency((item.product?.price ?? 0) * item.quantity)}
+                                                {formatCurrency(getProductFinalPrice(item.product) * item.quantity)}
                                             </p>
                                         </div>
                                     </div>

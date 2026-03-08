@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { formatCurrency } from '../../utils'
+import { formatCurrency, getProductPriceSummary } from '../../utils'
 import { getProductPrimaryImage } from '../../utils/productImages'
 import { QuickAddModal } from './QuickAddModal'
 import type { Product, ProductReviewStats } from '../../types'
@@ -55,10 +55,7 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
   const reviewsTotal = reviewStats?.total ?? 0
   const averageRating = reviewStats?.averageRating ?? 0
 
-  const discountValue = Math.max(0, Number(product.discount ?? 0))
-  const hasDiscount = product.price > 0 && discountValue > 0
-  const oldPrice = hasDiscount ? product.price + discountValue : 0
-  const discountPercent = hasDiscount ? Math.round((discountValue / oldPrice) * 100) : 0
+  const pricing = getProductPriceSummary(product)
 
   const [showModal, setShowModal] = useState(false)
 
@@ -79,9 +76,9 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
         {/* Usando proporção aspect-square. Essa proporção mantém o cartão mais baixo, mas a imagem ocupa 100% da área sem excesso de espaços em branco (object-contain). */}
         <div className="relative aspect-square w-full bg-white flex items-center justify-center p-0">
           {/* Discount Badge */}
-          {hasDiscount && (
+          {pricing.hasDiscount && (
             <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-[#0B1B3D] text-white z-10 font-bold text-[9px] uppercase tracking-wider rounded-sm shadow-sm">
-              {discountPercent}% OFF
+              {pricing.discountPercent}% OFF
             </div>
           )}
 
@@ -115,15 +112,15 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
           {/* Bottom Action Area (Price + Button inline) */}
           <div className="mt-auto pt-2 grid grid-cols-[1fr_auto] items-end gap-2">
             <div className="flex flex-col">
-              {product.price > 0 ? (
+              {pricing.finalPrice > 0 ? (
                 <>
-                  {hasDiscount && (
+                  {pricing.hasDiscount && (
                     <span className="text-[10px] text-gray-400 line-through leading-none mb-0.5">
-                      {formatCurrency(oldPrice)}
+                      {formatCurrency(pricing.basePrice)}
                     </span>
                   )}
                   <span className="text-[15px] font-black text-black leading-none">
-                    {formatCurrency(product.price)}
+                    {formatCurrency(pricing.finalPrice)}
                   </span>
                 </>
               ) : (

@@ -21,9 +21,6 @@ export interface BannerAdminPayload {
   productId: string
   endDate: string
   startDate?: string
-  hasDiscount?: boolean
-  discountType?: 'percentage' | 'fixed'
-  discountValue?: number
   showTimer?: boolean
   priority?: number
   type?: BannerType

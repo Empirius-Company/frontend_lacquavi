@@ -4,7 +4,7 @@ import { ordersApi, couponsApi, shippingApi } from '../api/index'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
 import { Button, ErrorMessage } from '../components/ui'
-import { formatCurrency, generateIdempotencyKey } from '../utils'
+import { formatCurrency, generateIdempotencyKey, getProductFinalPrice } from '../utils'
 import { getProductPrimaryImage } from '../utils/productImages'
 import type { CouponValidation, ApiError, Order, ShippingDestination, ShippingQuote } from '../types'
 
@@ -496,7 +496,7 @@ export function CheckoutPage() {
                       <p className="text-xs text-nude-500 mt-0.5">Qtd: {item.quantity}</p>
                     </div>
                     <p className="text-sm font-medium text-noir-950 flex-shrink-0">
-                      {formatCurrency((item.product?.price ?? 0) * item.quantity)}
+                      {formatCurrency(getProductFinalPrice(item.product) * item.quantity)}
                     </p>
                   </div>
                   )
