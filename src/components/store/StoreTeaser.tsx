@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { STORES } from '../../config/store'
 
 /* ── Ícones SVG ───────────────── */
 function IconMapPin() {
@@ -24,45 +25,8 @@ function IconArrow() {
   )
 }
 
-const STORES = [
-  {
-    id: 'lagoa-santa',
-    name: 'Lacquavi Lagoa Santa',
-    locationName: 'Lagoa Santa',
-    street: 'Open Mall',
-    complement: 'Loja 05 — Centro',
-    city: 'Lagoa Santa',
-    state: 'MG',
-    zip: '33400-000',
-    hours: [
-      { days: 'Segunda a Sábado', time: '09h às 21h' },
-      { days: 'Domingos e Feriados', time: '10h às 16h' },
-    ],
-    whatsapp: '5531999990000',
-    mapsUrl: 'https://www.google.com/maps/dir/?api=1&destination=Open+Mall+Lagoa+Santa',
-    mapEmbedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3756.8837265561085!2d-43.90177722409549!3d-19.63102418169002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xa67dd88421869f%3A0x6a2ec68bd5f874bc!2sOpen%20Mall%20Lagoa%20Santa!5e0!3m2!1spt-BR!2sbr!4v1710900000000'
-  },
-  {
-    id: 'bh',
-    name: "L'acqua di Fiori",
-    locationName: 'Belo Horizonte',
-    street: 'Minas Shopping',
-    complement: 'Piso 2, Loja 110 — São Paulo',
-    city: 'Belo Horizonte',
-    state: 'MG',
-    zip: '31160-551',
-    hours: [
-      { days: 'Segunda a Sábado', time: '10h às 22h' },
-      { days: 'Domingos e Feriados', time: '14h às 20h' },
-    ],
-    whatsapp: '5531999990000',
-    mapsUrl: 'https://www.google.com/maps/dir/?api=1&destination=Minas+Shopping+Belo+Horizonte',
-    mapEmbedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3751.487053073747!2d-43.93121512409025!3d-19.882677181512876!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xa6903f7a6f3b7d%3A0xdfeb9cc7bf7dfb9c!2sMinas%20Shopping!5e0!3m2!1spt-BR!2sbr!4v1710900000000'
-  }
-];
-
 export function StoreTeaser() {
-  const [activeStoreId, setActiveStoreId] = useState<'lagoa-santa' | 'bh'>('lagoa-santa');
+  const [activeStoreId, setActiveStoreId] = useState(STORES[0].id);
   const s = STORES.find(store => store.id === activeStoreId)!;
 
   const todayIsOpen = new Date().getDay() >= 1 && new Date().getDay() <= 5;
@@ -84,7 +48,7 @@ export function StoreTeaser() {
             {STORES.map((store) => (
               <button
                 key={store.id}
-                onClick={() => setActiveStoreId(store.id as any)}
+                onClick={() => setActiveStoreId(store.id)}
                 className={`flex-1 min-w-[160px] whitespace-nowrap px-6 py-3 rounded-lg font-bold text-sm transition-all focus:outline-none ${activeStoreId === store.id
                   ? 'bg-[#e6226e] text-white shadow-md'
                   : 'text-gray-500 hover:text-[#000000] hover:bg-gray-50'

@@ -1,19 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { STORE_CONFIG } from '../config/store'
+import { STORES } from '../config/store'
 
 /* ══════════════════════════════════════════════════════════════════
-   NOSSA LOJA — Página Dedicada /nossa-loja
-   ──────────────────────────────────────────────────────────────────
-   Estrutura em funil de confiança:
-   1. Hero editorial da loja
-   2. Três pilares da experiência presencial
-   3. Endereço + mapa + horários (SEO local)
-   4. Experiências exclusivas
-   5. Benefício de visita + CTA final
+  NOSSA LOJA — /nossa-loja
    ══════════════════════════════════════════════════════════════════ */
-
-/* ── Micro scroll-reveal hook ──────────────────────────────────── */
 function useReveal() {
   useEffect(() => {
     const obs = new IntersectionObserver(
@@ -115,98 +106,40 @@ const EXPERIENCES_FULL = [
    ══════════════════════════════════════════════════════════════════ */
 export function StorePage() {
   useReveal()
-  const s = STORE_CONFIG
-  const [mapLoaded, setMapLoaded] = useState(false)
-  const todayIsOpen = new Date().getDay() >= 1 && new Date().getDay() <= 5
+  const [activeId, setActiveId] = useState(STORES[0].id)
+  const s = STORES.find(store => store.id === activeId)!
+  const day = new Date().getDay()
+  // Mon–Sat (1–6)
+  const todayIsOpen = day >= 1 && day <= 6
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2]">
+    <div className="min-h-screen bg-[#F5F5F5]">
 
-      {/* ══ 1. HERO ════════════════════════════════════════════════ */}
-      <section
-        className="relative overflow-hidden bg-black"
-        style={{
-          minHeight: 'clamp(420px, 50vw, 580px)',
-        }}
-      >
-        {/* Subtle concentric circles glow */}
-        <div aria-hidden className="absolute inset-0 pointer-events-none">
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 'min(900px, 100vw)', height: 'min(500px, 80vh)',
-            borderRadius: '50%',
-            background: 'radial-gradient(ellipse, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 40%, transparent 70%)',
-          }} />
-        </div>
-
-        {/* Content */}
-        <div className="container-page relative z-10 flex flex-col justify-center"
-          style={{ minHeight: 'clamp(420px, 50vw, 580px)', paddingTop: '5rem', paddingBottom: '5rem' }}>
-
-          <div className="max-w-2xl">
-            {/* Breadcrumb / eyebrow */}
-            <div className="flex items-center gap-3 mb-6">
-              <Link to="/" className="text-[0.6rem] text-gray-400 uppercase tracking-widest hover:text-white transition-colors">
-                Início
-              </Link>
-              <span className="text-gray-600 text-xs">›</span>
-              <span className="text-[0.6rem] text-gray-400 uppercase tracking-widest">Nossa Loja</span>
+      {/* ══ 1. CABEÇALHO DA PÁGINA ═════════════════════════════════ */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="container-page py-10">
+          <nav className="flex items-center gap-2 text-xs text-gray-400 mb-5">
+            <Link to="/" className="hover:text-[#000000] transition-colors">Início</Link>
+            <span>›</span>
+            <span className="text-[#000000] font-medium">Nossa Loja</span>
+          </nav>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mb-2">Experiência Presencial</p>
+              <h1 className="text-4xl md:text-5xl font-black text-[#000000] font-display leading-tight">
+                Nossas Lojas
+              </h1>
+              <p className="mt-3 text-gray-500 max-w-lg leading-relaxed text-sm sm:text-base">
+                Visite-nos, teste fragrâncias na pele e receba consultoria olfativa gratuita com nossas especialistas.
+              </p>
             </div>
-
-            {/* Open indicator */}
-            <div className="flex items-center gap-2.5 mb-7">
-              <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{
-                  background: todayIsOpen ? '#5CBB7D' : '#666666',
-                  boxShadow: todayIsOpen ? '0 0 0 3px rgba(92,187,125,0.2)' : 'none',
-                  animation: todayIsOpen ? 'pulseDot 2s ease-in-out infinite' : 'none',
-                }}
-              />
-              <span className="text-[0.65rem] font-medium uppercase tracking-[0.2em] text-gray-400">
-                {todayIsOpen ? 'Aberto agora — Segunda a Sexta, 10h às 20h' : 'Fechado hoje — Retornamos segunda-feira'}
-              </span>
-            </div>
-
-            <h1
-              className="font-display font-light text-white leading-none mb-5"
-              style={{ fontSize: 'clamp(2.4rem, 6vw, 5rem)', letterSpacing: '-0.03em' }}
-            >
-              Um espaço<br />
-              <span className="italic text-white font-bold">
-                criado para você.
-              </span>
-            </h1>
-
-            <p className="text-gray-300 leading-relaxed max-w-lg mb-8 font-medium"
-              style={{ fontSize: 'clamp(0.95rem, 1.5vw, 1.1rem)' }}>
-              Na Lacquavi, cada visita é uma jornada sensorial. Teste fragrâncias, receba consultoria especializada e descubra o perfume que conta a sua história — antes de comprar.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              <a
-                href={s.mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-[#e6226e] text-white hover:bg-[#cc1d60] px-6 py-3 rounded-lg font-bold transition-colors inline-flex items-center justify-center gap-2 shadow-xl hover:shadow-[0_4px_16px_rgba(230,34,110,0.4)]"
-              >
-                <Icon.MapPin />
-                Como Chegar
-              </a>
-              <a
-                href={`https://wa.me/${s.contact.whatsapp}?text=Olá!%20Gostaria%20de%20visitar%20a%20loja%20Lacquavi.`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-white inline-flex items-center justify-center gap-2 text-sm font-medium transition-colors"
-              >
-                <Icon.WhatsApp />
-                Falar pelo WhatsApp
-              </a>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${todayIsOpen ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+              <span className="text-xs text-gray-500 font-medium">{todayIsOpen ? 'Aberto hoje' : 'Fechado hoje'}</span>
             </div>
           </div>
         </div>
-      </section >
+      </div>
 
       {/* ══ 2. TRUST BAR ══════════════════════════════════════════ */}
       <div className="bg-white border-b border-gray-100">
@@ -219,9 +152,7 @@ export function StorePage() {
               { icon: '✦', text: '100% originais, NF-e em toda compra' },
             ].map((t, i) => (
               <div key={i} className="flex items-center gap-2 text-gray-500">
-                <span className="text-[#000000] text-sm flex-shrink-0">
-                  {typeof t.icon === 'string' ? t.icon : t.icon}
-                </span>
+                <span className="text-[#000000] text-sm flex-shrink-0">{typeof t.icon === 'string' ? t.icon : t.icon}</span>
                 <span className="text-[0.72rem] font-medium">{t.text}</span>
               </div>
             ))}
@@ -229,160 +160,169 @@ export function StorePage() {
         </div>
       </div>
 
-      {/* ══ 3. MAP + CONTACT ══════════════════════════════════════ */}
-      <section className="py-16 sm:py-24 bg-white">
+      {/* ══ 3. SELETOR DE LOJA + MAPA + CONTATO ══════════════════ */}
+      <section className="py-12 sm:py-16 bg-white">
         <div className="container-page">
 
-          <div className="sp-reveal text-center mb-12">
-            <p className="font-bold text-gray-500 text-sm uppercase tracking-widest mb-3">Localização</p>
+          <div className="sp-reveal text-center mb-8">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Localização</p>
             <h2 className="font-display font-black text-[#000000] leading-tight"
-              style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)' }}>
-              Encontre a gente
+              style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)' }}>
+              Encontre nossa loja
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8 items-stretch">
+          {/* Store selector tabs */}
+          <div className="flex justify-center mb-8">
+            <div className="inline-flex bg-gray-100 border border-gray-200 p-1 rounded-xl gap-1">
+              {STORES.map(store => (
+                <button
+                  key={store.id}
+                  onClick={() => setActiveId(store.id)}
+                  className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all focus:outline-none ${
+                    activeId === store.id
+                      ? 'bg-[#e6226e] text-white shadow-md'
+                      : 'text-gray-500 hover:text-[#000000] hover:bg-white'
+                  }`}
+                >
+                  {store.locationName}
+                </button>
+              ))}
+            </div>
+          </div>
 
-            {/* Map */}
-            <div
-              className="sp-reveal lg:col-span-3 rounded-2xl overflow-hidden relative bg-gray-100"
-              style={{ minHeight: 420 }}
-            >
-              {!mapLoaded && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gray-50">
-                  <div className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center text-[#000000]">
-                    <Icon.MapPin />
-                  </div>
-                  <p className="text-sm text-gray-400">Carregando mapa…</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto items-stretch">
+
+            {/* Info column */}
+            <div className="flex flex-col gap-4">
+
+              {/* Status + nome */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-[#e6226e]" />
+                <div className="flex items-center gap-2.5 mt-2 mb-3">
+                  <span className={`px-2.5 py-1 rounded-md text-[10px] uppercase tracking-widest font-black flex items-center gap-1.5 ${todayIsOpen ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`w-2 h-2 rounded-full ${todayIsOpen ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                    {todayIsOpen ? 'Aberto Hoje' : 'Fechado Hoje'}
+                  </span>
+                  <span className="bg-[#e6226e]/10 text-[#e6226e] px-2.5 py-1 rounded-md text-[10px] uppercase font-black tracking-widest">
+                    ★ Retire Aqui em 1h
+                  </span>
                 </div>
-              )}
+                <h3 className="text-2xl font-black font-display text-[#000000]">{s.name}</h3>
+                <p className="text-sm text-gray-500 mt-1">{s.city}, {s.state}</p>
+              </div>
+
+              {/* Endereço */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex gap-4">
+                <span className="text-[#000000] pt-0.5 flex-shrink-0"><Icon.MapPin /></span>
+                <div>
+                  <p className="text-[0.65rem] text-gray-500 uppercase tracking-wider mb-1 font-bold">Endereço</p>
+                  <p className="font-bold text-[#000000] leading-tight">{s.street}</p>
+                  <p className="text-sm text-gray-700">{s.complement}</p>
+                  <p className="text-sm text-gray-500">{s.city}, {s.state} — CEP {s.zip}</p>
+                </div>
+              </div>
+
+              {/* Horários */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex gap-4">
+                <span className="text-[#000000] pt-0.5 flex-shrink-0"><Icon.Clock /></span>
+                <div className="flex-1">
+                  <p className="text-[0.65rem] text-gray-500 uppercase tracking-wider mb-2 font-bold">Horário de Funcionamento</p>
+                  {s.hours.map(h => (
+                    <div key={h.days} className="flex justify-between gap-4 text-sm border-b border-gray-50 pb-1.5 last:border-0 last:pb-0 mb-1.5">
+                      <span className="text-gray-500">{h.days}</span>
+                      <span className={`font-bold ${h.time === 'Fechado' ? 'text-gray-400' : 'text-[#000000]'}`}>{h.time}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Contato */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                <p className="text-[0.65rem] text-gray-500 uppercase tracking-wider mb-3 font-bold">Contato</p>
+                <div className="space-y-2">
+                  <a href={`https://wa.me/${s.whatsapp}`} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-all group">
+                    <span className="text-[#000000] w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"><Icon.WhatsApp /></span>
+                    <div>
+                      <p className="text-[0.6rem] text-gray-400 uppercase tracking-wider">WhatsApp</p>
+                      <p className="text-sm font-medium text-[#000000]">{s.phone}</p>
+                    </div>
+                    <span className="ml-auto text-gray-400 group-hover:text-[#000000] group-hover:translate-x-0.5 transition-all"><Icon.Arrow /></span>
+                  </a>
+                  <a href={`mailto:${s.email}`}
+                    className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-all group">
+                    <span className="text-[#000000] w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"><Icon.Mail /></span>
+                    <div>
+                      <p className="text-[0.6rem] text-gray-400 uppercase tracking-wider">E-mail</p>
+                      <p className="text-sm font-medium text-[#000000]">{s.email}</p>
+                    </div>
+                    <span className="ml-auto text-gray-400 group-hover:text-[#000000] group-hover:translate-x-0.5 transition-all"><Icon.Arrow /></span>
+                  </a>
+                  <a href={s.instagram} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-all group">
+                    <span className="text-[#000000] w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0"><Icon.Instagram /></span>
+                    <div>
+                      <p className="text-[0.6rem] text-gray-400 uppercase tracking-wider">Instagram</p>
+                      <p className="text-sm font-medium text-[#000000]">@lacquavi</p>
+                    </div>
+                    <span className="ml-auto text-gray-400 group-hover:text-[#000000] group-hover:translate-x-0.5 transition-all"><Icon.Arrow /></span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Botões de ação */}
+              <div className="flex gap-3">
+                <a href={s.mapsUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex-1 bg-[#e6226e] text-white py-4 rounded-xl font-bold text-sm text-center hover:bg-[#cc1d60] transition-colors shadow-lg shadow-[#e6226e]/20 flex items-center justify-center gap-2">
+                  <Icon.MapPin /> Como Chegar
+                </a>
+                <a href={`https://wa.me/${s.whatsapp}?text=Olá!%20Gostaria%20de%20visitar%20a%20${encodeURIComponent(s.name)}.`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex-1 border border-gray-200 bg-white text-[#000000] py-4 rounded-xl font-bold text-sm text-center hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center justify-center gap-2">
+                  <Icon.WhatsApp /> WhatsApp
+                </a>
+              </div>
+            </div>
+
+            {/* Mapa */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden relative group"
+              style={{ minHeight: 480 }}>
+              {/* Click para abrir no Google Maps */}
+              <a href={s.mapsUrl} target="_blank" rel="noopener noreferrer"
+                className="absolute inset-0 z-20" aria-label="Abrir no Google Maps" />
+
               <iframe
+                key={s.id}
                 title={`Mapa — ${s.name}`}
                 src={s.mapEmbedUrl}
                 width="100%"
                 height="100%"
-                style={{ border: 0, minHeight: 420, display: mapLoaded ? 'block' : 'none', filter: 'grayscale(1)' }}
+                style={{ border: 0, position: 'absolute', inset: 0, filter: 'grayscale(0.6) contrast(1.05)', pointerEvents: 'none' }}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                onLoad={() => setMapLoaded(true)}
               />
-            </div>
 
-            {/* Contact info card */}
-            <div
-              className="sp-reveal lg:col-span-2 flex flex-col gap-4"
-              style={{ transitionDelay: '120ms' }}
-            >
-
-              {/* Address block */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-sm">
-                <h3 className="font-display font-bold text-lg text-[#000000] mb-5">Informações da Loja</h3>
-
-                <address className="not-italic space-y-5">
-                  {/* Address */}
-                  <div className="flex gap-3.5">
-                    <span className="text-[#000000] mt-0.5 flex-shrink-0"><Icon.MapPin /></span>
-                    <div>
-                      <p className="text-[0.65rem] text-gray-500 uppercase tracking-wider mb-1">Endereço</p>
-                      <p className="text-sm text-[#000000] font-medium leading-relaxed">{s.address.street}</p>
-                      <p className="text-sm text-[#000000]">{s.address.complement}</p>
-                      <p className="text-sm text-gray-600">{s.address.neighborhood} — {s.address.city}, {s.address.state}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">CEP {s.address.zip}</p>
-                    </div>
-                  </div>
-
-                  {/* Hours */}
-                  <div className="flex gap-3.5">
-                    <span className="text-[#000000] mt-0.5 flex-shrink-0"><Icon.Clock /></span>
-                    <div>
-                      <p className="text-[0.65rem] text-gray-500 uppercase tracking-wider mb-2">Horário de Funcionamento</p>
-                      {s.hours.map(h => (
-                        <div key={h.days} className="flex justify-between gap-6 mb-1">
-                          <span className="text-xs text-gray-600">{h.days}</span>
-                          <span className={`text-xs font-medium ${h.time === 'Fechado' ? 'text-gray-400' : 'text-[#000000]'}`}>
-                            {h.time}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </address>
+              {/* Pin rosa */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-10 pointer-events-none drop-shadow-xl mt-[-15px]">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="#e6226e" stroke="white" strokeWidth="1">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                </svg>
               </div>
 
-              {/* Contact links */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-7 shadow-sm">
-                <h3 className="font-display font-bold text-lg text-[#000000] mb-5">Contato</h3>
-                <div className="space-y-3">
-                  <a
-                    href={`https://wa.me/${s.contact.whatsapp}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-all group"
-                  >
-                    <span className="text-[#000000] w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                      <Icon.WhatsApp />
-                    </span>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wider">WhatsApp</p>
-                      <p className="text-sm font-medium text-[#000000]">{s.contact.phone}</p>
-                    </div>
-                    <span className="ml-auto text-gray-400 group-hover:text-[#000000] group-hover:translate-x-0.5 transition-all">
-                      <Icon.Arrow />
-                    </span>
-                  </a>
-
-                  <a
-                    href={`mailto:${s.contact.email}`}
-                    className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-all group"
-                  >
-                    <span className="text-[#000000] w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                      <Icon.Mail />
-                    </span>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wider">E-mail</p>
-                      <p className="text-sm font-medium text-[#000000]">{s.contact.email}</p>
-                    </div>
-                    <span className="ml-auto text-gray-400 group-hover:text-[#000000] group-hover:translate-x-0.5 transition-all">
-                      <Icon.Arrow />
-                    </span>
-                  </a>
-
-                  <a
-                    href={s.contact.instagram}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-all group"
-                  >
-                    <span className="text-[#000000] w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                      <Icon.Instagram />
-                    </span>
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase tracking-wider">Instagram</p>
-                      <p className="text-sm font-medium text-[#000000]">@lacquavi</p>
-                    </div>
-                    <span className="ml-auto text-gray-400 group-hover:text-[#000000] group-hover:translate-x-0.5 transition-all">
-                      <Icon.Arrow />
-                    </span>
-                  </a>
-                </div>
-
-                <a
-                  href={s.mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="border-2 border-[#0A0806] text-[#0A0806] hover:bg-[#0A0806] hover:text-white justify-center w-full px-6 py-3 rounded-lg font-bold transition-all inline-flex items-center gap-2 mt-5"
-                >
-                  <Icon.MapPin />
-                  Como Chegar em Lagoa Santa
-                </a>
+              {/* Hover CTA */}
+              <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none bg-gradient-to-t from-black/40 to-transparent flex items-end justify-center pb-8 pt-12 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span className="bg-[#e6226e] text-white px-6 py-3 rounded-full font-bold shadow-2xl flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                  <Icon.MapPin /> Abrir no Google Maps
+                </span>
               </div>
             </div>
           </div>
         </div>
-      </section >
+      </section>
 
       {/* ══ 4. EXPERIÊNCIAS ════════════════════════════════════════ */}
-      <section className="py-16 sm:py-24 bg-white">
+      <section className="py-12 sm:py-16 bg-[#F5F5F5]">
         <div className="container-page">
 
           <div className="sp-reveal text-center mb-12 sm:mb-16">
@@ -440,74 +380,31 @@ export function StorePage() {
       </section>
 
       {/* ══ 5. BENEFÍCIO DE VISITA — CTA FINAL ════════════════════ */}
-      < section className="bg-[#FAF7F2] py-16 sm:py-24" >
+      <section className="bg-white py-12 sm:py-16">
         <div className="container-page">
-          <div
-            className="sp-reveal relative overflow-hidden rounded-3xl px-6 sm:px-14 py-12 sm:py-16"
-            style={{ background: 'linear-gradient(145deg, #0D0B09 0%, #1A1510 50%, #0A0806 100%)' }}
-          >
-            {/* Glow */}
-            <div aria-hidden className="absolute inset-0 pointer-events-none"
-              style={{ background: 'radial-gradient(ellipse 60% 80% at 90% 50%, rgba(212,175,122,0.08) 0%, rgba(139,31,66,0.06) 40%, transparent 70%)' }}
-            />
-            {/* Gold top line */}
-            <div aria-hidden className="absolute top-0 inset-x-0 h-px"
-              style={{ background: 'linear-gradient(to right, transparent, rgba(212,175,122,0.45) 30%, rgba(212,175,122,0.7) 50%, rgba(212,175,122,0.45) 70%, transparent)' }}
-            />
-            {/* Decorative rings */}
-            <div aria-hidden className="hidden sm:block absolute right-[-5%] top-1/2 -translate-y-1/2 w-80 h-80 rounded-full border border-white/[0.04]" />
-            <div aria-hidden className="hidden sm:block absolute right-[12%] top-1/2 -translate-y-1/2 w-52 h-52 rounded-full border border-[rgba(212,175,122,0.07)]" />
-
-            <div className="relative max-w-xl">
-              <span
-                className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full mb-5 text-[0.65rem] font-medium uppercase tracking-[0.18em] border"
-                style={{
-                  color: '#D4AF37',
-                  background: 'rgba(212,175,122,0.1)',
-                  borderColor: 'rgba(212,175,122,0.25)',
-                }}
-              >
-                <Icon.Gift />
-                {s.visitPerk.badge}
-              </span>
-
-              <h2
-                className="font-display font-light text-white leading-tight mb-4"
-                style={{ fontSize: 'clamp(1.8rem, 4vw, 3rem)' }}
-              >
-                {s.visitPerk.headline}
-              </h2>
-              <p className="text-[#A89688] text-sm leading-relaxed mb-3 max-w-sm">
-                {s.visitPerk.sub}
-              </p>
-              <p className="text-xs text-[rgba(168,150,136,0.45)] mb-8">
-                Agendamentos sujeitos a disponibilidade. Válido apenas na loja modelo.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-3">
-                <a
-                  href={s.mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-[#e6226e] text-white hover:bg-[#cc1d60] px-6 py-3 rounded-lg font-bold transition-colors inline-flex items-center justify-center gap-2 shadow-xl hover:shadow-[0_4px_16px_rgba(230,34,110,0.4)]"
-                >
-                  <Icon.MapPin />
-                  Visitar a Loja Agora
-                </a>
-                <a
-                  href={`https://wa.me/${s.contact.whatsapp}?text=Olá!%20Vi%20o%20benefício%20de%20visita%20no%20site%20e%20gostaria%20de%20saber%20mais.`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white inline-flex items-center justify-center gap-2 text-sm font-medium transition-colors"
-                >
-                  <Icon.WhatsApp />
-                  Tirar Dúvidas
-                </a>
-              </div>
+          <div className="sp-reveal text-center max-w-xl mx-auto">
+            <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mb-3">Visite-nos</p>
+            <h2 className="font-display font-black text-[#000000] leading-tight mb-4"
+              style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)' }}>
+              Sua assinatura olfativa te espera
+            </h2>
+            <p className="text-gray-500 text-sm leading-relaxed mb-8 max-w-sm mx-auto">
+              Venha descobrir fragrâncias com a orientação das nossas especialistas. Experiência gratuita, sem compromisso.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <a href={s.mapsUrl} target="_blank" rel="noopener noreferrer"
+                className="bg-[#e6226e] text-white px-8 py-3.5 rounded-lg font-bold hover:bg-[#cc1d60] transition-colors inline-flex items-center justify-center gap-2 shadow-lg shadow-[#e6226e]/20">
+                <Icon.MapPin /> Visitar a Loja
+              </a>
+              <a href={`https://wa.me/${s.whatsapp}?text=Olá!%20Vi%20o%20benefício%20de%20visita%20no%20site%20e%20gostaria%20de%20saber%20mais.`}
+                target="_blank" rel="noopener noreferrer"
+                className="border border-gray-200 bg-white text-[#000000] px-8 py-3.5 rounded-lg font-bold hover:bg-gray-50 hover:border-gray-300 transition-colors inline-flex items-center justify-center gap-2">
+                <Icon.WhatsApp /> Falar pelo WhatsApp
+              </a>
             </div>
           </div>
-        </div >
-      </section >
+        </div>
+      </section>
 
       {/* ══ SEO LOCAL — structured data ═══════════════════════════ */}
       {/* JSON-LD injetado no head via script tag — LocalBusiness Schema */}
@@ -520,14 +417,14 @@ export function StorePage() {
             name: s.name,
             image: 'https://lacquavi.com.br/og-store.jpg',
             url: 'https://lacquavi.com.br/nossa-loja',
-            telephone: s.contact.phone,
-            email: s.contact.email,
+            telephone: s.phone,
+            email: s.email,
             address: {
               '@type': 'PostalAddress',
-              streetAddress: `${s.address.street}, ${s.address.complement}`,
-              addressLocality: s.address.city,
-              addressRegion: s.address.state,
-              postalCode: s.address.zip,
+              streetAddress: `${s.street}, ${s.complement}`,
+              addressLocality: s.city,
+              addressRegion: s.state,
+              postalCode: s.zip,
               addressCountry: 'BR',
             },
             openingHoursSpecification: [
@@ -535,7 +432,7 @@ export function StorePage() {
               { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Saturday'], opens: '10:00', closes: '18:00' },
             ],
             priceRange: '$$',
-            description: 'Parfumerie premium em Belo Horizonte. Fragrâncias 100% originais, consultoria olfativa gratuita e embalagem para presente.',
+            description: `Loja física ${s.name} em ${s.city}. Fragrâncias 100% originais, consultoria olfativa gratuita e embalagem para presente.`,
           }),
         }}
       />

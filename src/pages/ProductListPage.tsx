@@ -5,6 +5,7 @@ import { ProductCard } from '../components/product/ProductCard'
 import { ProductCardSkeleton, Button } from '../components/ui'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
 import { useProductsReviewStats } from '../hooks/useProductsReviewStats'
+import { getProductPriceSummary } from '../utils'
 import type { Product, Category, Subcategory } from '../types'
 
 const GENDER_OPTIONS = [
@@ -27,8 +28,8 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
       className={`
         px-4 py-2 rounded-full text-xs font-medium tracking-wide transition-all duration-200
         ${active
-          ? 'bg-noir-950 text-pearl border border-noir-950 shadow-sm'
-          : 'bg-pearl text-nude-600 border border-nude-200 hover:border-nude-400'
+          ? 'bg-[#e6226e] text-white border border-[#e6226e] shadow-sm'
+          : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
         }
       `}
     >
@@ -93,9 +94,12 @@ export function ProductListPage() {
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.brand?.toLowerCase().includes(searchQuery.toLowerCase())
     )
+
+    const getSortablePrice = (product: Product) => getProductPriceSummary(product).finalPrice
+
     switch (sort) {
-      case 'price-asc':  list.sort((a, b) => a.price - b.price);             break
-      case 'price-desc': list.sort((a, b) => b.price - a.price);             break
+      case 'price-asc':  list.sort((a, b) => getSortablePrice(a) - getSortablePrice(b)); break
+      case 'price-desc': list.sort((a, b) => getSortablePrice(b) - getSortablePrice(a)); break
       case 'name-asc':   list.sort((a, b) => a.name.localeCompare(b.name));  break
     }
     return list
@@ -105,18 +109,16 @@ export function ProductListPage() {
   const { statsByProduct } = useProductsReviewStats(visible.map((product) => product.id))
 
   return (
-    <div className="min-h-screen bg-parchment pt-20">
+    <div className="min-h-screen bg-[#F5F5F5]">
 
       {/* ── Page header ─────────────────────────────── */}
-      <div className="bg-noir-950 pt-16 pb-12 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 50% 70% at 50% 120%, rgba(212,175,122,0.07) 0%, transparent 70%)' }} />
-        <div className="container-page relative">
+      <div className="bg-white border-b border-gray-100">
+        <div className="container-page py-8 md:py-10">
           {/* Breadcrumb */}
-          <p className="text-2xs text-nude-600 mb-4 uppercase tracking-ultra">
-            Início / <span className="text-nude-400">Coleção</span>
+          <p className="text-[11px] text-gray-400 mb-3 uppercase tracking-widest">
+            Início / <span className="text-[#000000] font-medium">Coleção</span>
           </p>
-          <h1 className="font-display text-4xl md:text-5xl text-pearl font-light">
+          <h1 className="font-display text-4xl md:text-5xl text-[#000000] font-black leading-tight">
             {selectedGender
               ? `Fragrâncias ${selectedGender.charAt(0).toUpperCase() + selectedGender.slice(1)}s`
               : searchQuery
@@ -124,7 +126,7 @@ export function ProductListPage() {
               : 'Toda a Coleção'
             }
           </h1>
-          <p className="mt-3 text-nude-500 text-sm">
+          <p className="mt-2 text-gray-500 text-sm">
             {loading ? '...' : `${visible.length} fragrâncias encontradas`}
           </p>
         </div>
@@ -156,7 +158,7 @@ export function ProductListPage() {
                   setParam('category', e.target.value)
                   setParam('subcategory', '')
                 }}
-                className="input-luxury text-sm py-2.5 pr-8 !rounded-full cursor-pointer min-w-[160px]"
+                className="input-luxury text-sm py-2.5 pr-8 !rounded-full cursor-pointer min-w-[160px] bg-white"
               >
                 <option value="">Todas Categorias</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -166,7 +168,7 @@ export function ProductListPage() {
                 <select
                   value={selectedSubcategory}
                   onChange={e => setParam('subcategory', e.target.value)}
-                  className="input-luxury text-sm py-2.5 pr-8 !rounded-full cursor-pointer min-w-[180px]"
+                  className="input-luxury text-sm py-2.5 pr-8 !rounded-full cursor-pointer min-w-[180px] bg-white"
                 >
                   <option value="">Todas Subcategorias</option>
                   {subcategories.map((subcategory) => (
@@ -178,7 +180,7 @@ export function ProductListPage() {
               <select
                 value={sort}
                 onChange={e => setParam('sort', e.target.value)}
-                className="input-luxury text-sm py-2.5 pr-8 !rounded-full cursor-pointer min-w-[140px]"
+                className="input-luxury text-sm py-2.5 pr-8 !rounded-full cursor-pointer min-w-[140px] bg-white"
               >
                 {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -189,33 +191,33 @@ export function ProductListPage() {
         {/* Active filters chips */}
         {totalActive > 0 && (
           <div className="flex items-center gap-2 mb-6 flex-wrap">
-            <span className="text-2xs text-nude-500 uppercase tracking-wide">Filtros ativos:</span>
+            <span className="text-2xs text-gray-500 uppercase tracking-wide">Filtros ativos:</span>
             {selectedGender && (
-              <button onClick={() => setParam('gender', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-noir-950 text-pearl text-2xs">
+              <button onClick={() => setParam('gender', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e6226e] text-white text-2xs">
                 {selectedGender} <span className="opacity-60">✕</span>
               </button>
             )}
             {selectedCat && (
-              <button onClick={() => setParam('category', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-noir-950 text-pearl text-2xs">
+              <button onClick={() => setParam('category', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e6226e] text-white text-2xs">
                 {categories.find(c => c.id === selectedCat)?.name ?? 'Categoria'} <span className="opacity-60">✕</span>
               </button>
             )}
             {selectedSubcategory && (
-              <button onClick={() => setParam('subcategory', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-noir-950 text-pearl text-2xs">
+              <button onClick={() => setParam('subcategory', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e6226e] text-white text-2xs">
                 {subcategories.find((subcategory) => subcategory.id === selectedSubcategory)?.name ?? 'Subcategoria'} <span className="opacity-60">✕</span>
               </button>
             )}
             {selectedType && (
-              <button onClick={() => setParam('type', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-noir-950 text-pearl text-2xs">
+              <button onClick={() => setParam('type', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e6226e] text-white text-2xs">
                 {selectedType} <span className="opacity-60">✕</span>
               </button>
             )}
             {searchQuery && (
-              <button onClick={() => setParam('q', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-noir-950 text-pearl text-2xs">
+              <button onClick={() => setParam('q', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e6226e] text-white text-2xs">
                 "{searchQuery}" <span className="opacity-60">✕</span>
               </button>
             )}
-            <button onClick={() => setSearchParams({})} className="text-2xs text-rouge-700 hover:text-rouge-800 underline ml-1">
+            <button onClick={() => setSearchParams({})} className="text-2xs text-[#e6226e] hover:text-[#cc1d60] underline ml-1">
               Limpar tudo
             </button>
           </div>

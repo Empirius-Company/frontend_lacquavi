@@ -38,53 +38,55 @@ function AuthLayout({ children, eyebrow, title, sub }: {
   sub?: string
 }) {
   return (
-    <div className="min-h-screen bg-noir-950 flex relative overflow-hidden">
-      {/* Atmospheric glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full opacity-30"
-          style={{ background: 'radial-gradient(ellipse, rgba(212,175,122,0.12) 0%, rgba(139,31,66,0.06) 50%, transparent 70%)' }} />
-      </div>
+    <div className="min-h-screen bg-[#F5F5F5]">
+      <div className="container-page py-10 sm:py-14 lg:py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start max-w-6xl mx-auto">
 
-      {/* Left editorial panel — desktop only */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-14 relative">
-        <Link to="/" className="font-display text-xl text-pearl tracking-[0.06em] hover:text-gold-400 transition-colors">
-          LACQUAVI
-        </Link>
-        <div>
-          <p className="font-display text-5xl text-pearl font-light leading-tight mb-5">
-            Uma fragrância para<br />
-            <span className="text-gold-gradient italic">cada momento</span><br />
-            da sua vida.
-          </p>
-          <p className="text-nude-500 text-sm leading-relaxed max-w-xs">
-            Curadoria premium de perfumes originais. Autenticidade, sofisticação e entrega para todo o Brasil.
-          </p>
-        </div>
-        <div className="flex items-center gap-6">
-          {[{ n: '200+', l: 'Fragrâncias' }, { n: '15k+', l: 'Clientes' }, { n: '★ 4.9', l: 'Avaliações' }].map(s => (
-            <div key={s.l}>
-              <p className="font-display text-xl text-pearl">{s.n}</p>
-              <p className="text-3xs text-nude-600 uppercase tracking-wide mt-0.5">{s.l}</p>
+          {/* Coluna institucional */}
+          <div className="hidden lg:flex flex-col bg-white rounded-3xl border border-gray-100 shadow-sm p-10 gap-8 relative overflow-hidden">
+            <div aria-hidden className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-[#e6226e]/10 blur-2xl" />
+            <div>
+              <Link to="/" className="inline-flex items-center hover:opacity-90 transition-opacity">
+                <img src="/logo.png" alt="Lacquavi" className="h-[43px] md:h-[54px] object-contain" />
+              </Link>
+              <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mt-8 mb-3">Experiência Premium</p>
+              <h2 className="font-display text-4xl text-[#000000] font-black leading-tight mb-4">
+                Fragrâncias originais,
+                <br />
+                <span className="italic font-bold">curadoria exclusiva.</span>
+              </h2>
+              <p className="text-gray-500 text-sm leading-relaxed max-w-md">
+                Faça login para acompanhar seus pedidos ou crie sua conta para receber ofertas e novidades da Lacquavi.
+              </p>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Right — form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 py-24">
-        <div className="w-full max-w-sm">
-          {/* Mobile logo */}
-          <Link to="/" className="block lg:hidden font-display text-xl text-pearl text-center mb-10 tracking-[0.06em]">
-            LACQUAVI
-          </Link>
-
-          <div className="mb-8">
-            <p className="section-eyebrow-light mb-3">{eyebrow}</p>
-            <h1 className="font-display text-3xl text-pearl">{title}</h1>
-            {sub && <p className="text-nude-500 text-sm mt-2">{sub}</p>}
+            <div className="grid grid-cols-3 gap-3">
+              {[{ n: '200+', l: 'Fragrâncias' }, { n: '15k+', l: 'Clientes' }, { n: '★ 4.9', l: 'Avaliações' }].map(s => (
+                <div key={s.l} className="rounded-xl border border-gray-100 bg-[#F5F5F5] px-3 py-3">
+                  <p className="font-display text-lg text-[#000000]">{s.n}</p>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">{s.l}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {children}
+          {/* Coluna do formulário */}
+          <div className="flex items-center justify-center">
+            <div className="w-full max-w-md bg-white rounded-3xl border border-gray-100 shadow-sm p-6 sm:p-8">
+              <Link to="/" className="block lg:hidden text-center mb-8">
+                <img src="/logo.png" alt="Lacquavi" className="h-[43px] object-contain mx-auto" />
+              </Link>
+
+              <div className="mb-7">
+                <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mb-2">{eyebrow}</p>
+                <h1 className="font-display text-3xl text-[#000000] font-black leading-tight">{title}</h1>
+                {sub && <p className="text-gray-500 text-sm mt-2 leading-relaxed">{sub}</p>}
+              </div>
+
+              {children}
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -126,7 +128,6 @@ export function LoginPage() {
           onChange={e => set('email', e.target.value)}
           placeholder="seu@email.com"
           autoComplete="email"
-          dark
           required
         />
         <Input
@@ -136,17 +137,16 @@ export function LoginPage() {
           onChange={e => set('password', e.target.value)}
           placeholder="••••••••"
           autoComplete="current-password"
-          dark
           required
         />
-        {error && <ErrorMessage message={error} dark />}
+        {error && <ErrorMessage message={error} />}
         <Button variant="primary" size="lg" fullWidth type="submit" loading={loading}>
           Entrar
         </Button>
       </form>
-      <p className="text-center text-sm text-nude-600 mt-6">
+      <p className="text-center text-sm text-gray-500 mt-6">
         Não tem conta?{' '}
-        <Link to="/register" className="text-gold-400 hover:text-gold-300 transition-colors">
+        <Link to="/register" className="text-[#e6226e] hover:text-[#cc1d60] font-semibold transition-colors">
           Criar conta gratuita
         </Link>
       </p>
@@ -193,8 +193,8 @@ export function RegisterPage() {
   return (
     <AuthLayout eyebrow="Junte-se à Lacquavi" title="Criar sua conta" sub="Cadastre-se e acesse fragrâncias exclusivas com entrega para todo o Brasil.">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input label="Nome completo" type="text" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Seu nome" dark required />
-        <Input label="E-mail" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="seu@email.com" dark required />
+        <Input label="Nome completo" type="text" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Seu nome" required />
+        <Input label="E-mail" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="seu@email.com" required />
         <Input
           label="Telefone"
           type="tel"
@@ -202,18 +202,17 @@ export function RegisterPage() {
           onChange={e => handlePhone(e.target.value)}
           placeholder="(11) 99999-9999"
           hint="Opcional — para atualizações do seu pedido"
-          dark
           inputMode="numeric"
         />
-        <Input label="Senha" type="password" value={form.password} onChange={e => set('password', e.target.value)} placeholder="Mínimo 8 caracteres" dark required />
-        {error && <ErrorMessage message={error} dark />}
+        <Input label="Senha" type="password" value={form.password} onChange={e => set('password', e.target.value)} placeholder="Mínimo 8 caracteres" required />
+        {error && <ErrorMessage message={error} />}
         <Button variant="primary" size="lg" fullWidth type="submit" loading={loading}>
           Criar Conta Gratuita
         </Button>
       </form>
-      <p className="text-center text-sm text-nude-600 mt-6">
+      <p className="text-center text-sm text-gray-500 mt-6">
         Já tem conta?{' '}
-        <Link to="/login" className="text-gold-400 hover:text-gold-300 transition-colors">Entrar</Link>
+        <Link to="/login" className="text-[#e6226e] hover:text-[#cc1d60] font-semibold transition-colors">Entrar</Link>
       </p>
     </AuthLayout>
   )
@@ -348,15 +347,16 @@ export function MyOrdersPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-parchment pt-20">
-      <div className="bg-noir-950 py-10">
-        <div className="container-page">
-          <p className="section-eyebrow-light mb-3">Conta</p>
-          <h1 className="font-display text-3xl md:text-4xl text-pearl font-light">Meus Pedidos</h1>
+    <div className="min-h-screen bg-[#F5F5F5]">
+      <div className="bg-white border-b border-gray-100">
+        <div className="container-page py-8 md:py-10">
+          <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mb-2">Conta</p>
+          <h1 className="font-display text-3xl md:text-4xl text-[#000000] font-black">Meus Pedidos</h1>
+          <p className="text-sm text-gray-500 mt-2">Acompanhe o status e histórico dos seus pedidos.</p>
         </div>
       </div>
 
-      <div className="container-page py-10">
+      <div className="container-page py-8 md:py-10">
         {loading ? (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -380,21 +380,21 @@ export function MyOrdersPage() {
 
                   return (
                 <Link to={`/account/orders/${order.id}`} className="group block">
-                  <div className="bg-pearl rounded-2xl border border-nude-100 px-6 py-5 shadow-card-light hover:border-gold-500/20 hover:shadow-card-hover transition-all duration-300">
+                  <div className="bg-white rounded-2xl border border-gray-100 px-6 py-5 shadow-sm hover:border-[#e6226e]/30 hover:shadow-md transition-all duration-300">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1.5">
-                          <p className="font-mono text-sm font-medium text-noir-950">#{order.id.slice(-8).toUpperCase()}</p>
+                          <p className="font-mono text-sm font-medium text-[#111111]">#{order.id.slice(-8).toUpperCase()}</p>
                           <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${getOrderDisplayStatusColor(order)}`}>
                             {getOrderDisplayStatusLabel(order)}
                           </span>
                         </div>
-                        <p className="text-xs text-nude-500">{formatDate(order.createdAt)}</p>
-                        <p className="text-xs text-nude-500 mt-0.5">{order.items.length} {order.items.length === 1 ? 'item' : 'itens'}</p>
+                        <p className="text-xs text-gray-500">{formatDate(order.createdAt)}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{order.items.length} {order.items.length === 1 ? 'item' : 'itens'}</p>
                         {trackingCode && (
                           <div className="mt-2 flex items-center gap-3">
-                            <p className="text-2xs text-nude-600">
-                              Rastreio: <span className="font-mono text-noir-900">{trackingCode}</span>
+                            <p className="text-2xs text-gray-600">
+                              Rastreio: <span className="font-mono text-[#000000]">{trackingCode}</span>
                             </p>
                             {customerTrackingUrl && (
                               <button
@@ -404,7 +404,7 @@ export function MyOrdersPage() {
                                   event.stopPropagation()
                                   window.open(customerTrackingUrl, '_blank', 'noopener,noreferrer')
                                 }}
-                                className="text-2xs font-medium text-gold-600 hover:text-gold-500 underline underline-offset-2"
+                                className="text-2xs font-medium text-[#e6226e] hover:text-[#cc1d60] underline underline-offset-2"
                               >
                                 Acompanhar entrega
                               </button>
@@ -413,8 +413,8 @@ export function MyOrdersPage() {
                         )}
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="font-display text-xl text-noir-950">{formatCurrency(order.total)}</p>
-                        <p className="text-xs text-nude-400 mt-1 group-hover:text-gold-500 transition-colors">Ver detalhes →</p>
+                        <p className="font-display text-xl text-[#000000]">{formatCurrency(order.total)}</p>
+                        <p className="text-xs text-gray-400 mt-1 group-hover:text-[#e6226e] transition-colors">Ver detalhes →</p>
                       </div>
                     </div>
                   </div>
@@ -470,52 +470,53 @@ export function OrderDetailPage() {
     } finally { setCanceling(false) }
   }
 
-  if (loading) return <div className="min-h-screen bg-parchment pt-20 flex items-center justify-center"><Spinner size="lg" /></div>
+  if (loading) return <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center"><Spinner size="lg" /></div>
   if (!order)  return null
 
   const canCancel = !['delivered', 'cancelled'].includes(order.status)
   const customerTrackingUrl = buildCustomerTrackingUrl(shipment?.trackingCode)
 
   return (
-    <div className="min-h-screen bg-parchment pt-20">
-      <div className="bg-noir-950 py-10">
-        <div className="container-page">
-          <Link to="/account/orders" className="text-2xs text-nude-600 hover:text-nude-400 transition-colors flex items-center gap-1.5 mb-4">
+    <div className="min-h-screen bg-[#F5F5F5]">
+      <div className="bg-white border-b border-gray-100">
+        <div className="container-page py-8 md:py-10">
+          <Link to="/account/orders" className="text-xs text-gray-500 hover:text-[#000000] transition-colors flex items-center gap-1.5 mb-4">
             <span>←</span> Meus Pedidos
           </Link>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="font-display text-3xl text-pearl font-light">
-                Pedido #{order.id.slice(-8).toUpperCase()}
+              <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mb-2">Pedido</p>
+              <h1 className="font-display text-3xl md:text-4xl text-[#000000] font-black">
+                #{order.id.slice(-8).toUpperCase()}
               </h1>
-              <p className="text-nude-500 text-sm mt-1">{formatDateTime(order.createdAt)}</p>
+              <p className="text-gray-500 text-sm mt-2">{formatDateTime(order.createdAt)}</p>
             </div>
-            <span className={`badge-status border rounded-full text-sm px-3 py-1 ${getOrderDisplayStatusColor(order, shipment)}`}>
+            <span className={`badge-status border rounded-full text-sm px-3 py-1 self-start md:self-auto ${getOrderDisplayStatusColor(order, shipment)}`}>
               {getOrderDisplayStatusLabel(order, shipment)}
             </span>
           </div>
         </div>
       </div>
 
-      <div className="container-page py-10">
+      <div className="container-page py-8 md:py-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Items */}
           <div className="lg:col-span-7">
-            <div className="bg-pearl rounded-3xl border border-nude-100 overflow-hidden shadow-card-light">
-              <div className="px-6 py-4 border-b border-nude-50">
-                <h2 className="font-display text-lg text-noir-950">Itens do Pedido</h2>
+            <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h2 className="font-display text-lg text-[#000000] font-bold">Itens do Pedido</h2>
               </div>
-              <div className="divide-y divide-nude-50">
+              <div className="divide-y divide-gray-100">
                 {order.items.map(item => (
                   <div key={item.id} className="flex items-center gap-4 px-6 py-4">
-                    <div className="w-12 h-14 rounded-xl bg-nude-50 flex items-center justify-center text-nude-300 flex-shrink-0">
+                    <div className="w-12 h-14 rounded-xl bg-[#F5F5F5] flex items-center justify-center text-gray-300 flex-shrink-0 border border-gray-100">
                       <span className="text-xl">⬟</span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm text-noir-950">{item.productId}</p>
-                      <p className="text-xs text-nude-500 mt-0.5">Qtd: {item.quantity}</p>
+                      <p className="text-sm text-[#000000] font-medium">{item.productId}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Qtd: {item.quantity}</p>
                     </div>
-                    <p className="text-sm font-medium text-noir-950">{formatCurrency(item.price * item.quantity)}</p>
+                    <p className="text-sm font-medium text-[#000000]">{formatCurrency(item.price * item.quantity)}</p>
                   </div>
                 ))}
               </div>
@@ -524,8 +525,8 @@ export function OrderDetailPage() {
 
           {/* Summary */}
           <div className="lg:col-span-5 space-y-4">
-            <div className="bg-pearl rounded-3xl border border-nude-100 p-6 shadow-card-light space-y-3">
-              <h2 className="font-display text-lg text-noir-950 mb-4">Resumo Financeiro</h2>
+            <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm space-y-3">
+              <h2 className="font-display text-lg text-[#000000] font-bold mb-4">Resumo Financeiro</h2>
               <Row2 label="Subtotal"          value={formatCurrency(order.subtotal)} />
               {order.discountTotal > 0 && (
                 <Row2 label={`Desconto${order.couponCode ? ` (${order.couponCode})` : ''}`} value={`−${formatCurrency(order.discountTotal)}`} />
@@ -533,12 +534,12 @@ export function OrderDetailPage() {
               {typeof order.shippingAmountCents === 'number' && order.shippingAmountCents > 0 && (
                 <Row2 label={`Frete${order.shippingServiceName ? ` (${order.shippingServiceName})` : ''}`} value={formatCurrency(order.shippingAmountCents / 100)} />
               )}
-              <div className="border-t border-nude-100 pt-3 mt-3">
+              <div className="border-t border-gray-100 pt-3 mt-3">
                 <Row2 label="Total" value={formatCurrency(order.total)} bold />
               </div>
               {order.paymentStatus && (
                 <div className="pt-2 flex justify-between items-center">
-                  <span className="text-sm text-nude-600">Pagamento</span>
+                  <span className="text-sm text-gray-500">Pagamento</span>
                   <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${paymentStatusColor[order.paymentStatus] ?? ''}`}>
                     {paymentStatusLabel[order.paymentStatus]}
                   </span>
@@ -546,12 +547,12 @@ export function OrderDetailPage() {
               )}
             </div>
 
-            <div className="bg-pearl rounded-3xl border border-nude-100 p-6 shadow-card-light space-y-3">
-              <h2 className="font-display text-lg text-noir-950 mb-2">Entrega e Rastreio</h2>
+            <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm space-y-3">
+              <h2 className="font-display text-lg text-[#000000] font-bold mb-2">Entrega e Rastreio</h2>
               {shipmentLoading ? (
-                <p className="text-sm text-nude-500">Carregando rastreio...</p>
+                <p className="text-sm text-gray-500">Carregando rastreio...</p>
               ) : !shipment ? (
-                <p className="text-sm text-nude-500">Ainda não há envio vinculado a este pedido.</p>
+                <p className="text-sm text-gray-500">Ainda não há envio vinculado a este pedido.</p>
               ) : (
                 <>
                   <Row2 label="Status" value={shipmentStatusLabel[shipment.status] ?? shipment.status} />
@@ -564,7 +565,7 @@ export function OrderDetailPage() {
                           href={customerTrackingUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm font-medium text-gold-600 hover:text-gold-500 underline underline-offset-2"
+                          className="text-sm font-medium text-[#e6226e] hover:text-[#cc1d60] underline underline-offset-2"
                         >
                           Ver rastreio
                         </a>
@@ -572,18 +573,18 @@ export function OrderDetailPage() {
                     />
                   )}
                   {shipment.status === 'failed' && (
-                    <p className="text-sm text-nude-600">
+                    <p className="text-sm text-gray-600">
                       Tivemos uma instabilidade no envio. Nossa equipe já foi acionada e o status será atualizado em breve.
                     </p>
                   )}
                   {shipment.events && shipment.events.length > 0 && (
                     <div className="pt-2 space-y-2">
-                      <p className="text-xs text-nude-500 uppercase tracking-wide">Eventos</p>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Eventos</p>
                       <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
                         {shipment.events.slice(0, 10).map(event => (
-                          <div key={event.id} className="rounded-xl border border-nude-100 bg-white/70 p-2.5">
-                            <p className="text-xs font-medium text-noir-900">{event.description || event.eventType}</p>
-                            <p className="text-2xs text-nude-500 mt-0.5">{formatDateTime(event.occurredAt)}</p>
+                          <div key={event.id} className="rounded-xl border border-gray-100 bg-[#F5F5F5] p-2.5">
+                            <p className="text-xs font-medium text-[#111111]">{event.description || event.eventType}</p>
+                            <p className="text-2xs text-gray-500 mt-0.5">{formatDateTime(event.occurredAt)}</p>
                           </div>
                         ))}
                       </div>
@@ -594,7 +595,7 @@ export function OrderDetailPage() {
             </div>
 
             {canCancel && (
-              <Button variant="danger" fullWidth onClick={handleCancel} loading={canceling}>
+              <Button variant="danger" fullWidth onClick={handleCancel} loading={canceling} className="rounded-xl">
                 Cancelar Pedido
               </Button>
             )}
@@ -647,29 +648,30 @@ export function AccountProfilePage() {
   const handleLogout = async () => { await logout(); navigate('/') }
 
   return (
-    <div className="min-h-screen bg-parchment pt-20">
-      <div className="bg-noir-950 py-10">
-        <div className="container-page">
-          <p className="section-eyebrow-light mb-3">Conta</p>
-          <h1 className="font-display text-3xl text-pearl font-light">Minha Conta</h1>
+    <div className="min-h-screen bg-[#F5F5F5]">
+      <div className="bg-white border-b border-gray-100">
+        <div className="container-page py-8 md:py-10">
+          <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mb-2">Conta</p>
+          <h1 className="font-display text-3xl md:text-4xl text-[#000000] font-black">Minha Conta</h1>
+          <p className="text-sm text-gray-500 mt-2">Gerencie seus dados e acesse rapidamente seus pedidos.</p>
         </div>
       </div>
 
-      <div className="container-page py-10">
+      <div className="container-page py-8 md:py-10">
         <div className="max-w-lg mx-auto space-y-6">
           {/* Avatar card */}
           <ScrollReveal>
-            <div className="bg-pearl rounded-3xl border border-nude-100 p-7 shadow-card-light flex items-center gap-5">
-              <div className="w-16 h-16 rounded-full bg-gold-500/15 border border-gold-500/30 flex items-center justify-center text-2xl font-display text-gold-600">
+            <div className="bg-white rounded-3xl border border-gray-100 p-7 shadow-sm flex items-center gap-5">
+              <div className="w-16 h-16 rounded-full bg-[#e6226e]/10 border border-[#e6226e]/20 flex items-center justify-center text-2xl font-display text-[#e6226e]">
                 {user?.name?.[0]?.toUpperCase()}
               </div>
               <div>
-                <p className="font-display text-xl text-noir-950">{user?.name}</p>
-                <p className="text-sm text-nude-500">{user?.email}</p>
+                <p className="font-display text-xl text-[#000000] font-bold">{user?.name}</p>
+                <p className="text-sm text-gray-500">{user?.email}</p>
                 <span className={`mt-1.5 inline-flex items-center px-2 py-0.5 rounded-full text-2xs border font-medium ${
                   user?.role === 'admin'
-                    ? 'bg-gold-500/10 text-gold-600 border-gold-500/25'
-                    : 'bg-nude-50 text-nude-600 border-nude-200'
+                    ? 'bg-[#e6226e]/10 text-[#e6226e] border-[#e6226e]/20'
+                    : 'bg-gray-50 text-gray-600 border-gray-200'
                 }`}>
                   {user?.role === 'admin' ? '✦ Admin' : 'Cliente'}
                 </span>
@@ -679,8 +681,8 @@ export function AccountProfilePage() {
 
           {/* Edit form */}
           <ScrollReveal delay={100}>
-            <form onSubmit={handleSave} className="bg-pearl rounded-3xl border border-nude-100 p-7 shadow-card-light space-y-5">
-              <h2 className="font-display text-lg text-noir-950">Editar Dados</h2>
+            <form onSubmit={handleSave} className="bg-white rounded-3xl border border-gray-100 p-7 shadow-sm space-y-5">
+              <h2 className="font-display text-lg text-[#000000] font-bold">Editar Dados</h2>
               <Input
                 label="Nome"
                 value={form.name}
@@ -711,21 +713,21 @@ export function AccountProfilePage() {
 
           {/* Quick links */}
           <ScrollReveal delay={200}>
-            <div className="bg-pearl rounded-3xl border border-nude-100 p-7 shadow-card-light space-y-3">
-              <h2 className="font-display text-lg text-noir-950 mb-4">Acesso Rápido</h2>
-              <Link to="/account/orders" className="flex items-center justify-between p-4 rounded-2xl border border-nude-100 hover:border-gold-500/25 hover:bg-nude-50/50 transition-all group">
+            <div className="bg-white rounded-3xl border border-gray-100 p-7 shadow-sm space-y-3">
+              <h2 className="font-display text-lg text-[#000000] font-bold mb-4">Acesso Rápido</h2>
+              <Link to="/account/orders" className="flex items-center justify-between p-4 rounded-2xl border border-gray-100 hover:border-[#e6226e]/25 hover:bg-[#faf7f8] transition-all group">
                 <div className="flex items-center gap-3">
-                  <span className="text-lg text-nude-400">◎</span>
-                  <span className="text-sm font-medium text-noir-800">Meus Pedidos</span>
+                  <span className="text-lg text-gray-400">◎</span>
+                  <span className="text-sm font-medium text-[#111111]">Meus Pedidos</span>
                 </div>
-                <span className="text-nude-300 group-hover:text-gold-500 transition-colors">→</span>
+                <span className="text-gray-300 group-hover:text-[#e6226e] transition-colors">→</span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-between p-4 rounded-2xl border border-nude-100 hover:border-red-200 hover:bg-red-50/30 transition-all group"
+                className="w-full flex items-center justify-between p-4 rounded-2xl border border-gray-100 hover:border-red-200 hover:bg-red-50/30 transition-all group"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-lg text-nude-400">◐</span>
+                  <span className="text-lg text-gray-400">◐</span>
                   <span className="text-sm font-medium text-rouge-700">Sair da conta</span>
                 </div>
               </button>

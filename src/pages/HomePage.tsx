@@ -52,6 +52,52 @@ function SectionHeader({ eyebrow, title, linkTo, linkLabel }: { eyebrow?: string
   )
 }
 
+function HomeTopBanner() {
+  const [imageOk, setImageOk] = useState(true)
+
+  const handleScrollToWeekHighlights = () => {
+    document.getElementById('selecao-premium-destaque-semana')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
+  }
+
+  return (
+    <section className="bg-white">
+      <div className="container-page pt-4 md:pt-6 pb-2 md:pb-3">
+        <div className="relative w-full h-[40vh] min-h-[220px] max-h-[420px] overflow-hidden rounded-2xl border border-[#f0d7d7] shadow-sm">
+          {imageOk ? (
+            <img
+              src="/banner-home-top.png"
+              alt="Banner Lacquavi"
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={() => setImageOk(false)}
+            />
+          ) : (
+            <div
+              className="absolute inset-0 w-full h-full"
+              style={{
+                background: 'linear-gradient(145deg, #f7c9c8 0%, #f2afab 46%, #e89c98 100%)',
+              }}
+            />
+          )}
+
+          {/* CTA posicionado na área do retângulo da arte */}
+          <div className="absolute left-1/2 bottom-[16%] -translate-x-1/2">
+            <button
+              type="button"
+              onClick={handleScrollToWeekHighlights}
+              className="inline-flex items-center justify-center min-w-[180px] md:min-w-[220px] px-6 py-2.5 md:py-3 rounded-md border-2 border-white text-white font-semibold tracking-wide bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-[1px]"
+            >
+              COMPRAR AGORA
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function FlashSaleBanner() {
   const DEFAULT_TITLE = 'OFERTA RELÂMPAGO'
   const DEFAULT_SUBTITLE = 'Aproveite os preços especiais por tempo limitado.'
@@ -434,7 +480,8 @@ export function HomePage() {
         category,
         products: productsByCategory.get(category.id) ?? [],
       }))
-      .filter((section) => section.products.length > 0),
+      .filter((section) => section.products.length > 0)
+      .slice(0, 5),
     [categories, productsByCategory]
   )
 
@@ -462,6 +509,9 @@ export function HomePage() {
 
   return (
     <div className="bg-[#F5F5F5] min-h-screen pb-16">
+
+      {/* Banner principal logo abaixo do menu */}
+      <HomeTopBanner />
 
       {/* Hero Section at the top */}
       <BestSellersHero products={topProducts} reviewStatsByProduct={statsByProduct} />
@@ -491,7 +541,7 @@ export function HomePage() {
       <FlashSaleBanner />
 
       {/* Mais vendidos da semana */}
-      <section className="py-12 bg-[#F5F5F5]">
+      <section id="mais-vendidos-semana" className="py-12 bg-[#F5F5F5]">
         <div className="container-page">
           <SectionHeader
             eyebrow="Tendências"
