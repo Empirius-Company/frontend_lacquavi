@@ -27,7 +27,6 @@ export interface Category {
   id: string
   name: string
   slug: string
-  packagingCategory?: string | null
 }
 
 export interface Subcategory {
@@ -62,37 +61,11 @@ export interface Product {
   gender: 'masculino' | 'feminino' | 'unissex' | null
   requiresShipping?: boolean
   weightGrams?: number | null
-  packagingCategory?: string | null
   createdAt: string
   createdBy: string
   categoryId: string | null
   subcategoryId?: string | null
   isActive?: boolean
-}
-
-export interface BoxType {
-  id: string
-  name: string
-  lengthCm: number
-  widthCm: number
-  heightCm: number
-  maxWeightGrams: number
-  isActive: boolean
-  createdAt?: string
-  updatedAt?: string
-}
-
-export interface BoxCategoryRule {
-  id: string
-  packagingCategory: string
-  boxTypeId: string
-  maxItems: number
-  priority: number
-  allowMix: boolean
-  isActive: boolean
-  boxType?: BoxType
-  createdAt?: string
-  updatedAt?: string
 }
 
 // ─── Product Reviews ──────────────────────────────────────────────────────────

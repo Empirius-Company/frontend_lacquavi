@@ -29,8 +29,6 @@ const ADMIN_LINKS = [
   { to: '/admin/banners',     label: 'Banners',      icon: '◬' },
   { to: '/admin/categories',  label: 'Categorias',   icon: '⊞' },
   { to: '/admin/subcategories',  label: 'Subcategorias', icon: '⊟' },
-  { to: '/admin/box-types',   label: 'Caixas',       icon: '▣' },
-  { to: '/admin/box-rules',   label: 'Regras Caixa', icon: '▤' },
   { to: '/admin/orders',      label: 'Pedidos',      icon: '◎' },
   { to: '/admin/payments',    label: 'Pagamentos',   icon: '◑' },
   { to: '/admin/coupons',     label: 'Cupons',       icon: '⊛' },

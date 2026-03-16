@@ -12,10 +12,10 @@ export const categoriesApi = {
   getById: (id: string): Promise<CategoryResponse> =>
     httpClient.get<CategoryResponse>(`/api/categories/${id}`),
 
-  create: (data: { name: string; slug?: string; packagingCategory?: string }): Promise<CategoryResponse> =>
+  create: (data: { name: string; slug?: string }): Promise<CategoryResponse> =>
     httpClient.post<CategoryResponse>('/api/categories', data),
 
-  update: (id: string, data: { name?: string; slug?: string; packagingCategory?: string }): Promise<CategoryResponse> =>
+  update: (id: string, data: { name?: string; slug?: string }): Promise<CategoryResponse> =>
     httpClient.put<CategoryResponse>(`/api/categories/${id}`, data),
 
   remove: (id: string): Promise<{ success: boolean; message: string }> =>
@@ -58,11 +58,11 @@ type CreateProductInput = {
   price: number
   discount?: number
   stock: number
-  categoryId?: string
-  subcategoryId?: string
-  brand?: string
-  volume?: string
-  gender?: string
+  categoryId?: string | null
+  subcategoryId?: string | null
+  brand?: string | null
+  volume?: string | null
+  gender?: string | null
   isActive?: boolean
   requiresShipping?: boolean
   weightGrams?: number

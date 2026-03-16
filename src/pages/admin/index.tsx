@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { productsApi, categoriesApi, subcategoriesApi } from '../../api/catalogApi'
 import { uploadProductImageToStorage } from '../../api/storageApi'
-import { ordersApi, paymentsApi, couponsApi, healthApi, bannersApi, boxTypesApi, boxRulesApi, shippingApi } from '../../api/index'
+import { ordersApi, paymentsApi, couponsApi, healthApi, bannersApi, shippingApi } from '../../api/index'
 import { useToast } from '../../context/ToastContext'
 import { Button, Input, Select, Spinner, EmptyState, ErrorMessage, Skeleton, Modal } from '../../components/ui'
 import {
@@ -35,8 +35,6 @@ import type {
   ShipmentStatus,
   ShipmentSelection,
   ShippingDestination,
-  BoxType,
-  BoxCategoryRule,
 } from '../../types'
 
 const MAX_PRODUCT_IMAGES = 6
@@ -441,11 +439,11 @@ export function AdminProductFormPage() {
         price: parseFloat(form.price),
         discount: parseFloat(form.discount || '0'),
         stock: parseInt(form.stock),
-        brand: form.brand || undefined,
-        volume: form.volume || undefined,
-        gender: form.gender || undefined,
-        categoryId: form.categoryId || undefined,
-        subcategoryId: form.subcategoryId || undefined,
+        brand: form.brand.trim() ? form.brand.trim() : null,
+        volume: form.volume.trim() ? form.volume.trim() : null,
+        gender: form.gender.trim() ? form.gender.trim() : null,
+        categoryId: form.categoryId.trim() ? form.categoryId.trim() : null,
+        subcategoryId: form.subcategoryId.trim() ? form.subcategoryId.trim() : null,
         isActive: form.isActive,
         requiresShipping: form.requiresShipping,
         weightGrams: form.requiresShipping ? parsedWeightGrams : undefined,
@@ -680,7 +678,6 @@ export function AdminCategoriesPage() {
   const [modal, setModal]           = useState(false)
   const [editing, setEditing]       = useState<Category | null>(null)
   const [name, setName]             = useState('')
-  const [packagingCategory, setPackagingCategory] = useState('')
   const [saving, setSaving]         = useState(false)
 
   const load = () => {
@@ -693,7 +690,6 @@ export function AdminCategoriesPage() {
   const openModal = (cat?: Category) => {
     setEditing(cat ?? null)
     setName(cat?.name ?? '')
-    setPackagingCategory(cat?.packagingCategory ?? '')
     setModal(true)
   }
 
@@ -702,16 +698,10 @@ export function AdminCategoriesPage() {
     setSaving(true)
     try {
       if (editing) {
-        await categoriesApi.update(editing.id, {
-          name,
-          packagingCategory: packagingCategory.trim() || undefined,
-        })
+        await categoriesApi.update(editing.id, { name })
         toast('Categoria atualizada!', 'success')
       } else {
-        await categoriesApi.create({
-          name,
-          packagingCategory: packagingCategory.trim() || undefined,
-        })
+        await categoriesApi.create({ name })
         toast('Categoria criada!', 'success')
       }
       setModal(false)
@@ -751,7 +741,6 @@ export function AdminCategoriesPage() {
             <thead>
               <tr className="border-b border-obsidian-100 text-left">
                 <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Nome</th>
-                <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Categoria de embalagem</th>
                 <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Slug</th>
                 <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Ações</th>
               </tr>
@@ -760,7 +749,6 @@ export function AdminCategoriesPage() {
               {categories.map(cat => (
                 <tr key={cat.id} className="border-b border-obsidian-50 last:border-0">
                   <td className="px-5 py-4 text-sm font-medium text-ink">{cat.name}</td>
-                  <td className="px-5 py-4 text-sm text-obsidian-500 font-mono">{cat.packagingCategory || '—'}</td>
                   <td className="px-5 py-4 text-sm text-obsidian-400 font-mono">{cat.slug}</td>
                   <td className="px-5 py-4">
                     <div className="flex gap-2">
@@ -778,12 +766,6 @@ export function AdminCategoriesPage() {
       <Modal open={modal} onClose={() => setModal(false)} title={editing ? 'Editar Categoria' : 'Nova Categoria'} maxWidth="max-w-sm">
         <div className="space-y-4">
           <Input label="Nome" value={name} onChange={e => setName(e.target.value)} />
-          <Input
-            label="Categoria de embalagem"
-            value={packagingCategory}
-            onChange={e => setPackagingCategory(e.target.value)}
-            placeholder="Ex: perfume, kit"
-          />
           <div className="flex gap-3">
             <Button onClick={handleSave} loading={saving} fullWidth>Salvar</Button>
             <Button variant="outline" onClick={() => setModal(false)} fullWidth>Cancelar</Button>
@@ -921,346 +903,6 @@ export function AdminSubcategoriesPage() {
             options={categories.map((category) => ({ value: category.id, label: category.name }))}
             placeholder="Selecione"
           />
-          <div className="flex gap-3">
-            <Button onClick={handleSave} loading={saving} fullWidth>Salvar</Button>
-            <Button variant="outline" onClick={() => setModal(false)} fullWidth>Cancelar</Button>
-          </div>
-        </div>
-      </Modal>
-    </div>
-  )
-}
-
-// ─── Admin Box Types ─────────────────────────────────────────────────────────
-export function AdminBoxTypesPage() {
-  const { toast } = useToast()
-  const [boxTypes, setBoxTypes] = useState<BoxType[]>([])
-  const [loading, setLoading] = useState(true)
-  const [modal, setModal] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [editing, setEditing] = useState<BoxType | null>(null)
-  const [form, setForm] = useState({
-    name: '',
-    lengthCm: '',
-    widthCm: '',
-    heightCm: '',
-    maxWeightGrams: '',
-    isActive: true,
-  })
-
-  const load = () => {
-    setLoading(true)
-    boxTypesApi
-      .list()
-      .then((response) => setBoxTypes(response.boxTypes ?? response.data ?? []))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(load, [])
-
-  const openModal = (boxType?: BoxType) => {
-    setEditing(boxType ?? null)
-    setForm({
-      name: boxType?.name ?? '',
-      lengthCm: boxType?.lengthCm?.toString() ?? '',
-      widthCm: boxType?.widthCm?.toString() ?? '',
-      heightCm: boxType?.heightCm?.toString() ?? '',
-      maxWeightGrams: boxType?.maxWeightGrams?.toString() ?? '',
-      isActive: boxType?.isActive ?? true,
-    })
-    setModal(true)
-  }
-
-  const handleSave = async () => {
-    if (!form.name.trim()) return
-    setSaving(true)
-    try {
-      const payload = {
-        name: form.name,
-        lengthCm: Number(form.lengthCm),
-        widthCm: Number(form.widthCm),
-        heightCm: Number(form.heightCm),
-        maxWeightGrams: Number(form.maxWeightGrams),
-        isActive: form.isActive,
-      }
-
-      if (editing) {
-        await boxTypesApi.update(editing.id, payload)
-        toast('Caixa atualizada!', 'success')
-      } else {
-        await boxTypesApi.create(payload)
-        toast('Caixa criada!', 'success')
-      }
-      setModal(false)
-      load()
-    } catch (err) {
-      toast((err as ApiError).message, 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleDelete = async (boxType: BoxType) => {
-    if (!confirm(`Excluir caixa "${boxType.name}"?`)) return
-    try {
-      await boxTypesApi.remove(boxType.id)
-      toast('Caixa removida!', 'success')
-      load()
-    } catch (err) {
-      toast((err as ApiError).message, 'error')
-    }
-  }
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="font-display text-3xl text-ink">Tipos de Caixa</h1>
-        <Button onClick={() => openModal()}>+ Nova Caixa</Button>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card overflow-hidden">
-        {loading ? (
-          <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 rounded-xl" />)}</div>
-        ) : boxTypes.length === 0 ? (
-          <EmptyState title="Nenhum tipo de caixa" action={<Button onClick={() => openModal()}>Criar</Button>} />
-        ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-obsidian-100 text-left">
-                <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Nome</th>
-                <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Dimensões</th>
-                <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Peso máx</th>
-                <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Ativa</th>
-                <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {boxTypes.map((boxType) => (
-                <tr key={boxType.id} className="border-b border-obsidian-50 last:border-0">
-                  <td className="px-5 py-4 text-sm font-medium text-ink">{boxType.name}</td>
-                  <td className="px-5 py-4 text-sm text-obsidian-500">{boxType.lengthCm}×{boxType.widthCm}×{boxType.heightCm} cm</td>
-                  <td className="px-5 py-4 text-sm text-obsidian-500">{boxType.maxWeightGrams} g</td>
-                  <td className="px-5 py-4 text-sm text-obsidian-500">{boxType.isActive ? 'Sim' : 'Não'}</td>
-                  <td className="px-5 py-4">
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openModal(boxType)}>Editar</Button>
-                      <Button variant="danger" size="sm" onClick={() => handleDelete(boxType)}>Excluir</Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      <Modal open={modal} onClose={() => setModal(false)} title={editing ? 'Editar Caixa' : 'Nova Caixa'} maxWidth="max-w-lg">
-        <div className="space-y-4">
-          <Input label="Nome" value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} />
-          <div className="grid grid-cols-2 gap-3">
-            <Input label="Comprimento (cm)" type="number" min="1" value={form.lengthCm} onChange={(event) => setForm((prev) => ({ ...prev, lengthCm: event.target.value }))} />
-            <Input label="Largura (cm)" type="number" min="1" value={form.widthCm} onChange={(event) => setForm((prev) => ({ ...prev, widthCm: event.target.value }))} />
-            <Input label="Altura (cm)" type="number" min="1" value={form.heightCm} onChange={(event) => setForm((prev) => ({ ...prev, heightCm: event.target.value }))} />
-            <Input label="Peso máximo (g)" type="number" min="1" value={form.maxWeightGrams} onChange={(event) => setForm((prev) => ({ ...prev, maxWeightGrams: event.target.value }))} />
-          </div>
-          <label className="flex items-center gap-2 text-sm text-obsidian-700">
-            <input
-              type="checkbox"
-              checked={form.isActive}
-              onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))}
-              className="w-4 h-4"
-            />
-            Caixa ativa
-          </label>
-          <div className="flex gap-3">
-            <Button onClick={handleSave} loading={saving} fullWidth>Salvar</Button>
-            <Button variant="outline" onClick={() => setModal(false)} fullWidth>Cancelar</Button>
-          </div>
-        </div>
-      </Modal>
-    </div>
-  )
-}
-
-// ─── Admin Box Rules ─────────────────────────────────────────────────────────
-export function AdminBoxRulesPage() {
-  const { toast } = useToast()
-  const [boxRules, setBoxRules] = useState<BoxCategoryRule[]>([])
-  const [boxTypes, setBoxTypes] = useState<BoxType[]>([])
-  const [loading, setLoading] = useState(true)
-  const [modal, setModal] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [editing, setEditing] = useState<BoxCategoryRule | null>(null)
-  const [categoryFilter, setCategoryFilter] = useState('')
-  const [form, setForm] = useState({
-    packagingCategory: '',
-    boxTypeId: '',
-    maxItems: '1',
-    priority: '1',
-    allowMix: false,
-    isActive: true,
-  })
-
-  const load = () => {
-    setLoading(true)
-    Promise.all([
-      boxRulesApi.list(categoryFilter ? { category: categoryFilter } : undefined),
-      boxTypesApi.list(),
-    ])
-      .then(([boxRulesResponse, boxTypesResponse]) => {
-        setBoxRules(boxRulesResponse.boxRules ?? boxRulesResponse.data ?? [])
-        setBoxTypes(boxTypesResponse.boxTypes ?? boxTypesResponse.data ?? [])
-      })
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(load, [categoryFilter])
-
-  const openModal = (rule?: BoxCategoryRule) => {
-    setEditing(rule ?? null)
-    setForm({
-      packagingCategory: rule?.packagingCategory ?? '',
-      boxTypeId: rule?.boxTypeId ?? '',
-      maxItems: rule?.maxItems?.toString() ?? '1',
-      priority: rule?.priority?.toString() ?? '1',
-      allowMix: rule?.allowMix ?? false,
-      isActive: rule?.isActive ?? true,
-    })
-    setModal(true)
-  }
-
-  const handleSave = async () => {
-    if (!form.packagingCategory.trim() || !form.boxTypeId) return
-    setSaving(true)
-    try {
-      const payload = {
-        packagingCategory: form.packagingCategory.trim().toLowerCase(),
-        boxTypeId: form.boxTypeId,
-        maxItems: Number(form.maxItems),
-        priority: Number(form.priority),
-        allowMix: form.allowMix,
-        isActive: form.isActive,
-      }
-
-      if (editing) {
-        await boxRulesApi.update(editing.id, payload)
-        toast('Regra atualizada!', 'success')
-      } else {
-        await boxRulesApi.create(payload)
-        toast('Regra criada!', 'success')
-      }
-
-      setModal(false)
-      load()
-    } catch (err) {
-      toast((err as ApiError).message, 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleDelete = async (rule: BoxCategoryRule) => {
-    if (!confirm(`Excluir regra de "${rule.packagingCategory}"?`)) return
-    try {
-      await boxRulesApi.remove(rule.id)
-      toast('Regra removida!', 'success')
-      load()
-    } catch (err) {
-      toast((err as ApiError).message, 'error')
-    }
-  }
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-3xl text-ink">Regras de Caixa</h1>
-        <Button onClick={() => openModal()}>+ Nova Regra</Button>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card p-5 mb-4">
-        <Input
-          label="Filtrar por categoria de embalagem"
-          value={categoryFilter}
-          onChange={(event) => setCategoryFilter(event.target.value)}
-          placeholder="Ex: perfume, kit"
-        />
-      </div>
-
-      <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card overflow-hidden">
-        {loading ? (
-          <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 rounded-xl" />)}</div>
-        ) : boxRules.length === 0 ? (
-          <EmptyState title="Nenhuma regra de caixa" action={<Button onClick={() => openModal()}>Criar</Button>} />
-        ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-obsidian-100 text-left">
-                <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Categoria</th>
-                <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Caixa</th>
-                <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Capacidade</th>
-                <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Prioridade</th>
-                <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Ativa</th>
-                <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {boxRules.map((rule) => (
-                <tr key={rule.id} className="border-b border-obsidian-50 last:border-0">
-                  <td className="px-5 py-4 text-sm font-medium text-ink">{rule.packagingCategory}</td>
-                  <td className="px-5 py-4 text-sm text-obsidian-500">{rule.boxType?.name ?? boxTypes.find((boxType) => boxType.id === rule.boxTypeId)?.name ?? '—'}</td>
-                  <td className="px-5 py-4 text-sm text-obsidian-500">{rule.maxItems} item(ns)</td>
-                  <td className="px-5 py-4 text-sm text-obsidian-500">{rule.priority}</td>
-                  <td className="px-5 py-4 text-sm text-obsidian-500">{rule.isActive ? 'Sim' : 'Não'}</td>
-                  <td className="px-5 py-4">
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openModal(rule)}>Editar</Button>
-                      <Button variant="danger" size="sm" onClick={() => handleDelete(rule)}>Excluir</Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      <Modal open={modal} onClose={() => setModal(false)} title={editing ? 'Editar Regra' : 'Nova Regra'} maxWidth="max-w-lg">
-        <div className="space-y-4">
-          <Input
-            label="Categoria de embalagem"
-            value={form.packagingCategory}
-            onChange={(event) => setForm((prev) => ({ ...prev, packagingCategory: event.target.value }))}
-            placeholder="Ex: perfume"
-          />
-          <Select
-            label="Tipo de caixa"
-            value={form.boxTypeId}
-            onChange={(event) => setForm((prev) => ({ ...prev, boxTypeId: event.target.value }))}
-            options={boxTypes.map((boxType) => ({ value: boxType.id, label: boxType.name }))}
-            placeholder="Selecione"
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Input label="Máx itens" type="number" min="1" value={form.maxItems} onChange={(event) => setForm((prev) => ({ ...prev, maxItems: event.target.value }))} />
-            <Input label="Prioridade" type="number" min="1" value={form.priority} onChange={(event) => setForm((prev) => ({ ...prev, priority: event.target.value }))} />
-          </div>
-          <label className="flex items-center gap-2 text-sm text-obsidian-700">
-            <input
-              type="checkbox"
-              checked={form.allowMix}
-              onChange={(event) => setForm((prev) => ({ ...prev, allowMix: event.target.checked }))}
-              className="w-4 h-4"
-            />
-            Permitir mistura entre categorias
-          </label>
-          <label className="flex items-center gap-2 text-sm text-obsidian-700">
-            <input
-              type="checkbox"
-              checked={form.isActive}
-              onChange={(event) => setForm((prev) => ({ ...prev, isActive: event.target.checked }))}
-              className="w-4 h-4"
-            />
-            Regra ativa
-          </label>
           <div className="flex gap-3">
             <Button onClick={handleSave} loading={saving} fullWidth>Salvar</Button>
             <Button variant="outline" onClick={() => setModal(false)} fullWidth>Cancelar</Button>

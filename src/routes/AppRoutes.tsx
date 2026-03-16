@@ -33,8 +33,6 @@ import {
   AdminBannerFormPage,
   AdminCategoriesPage,
   AdminSubcategoriesPage,
-  AdminBoxTypesPage,
-  AdminBoxRulesPage,
   AdminOrdersPage,
   AdminOrderDetailPage,
   AdminPaymentsPage,
@@ -82,8 +80,6 @@ export function AppRoutes() {
         <Route path="/admin/banners/:id/edit"     element={<AdminBannerFormPage />} />
         <Route path="/admin/categories"           element={<AdminCategoriesPage />} />
         <Route path="/admin/subcategories"        element={<AdminSubcategoriesPage />} />
-        <Route path="/admin/box-types"            element={<AdminBoxTypesPage />} />
-        <Route path="/admin/box-rules"            element={<AdminBoxRulesPage />} />
         <Route path="/admin/orders"               element={<AdminOrdersPage />} />
         <Route path="/admin/orders/:id"           element={<AdminOrderDetailPage />} />
         <Route path="/admin/payments"             element={<AdminPaymentsPage />} />

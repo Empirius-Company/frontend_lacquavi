@@ -14,7 +14,6 @@ import type {
   OrderShipmentResponse,
 } from '../types'
 export { bannersApi } from './bannerApi'
-export { boxTypesApi, boxRulesApi } from './boxConfigApi'
 
 // ─── Orders API ───────────────────────────────────────────────────────────────
 interface CreateOrderInput {

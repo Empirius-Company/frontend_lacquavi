@@ -160,7 +160,6 @@ export function CheckoutPage() {
   const [shippingRequired, setShippingRequired] = useState(true)
   const [shippingAmountCents, setShippingAmountCents] = useState(0)
   const [shippingDiscountCents, setShippingDiscountCents] = useState(0)
-  const [selectedTotal, setSelectedTotal] = useState<number | null>(null)
 
   const orderIdempotencyKeyRef = useRef(generateIdempotencyKey())
 
@@ -177,7 +176,7 @@ export function CheckoutPage() {
     ? (shippingAmountCents - shippingDiscountCents) / 100
     : 0
   const total = subtotal - discount + shippingAmount
-  const displayTotal = selectedTotal ?? total
+  const displayTotal = total
   const [showCouponInput, setShowCouponInput] = useState(false)
 
   const lastZipLookupRef = useRef<string>('')
@@ -238,7 +237,6 @@ export function CheckoutPage() {
       setShippingRequired(true)
       setShippingAmountCents(0)
       setShippingDiscountCents(0)
-      setSelectedTotal(null)
       localStorage.removeItem(SHIPPING_SESSION_KEY)
       orderIdempotencyKeyRef.current = generateIdempotencyKey()
     }
@@ -261,7 +259,6 @@ export function CheckoutPage() {
         setShippingConfirmed(Boolean(order.shippingQuoteId))
         setShippingAmountCents(order.shippingAmountCents ?? 0)
         setShippingDiscountCents(order.shippingDiscountCents ?? 0)
-        setSelectedTotal(order.total)
       } catch {
         localStorage.removeItem(SHIPPING_SESSION_KEY)
       }
@@ -321,7 +318,6 @@ export function CheckoutPage() {
       setShippingConfirmed(false)
       setShippingAmountCents(0)
       setShippingDiscountCents(0)
-      setSelectedTotal(null)
     }
   }
 
@@ -351,7 +347,6 @@ export function CheckoutPage() {
         setShippingQuotes([])
         setShippingAmountCents(0)
         setShippingDiscountCents(0)
-        setSelectedTotal(subtotal - discount)
         setShippingError('Este pedido não possui itens físicos. Frete não é necessário.')
         break
       default:
@@ -431,7 +426,6 @@ export function CheckoutPage() {
       setShippingRequired(true)
       setShippingAmountCents(selectionResponse.selection.shippingAmountCents)
       setShippingDiscountCents(selectionResponse.selection.shippingDiscountCents)
-      setSelectedTotal(selectionResponse.selection.total)
       persistShippingSession({ selectedQuoteId })
       toast('Frete selecionado com sucesso!', 'success')
     } catch (err) {
