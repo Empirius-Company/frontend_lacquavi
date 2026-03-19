@@ -59,7 +59,7 @@ export function BestSellersHero({ products, reviewStatsByProduct = {} }: BestSel
             <div className="pointer-events-none absolute right-[13%] top-1/2 h-[220px] w-[220px] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(244,114,182,0.2)_0%,rgba(244,114,182,0.1)_45%,rgba(255,255,255,0)_76%)] blur-[2px] md:h-[340px] md:w-[340px]" />
 
             <div className="container-page relative z-10 w-full px-4 py-6 md:px-8 md:py-7">
-                <div className="grid items-center gap-4 md:grid-cols-[0.66fr_1.34fr] md:gap-2">
+                <div className="grid items-center gap-4 md:grid-cols-[0.66fr_1.34fr] md:gap-2 sm:grid-cols-1">
 
                     <div
                         className={`max-w-sm transition-all duration-700 transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
@@ -105,19 +105,19 @@ export function BestSellersHero({ products, reviewStatsByProduct = {} }: BestSel
                         </div>
                     </div>
 
-                    <div className="relative flex h-[180px] items-center justify-center overflow-hidden sm:h-[210px] md:h-[250px] lg:h-[270px]">
+                    <div className="relative flex h-[120px] items-center justify-center overflow-hidden sm:h-[180px] md:h-[250px] lg:h-[270px]">
                         <div className="pointer-events-none absolute left-1/2 top-1/2 h-[180px] w-[180px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(251,113,133,0.34)_0%,rgba(251,113,133,0.2)_44%,rgba(255,255,255,0)_76%)] md:h-[250px] md:w-[250px]" />
 
                         <div
                             key={`img-${activeProduct.id}`}
-                            className="relative z-10 flex items-center justify-center animate-fade-in-up w-[150px] h-[170px] sm:w-[170px] sm:h-[190px] md:w-[220px] md:h-[250px] lg:w-[240px] lg:h-[270px]"
+                            className="relative z-10 flex items-center justify-center animate-fade-in-up w-[90px] h-[100px] sm:w-[170px] sm:h-[190px] md:w-[220px] md:h-[250px] lg:w-[240px] lg:h-[270px]"
                         >
                             {hasImage ? (
                                 <img
                                     src={activeProductImage!.url}
                                     alt={activeProductImage!.alt || activeProduct.name}
-                                    className="soft-edge-image relative h-full w-full object-contain drop-shadow-[0_12px_22px_rgba(41,20,33,0.22)]"
-                                    style={{ animation: 'float 6s ease-in-out infinite' }}
+                                    className="soft-edge-image relative h-full w-full object-contain drop-shadow-[0_12px_22px_rgba(41,20,33,0.22)] max-w-full"
+                                    style={{ animation: 'float 6s ease-in-out infinite', maxWidth: '100%', height: 'auto' }}
                                 />
                             ) : (
                                 <div className="flex h-[220px] w-[160px] items-center justify-center rounded-[26px] bg-gradient-to-b from-rose-100 to-rose-300 text-center font-display text-xl font-medium text-rose-800 shadow-[0_16px_28px_rgba(41,20,33,0.2)] md:h-[290px] md:w-[200px] lg:h-[320px] lg:w-[220px]">

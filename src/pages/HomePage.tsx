@@ -568,18 +568,7 @@ export function HomePage() {
         </section>
       ))}
 
-      <section className="py-12 bg-white">
-        <div className="container-page">
-          <SectionHeader
-            title="Hidratantes e Desodorantes"
-            linkTo="/products?q=hidratante"
-          />
-          {error ? null : (
-            <ProductCarousel products={hydratedAndDeodorantProducts} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
-          )}
-        </div>
-      </section>
-
+     
       {/* Physical Store Teaser */}
       <StoreTeaser />
 

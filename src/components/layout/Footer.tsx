@@ -49,7 +49,6 @@ export function Footer() {
             <h4 className="font-bold text-[#333] mb-4 uppercase text-sm">Institucional</h4>
             <ul className="space-y-3">
               {[
-                { to: '/sobre', label: 'Sobre a Época' },
                 { to: '/nossa-loja', label: 'Nossas Lojas' },
                 { to: '/termos', label: 'Termos e Condições' },
                 { to: '/privacidade', label: 'Política de Privacidade' },
@@ -66,7 +65,6 @@ export function Footer() {
             <h4 className="font-bold text-[#333] mb-4 uppercase text-sm">Dúvidas</h4>
             <ul className="space-y-3">
               {[
-                { to: '/faq', label: 'Central de Atendimento' },
                 { to: '/entrega', label: 'Frete e Entrega' },
                 { to: '/trocas', label: 'Trocas e Devoluções' },
                 { to: '/pagamento', label: 'Formas de Pagamento' },
@@ -107,9 +105,9 @@ export function Footer() {
               </span>
             </div>
 
-            <h4 className="font-bold text-[#333] mb-2 uppercase text-sm">Televendas</h4>
-            <p className="text-2xl font-black text-[#000000] mb-1">0800 123 4567</p>
-            <p className="text-xs text-gray-500">Seg. a Sex. das 8h às 20h<br />Sáb. das 9h às 15h</p>
+            <h4 className="font-bold text-[#333] mb-2 uppercase text-sm">Atendimento</h4>
+            <p className="text-2xl font-black text-[#000000] mb-1">31 97501-9000</p>
+            <p className="text-xs text-gray-500">Seg. a Sex. das 8h às 22h<br />Sáb. das 9h às 14h</p>
           </div>
 
         </div>

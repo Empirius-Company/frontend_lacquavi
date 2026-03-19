@@ -502,8 +502,6 @@ export function ProductDetailPage() {
                   <h3 className="uppercase text-sm font-bold text-gray-800 tracking-widest border-b-2 border-[#e6226e] pb-2 -mb-px">Especificações</h3>
                 </div>
                 <div className="border border-pink-100 rounded p-4 text-sm text-gray-600 bg-white shadow-sm">
-                  <p className="mb-1"><span className="font-medium">Indicação:</span> Todos os tipos de pele</p>
-                  <p className="mb-1"><span className="font-medium">Necessidade:</span> Cuidado Diário</p>
                   {product.volume && <p><span className="font-medium">Tamanho:</span> {product.volume}</p>}
                 </div>
               </div>
