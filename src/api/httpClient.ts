@@ -2,19 +2,19 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios'
 import type { ApiError } from '../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
-const ACCESS_KEY = 'lacquavi_access_token'
-const REFRESH_KEY = 'lacquavi_refresh_token'
 
-// Token accessor — will be overridden by AuthContext once mounted
-let _getAccessToken: () => string | null = () => {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem(ACCESS_KEY)
-}
+// Token accessor/updater — wired by AuthContext once mounted
+let _getAccessToken: () => string | null = () => null
+let _setAccessToken: (token: string) => void = () => {}
 let _onUnauthorized: () => void = () => {}
 let refreshPromise: Promise<string | null> | null = null
 
 export const setTokenAccessor = (fn: () => string | null) => {
   _getAccessToken = fn
+}
+
+export const setTokenUpdater = (fn: (token: string) => void) => {
+  _setAccessToken = fn
 }
 
 export const setUnauthorizedHandler = (fn: () => void) => {
@@ -25,6 +25,7 @@ export const setUnauthorizedHandler = (fn: () => void) => {
 const instance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15_000,
+  withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -48,34 +49,28 @@ instance.interceptors.request.use((config) => {
 instance.interceptors.response.use(
   (res) => res,
   async (err: AxiosError<{ error?: string; message?: string; code?: string; retryAfter?: number }>) => {
-    const originalRequest = err.config as (AxiosRequestConfig & { _retry?: boolean }) | undefined
+    const originalRequest = err.config as (AxiosRequestConfig & { _retry?: boolean; _refreshAttempts?: number }) | undefined
     const isUnauthorized = err.response?.status === 401
     const isAuthEndpoint = originalRequest?.url?.includes('/auth/')
 
     if (isUnauthorized && originalRequest && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true
+      originalRequest._refreshAttempts = (originalRequest._refreshAttempts ?? 0) + 1
 
-      const currentRefreshToken = localStorage.getItem(REFRESH_KEY)
-      if (currentRefreshToken) {
+      if (originalRequest._refreshAttempts <= 3) {
         try {
           if (!refreshPromise) {
             refreshPromise = axios
-              .post<{ accessToken?: string; refreshToken?: string; token?: string }>(
+              .post<{ accessToken?: string; token?: string }>(
                 `${API_BASE_URL}/auth/refresh`,
-                { refreshToken: currentRefreshToken },
-                { headers: { 'Content-Type': 'application/json' } }
+                {},
+                { withCredentials: true, headers: { 'Content-Type': 'application/json' } }
               )
               .then((response) => {
                 const newAccessToken = response.data.accessToken || response.data.token || null
-                const newRefreshToken = response.data.refreshToken || currentRefreshToken
-
                 if (newAccessToken) {
-                  localStorage.setItem(ACCESS_KEY, newAccessToken)
+                  _setAccessToken(newAccessToken)
                 }
-                if (newRefreshToken) {
-                  localStorage.setItem(REFRESH_KEY, newRefreshToken)
-                }
-
                 return newAccessToken
               })
               .finally(() => {

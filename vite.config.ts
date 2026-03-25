@@ -9,22 +9,42 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+        cookieDomainRewrite: 'localhost',
       },
       '/auth': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+        cookieDomainRewrite: 'localhost',
       },
       '/products': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+        cookieDomainRewrite: 'localhost',
       },
       '/orders': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+        cookieDomainRewrite: 'localhost',
+      },
+      '/banners': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        cookieDomainRewrite: 'localhost',
+      },
+      '/shipping': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        cookieDomainRewrite: 'localhost',
+      },
+      '/webhooks': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        cookieDomainRewrite: 'localhost',
       },
       '/health': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+        cookieDomainRewrite: 'localhost',
       },
     },
   },

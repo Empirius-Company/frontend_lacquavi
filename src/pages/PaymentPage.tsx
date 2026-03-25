@@ -178,8 +178,7 @@ export function PaymentPage() {
     if (!orderId) return
     if (isCreatingRef.current) return
 
-    const effectiveToken = accessToken || localStorage.getItem('lacquavi_access_token')
-    if (!isAuthenticated || !effectiveToken) {
+    if (!isAuthenticated || !accessToken) {
       toast('Sua sessão expirou. Faça login novamente para gerar o PIX.', 'error')
       navigate('/login', { replace: true })
       return

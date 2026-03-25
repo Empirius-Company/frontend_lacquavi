@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, ReactNode, useEffect } from 'react'
+import { ButtonHTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, ReactNode, useEffect, Component, ErrorInfo } from 'react'
 import { useToast } from '../../context/ToastContext'
 import type { ToastType } from '../../context/ToastContext'
 
@@ -277,6 +277,52 @@ export function Modal({ open, onClose, title, children, maxWidth = 'max-w-lg', d
       </div>
     </div>
   )
+}
+
+// ─── Error Boundary ───────────────────────────────────────────────────────────
+interface ErrorBoundaryState { hasError: boolean; error: Error | null }
+interface ErrorBoundaryProps { children: ReactNode; fallback?: ReactNode }
+
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    // Log to console in dev; in prod this would go to Sentry/Datadog
+    if (import.meta.env.DEV) {
+      console.error('[ErrorBoundary]', error, info.componentStack)
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      if (this.props.fallback) return this.props.fallback
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[40vh] px-6 text-center space-y-5">
+          <div className="text-5xl text-nude-300">◇</div>
+          <div>
+            <h2 className="font-display text-xl text-noir-950">Algo deu errado</h2>
+            <p className="mt-1.5 text-sm text-nude-500">
+              Ocorreu um erro inesperado. Recarregue a página para tentar novamente.
+            </p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn-primary px-8 py-3 text-sm rounded-full"
+          >
+            Recarregar
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
 }
 
 // ─── Error Message ────────────────────────────────────────────────────────────

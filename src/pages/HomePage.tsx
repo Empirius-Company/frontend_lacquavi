@@ -11,12 +11,6 @@ import { getProductPriceSummary } from '../utils'
 import { getProductPrimaryImageUrl } from '../utils/productImages'
 import type { Product, Category, Banner } from '../types'
 
-const normalizeText = (value: string) =>
-  value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-
 function useReveal(dep?: unknown) {
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -337,17 +331,6 @@ function CategoryTiles({ categories, products }: { categories: Category[]; produ
 
   const perfumeCategory = findCategory('perfume')
   const kitsCategory = findCategory('kit')
-  const lotionCategory = categories.find((category) => {
-    const haystack = `${normalize(category.name)} ${normalize(category.slug)}`
-    return (
-      haystack.includes('locao hidratante') ||
-      haystack.includes('locoes hidratantes') ||
-      haystack.includes('locao') ||
-      haystack.includes('hidrat') ||
-      haystack.includes('locion')
-    )
-  })
-
   const pickImage = (categoryId: string, keyword?: string) => {
     const normalizedKeyword = keyword ? normalize(keyword) : ''
     const directMatch = products.find((product) => {
@@ -389,13 +372,22 @@ function CategoryTiles({ categories, products }: { categories: Category[]; produ
     })
   }
 
-  if (lotionCategory) {
-    tiles.push({
-      key: 'locoes-hidratantes',
-      label: 'Cuidados Pessoais',
-      to: `/products?category=${lotionCategory.id}`,
-      imageUrl: pickImage(lotionCategory.id),
-    })
+  const usedCategoryIds = new Set([
+    perfumeCategory?.id,
+    kitsCategory?.id,
+  ].filter(Boolean))
+
+  if (tiles.length < 4) {
+    for (const category of categories) {
+      if (tiles.length >= 4) break
+      if (usedCategoryIds.has(category.id)) continue
+      tiles.push({
+        key: category.id,
+        label: category.name,
+        to: `/products?category=${category.id}`,
+        imageUrl: pickImage(category.id),
+      })
+    }
   }
 
   if (tiles.length === 0) return null
@@ -484,28 +476,6 @@ export function HomePage() {
       .slice(0, 5),
     [categories, productsByCategory]
   )
-
-  const hydratedAndDeodorantProducts = useMemo(() => {
-    const hydratedOrDeodorantCategoryIds = categories
-      .filter((category) => {
-        const haystack = `${normalizeText(category.name)} ${normalizeText(category.slug)}`
-        return haystack.includes('hidrat') || haystack.includes('desodor')
-      })
-      .map((category) => category.id)
-
-    const fromCategories = sortedProducts.filter(
-      (product) => product.categoryId && hydratedOrDeodorantCategoryIds.includes(product.categoryId)
-    )
-
-    if (fromCategories.length > 0) {
-      return fromCategories
-    }
-
-    return sortedProducts.filter((product) => {
-      const haystack = normalizeText(`${product.name} ${product.description || ''} ${product.brand || ''}`)
-      return haystack.includes('hidrat') || haystack.includes('desodor')
-    })
-  }, [categories, sortedProducts])
 
   return (
     <div className="bg-[#F5F5F5] min-h-screen pb-16">

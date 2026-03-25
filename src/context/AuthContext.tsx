@@ -2,11 +2,8 @@ import {
   createContext, useContext, useEffect, useState, useCallback, ReactNode
 } from 'react'
 import { authApi } from '../api/authApi'
-import { setTokenAccessor, setUnauthorizedHandler } from '../api/httpClient'
+import { setTokenAccessor, setTokenUpdater, setUnauthorizedHandler } from '../api/httpClient'
 import type { User, ApiError } from '../types'
-
-const ACCESS_KEY  = 'lacquavi_access_token'
-const REFRESH_KEY = 'lacquavi_refresh_token'
 
 interface AuthContextValue {
   user: User | null
@@ -26,85 +23,61 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser]                   = useState<User | null>(null)
-  const [accessToken, setAccessToken]     = useState('')
-  const [refreshToken, setRefreshToken]   = useState('')
-  const [isLoading, setIsLoading]         = useState(true)
+  const [user, setUser]               = useState<User | null>(null)
+  const [accessToken, setAccessToken] = useState('')
+  const [isLoading, setIsLoading]     = useState(true)
 
-  const saveSession = useCallback((at: string, rt: string, u: User) => {
-    localStorage.setItem(ACCESS_KEY,  at)
-    localStorage.setItem(REFRESH_KEY, rt)
+  const saveSession = useCallback((at: string, u: User) => {
     setAccessToken(at)
-    setRefreshToken(rt)
     setUser(u)
   }, [])
 
   const clearSession = useCallback(() => {
-    localStorage.removeItem(ACCESS_KEY)
-    localStorage.removeItem(REFRESH_KEY)
     setAccessToken('')
-    setRefreshToken('')
     setUser(null)
   }, [])
 
-  // Wire httpClient
+  // Wire httpClient — provide in-memory token
   useEffect(() => {
-    setTokenAccessor(() => accessToken || localStorage.getItem(ACCESS_KEY))
+    setTokenAccessor(() => accessToken || null)
   }, [accessToken])
+
+  // Wire httpClient — update in-memory token after silent refresh
+  useEffect(() => {
+    setTokenUpdater((token: string) => setAccessToken(token))
+  }, [])
 
   useEffect(() => {
     setUnauthorizedHandler(() => clearSession())
   }, [clearSession])
 
-  // Bootstrap session from localStorage
+  // Bootstrap — always restore session via HttpOnly cookie
   useEffect(() => {
-    const storedAccess  = localStorage.getItem(ACCESS_KEY)
-    const storedRefresh = localStorage.getItem(REFRESH_KEY)
-
-    if (!storedAccess) {
-      setIsLoading(false)
-      return
-    }
-
-    setAccessToken(storedAccess)
-    if (storedRefresh) setRefreshToken(storedRefresh)
-
-    authApi.getProfile()
-      .then(({ user }) => setUser(user))
-      .catch(() => {
-        // Try refresh if profile fails
-        if (storedRefresh) {
-          return authApi.refresh(storedRefresh)
-            .then(({ accessToken: at, refreshToken: rt }) => {
-              localStorage.setItem(ACCESS_KEY,  at)
-              localStorage.setItem(REFRESH_KEY, rt)
-              setAccessToken(at)
-              setRefreshToken(rt)
-              return authApi.getProfile()
-            })
-            .then(({ user }) => setUser(user))
-            .catch(() => clearSession())
-        }
-        clearSession()
+    authApi.refresh()
+      .then(({ accessToken: at }) => {
+        setAccessToken(at)
+        return authApi.getProfile()
       })
+      .then(({ user }) => setUser(user))
+      .catch(() => clearSession())
       .finally(() => setIsLoading(false))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Actions ────────────────────────────────────────────────────────────────
   const login = useCallback(async (email: string, password: string) => {
     const res = await authApi.login({ email, password })
-    saveSession(res.accessToken, res.refreshToken, res.user)
+    saveSession(res.accessToken, res.user)
   }, [saveSession])
 
   const register = useCallback(async (name: string, email: string, password: string, phone?: string) => {
     const res = await authApi.register({ name, email, password, ...(phone ? { phone } : {}) })
-    saveSession(res.accessToken, res.refreshToken, res.user)
+    saveSession(res.accessToken, res.user)
   }, [saveSession])
 
   const logout = useCallback(async () => {
-    try { await authApi.logout({ refreshToken }) } catch { /* ignore */ }
+    try { await authApi.logout() } catch { /* ignore */ }
     clearSession()
-  }, [refreshToken, clearSession])
+  }, [clearSession])
 
   const logoutAll = useCallback(async () => {
     try { await authApi.logoutAll() } catch { /* ignore */ }
@@ -112,13 +85,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [clearSession])
 
   const refreshSession = useCallback(async () => {
-    const rt = refreshToken || localStorage.getItem(REFRESH_KEY) || ''
-    const res = await authApi.refresh(rt)
-    localStorage.setItem(ACCESS_KEY,  res.accessToken)
-    localStorage.setItem(REFRESH_KEY, res.refreshToken)
+    const res = await authApi.refresh()
     setAccessToken(res.accessToken)
-    setRefreshToken(res.refreshToken)
-  }, [refreshToken])
+  }, [])
 
   const updateUser = useCallback((updated: User) => setUser(updated), [])
 

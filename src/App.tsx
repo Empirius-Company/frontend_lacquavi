@@ -4,7 +4,7 @@ import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import { ToastProvider } from './context/ToastContext'
 import { AppRoutes } from './routes/AppRoutes'
-import { ToastContainer } from './components/ui'
+import { ToastContainer, ErrorBoundary } from './components/ui'
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -19,17 +19,21 @@ function ScrollToTop() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <ScrollToTop />
-      <ToastProvider>
-        <AuthProvider>
-          <CartProvider>
-            <AppRoutes />
-            <ToastContainer />
-          </CartProvider>
-        </AuthProvider>
-      </ToastProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ScrollToTop />
+        <ToastProvider>
+          <AuthProvider>
+            <CartProvider>
+              <ErrorBoundary>
+                <AppRoutes />
+              </ErrorBoundary>
+              <ToastContainer />
+            </CartProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }
 
