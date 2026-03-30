@@ -27,12 +27,12 @@ function CartItem({ item }: { item: any }) {
       {/* Info */}
       <div className="flex-1 min-w-0">
         {item.product?.brand && (
-          <p className="text-2xs text-[#e6226e] uppercase tracking-wide-lg font-semibold mb-0.5">
+          <p className="text-2xs text-[#2a7e51] uppercase tracking-wide-lg font-semibold mb-0.5">
             {item.product.brand}
           </p>
         )}
         <Link to={`/products/${item.productId}`}>
-          <h3 className="font-display text-base text-[#111111] leading-snug hover:text-[#e6226e] transition-colors line-clamp-2">
+          <h3 className="font-display text-base text-[#111111] leading-snug hover:text-[#2a7e51] transition-colors line-clamp-2">
             {item.product?.name ?? item.productId}
           </h3>
         </Link>
@@ -45,13 +45,13 @@ function CartItem({ item }: { item: any }) {
           <div className="flex items-center border border-gray-200 rounded-full overflow-hidden bg-white">
             <button
               onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-              className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-[#111111] hover:bg-gray-50 transition-colors"
+              className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-[#111111] hover:bg-gray-50 transition-colors"
             >−</button>
             <span className="w-7 text-center text-sm font-medium text-[#111111]">{item.quantity}</span>
             <button
               onClick={() => updateQuantity(item.productId, item.quantity + 1)}
               disabled={item.quantity >= (item.product?.stock ?? 99)}
-              className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-[#111111] hover:bg-gray-50 transition-colors disabled:opacity-30"
+              className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-[#111111] hover:bg-gray-50 transition-colors disabled:opacity-30"
             >+</button>
           </div>
 
@@ -65,7 +65,7 @@ function CartItem({ item }: { item: any }) {
       {/* Remove */}
       <button
         onClick={() => removeItem(item.productId)}
-        className="self-start p-1.5 text-gray-300 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-red-50"
+        className="self-start p-1.5 text-gray-300 hover:text-red-700 opacity-40 group-hover:opacity-100 transition-all rounded-lg hover:bg-red-50"
         aria-label="Remover"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -111,7 +111,7 @@ export function CartPage() {
       {/* Page header */}
       <div className="bg-white border-b border-gray-100">
         <div className="container-page py-8 md:py-10">
-          <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mb-2">Compra</p>
+          <p className="text-xs font-bold text-[#2a7e51] uppercase tracking-widest mb-2">Compra</p>
           <h1 className="font-display text-3xl md:text-4xl font-black text-[#000000]">
             Carrinho de Compras
           </h1>

@@ -44,13 +44,13 @@ export function StoreTeaser() {
           </p>
 
           {/* Selector UI */}
-          <div className="inline-flex bg-white border border-gray-200 shadow-sm p-1.5 rounded-xl max-w-full overflow-x-auto gap-2">
+          <div className="flex flex-wrap justify-center gap-2 bg-white border border-gray-200 shadow-sm p-1.5 rounded-xl max-w-full">
             {STORES.map((store) => (
               <button
                 key={store.id}
                 onClick={() => setActiveStoreId(store.id)}
-                className={`flex-1 min-w-[160px] whitespace-nowrap px-6 py-3 rounded-lg font-bold text-sm transition-all focus:outline-none ${activeStoreId === store.id
-                  ? 'bg-[#e6226e] text-white shadow-md'
+                className={`flex-1 min-w-[120px] whitespace-nowrap px-5 py-3 rounded-lg font-bold text-sm transition-all focus:outline-none ${activeStoreId === store.id
+                  ? 'bg-[#2a7e51] text-white shadow-md'
                   : 'text-gray-500 hover:text-[#000000] hover:bg-gray-50'
                   }`}
               >
@@ -75,7 +75,7 @@ export function StoreTeaser() {
                   <span className={`w-2 h-2 rounded-full ${todayIsOpen ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></span>
                   {todayIsOpen ? 'Aberto Hoje' : 'Fechado Hoje'}
                 </span>
-                <span className="bg-[#e6226e]/10 text-[#e6226e] px-2.5 py-1 rounded-md text-[10px] uppercase font-black tracking-widest">
+                <span className="bg-[#2a7e51]/10 text-[#2a7e51] px-2.5 py-1 rounded-md text-[10px] uppercase font-black tracking-widest">
                   ★ Retire Aqui em 1h
                 </span>
               </div>
@@ -117,7 +117,7 @@ export function StoreTeaser() {
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-4 mt-2">
-              <a href={s.mapsUrl} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#e6226e] text-white text-center py-4 rounded-xl font-bold text-sm hover:bg-[#cc1d60] transition-colors shadow-lg shadow-[#e6226e]/20 flex items-center justify-center gap-2">
+              <a href={s.mapsUrl} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#2a7e51] text-white text-center py-4 rounded-xl font-bold text-sm hover:bg-[#236843] transition-colors shadow-lg shadow-[#2a7e51]/20 flex items-center justify-center gap-2">
                 <IconMapPin /> Como Chegar
               </a>
               <a href={`https://wa.me/${s.whatsapp}?text=Olá!%20Gostaria%20de%20visitar%20a%20${s.name}.`} target="_blank" rel="noopener noreferrer" className="flex-1 border border-gray-200 bg-white text-[#000000] text-center py-4 rounded-xl font-bold text-sm hover:border-gray-300 hover:bg-gray-50 transition-colors shadow-sm">
@@ -144,14 +144,14 @@ export function StoreTeaser() {
 
             {/* Custom Pink Pin Overlay */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-10 pointer-events-none drop-shadow-xl mt-[-15px]">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="#e6226e" stroke="white" strokeWidth="1" xmlns="http://www.w3.org/2000/svg">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="#2a7e51" stroke="white" strokeWidth="1" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
               </svg>
             </div>
 
             {/* Hover Action Indicator */}
             <div className="absolute inset-x-0 bottom-0 top-auto z-10 pointer-events-none bg-gradient-to-t from-[#000000]/40 to-transparent flex items-end justify-center pb-8 pt-12 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <span className="bg-[#e6226e] text-white px-6 py-3 rounded-full font-bold shadow-2xl flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+              <span className="bg-[#2a7e51] text-white px-6 py-3 rounded-full font-bold shadow-2xl flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                 <IconMapPin /> Abrir no Google Maps
               </span>
             </div>

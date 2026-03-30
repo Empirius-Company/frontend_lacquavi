@@ -86,7 +86,7 @@ export function MiniCart() {
                                             <div className="flex items-center border border-nude-200 rounded-full bg-white">
                                                 <button
                                                     onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                                                    className="w-7 h-7 flex items-center justify-center text-nude-500 hover:text-noir-950 transition-colors"
+                                                    className="w-9 h-9 flex items-center justify-center text-nude-500 hover:text-noir-950 transition-colors"
                                                 >−</button>
                                                 <span className="w-6 text-center text-xs font-semibold">{item.quantity}</span>
                                                 <button
@@ -117,7 +117,7 @@ export function MiniCart() {
 
                         <button
                             onClick={handleCheckout}
-                            className="w-full bg-[#000000] hover:bg-[#e6226e] transition-colors text-white font-bold tracking-widest uppercase text-sm py-4 rounded-xl shadow-[0_4px_14px_rgba(0,0,0,0.1)] mb-2"
+                            className="w-full bg-[#000000] hover:bg-[#2a7e51] transition-colors text-white font-bold tracking-widest uppercase text-sm py-4 rounded-xl shadow-[0_4px_14px_rgba(0,0,0,0.1)] mb-2"
                         >
                             Finalizar Pedido →
                         </button>

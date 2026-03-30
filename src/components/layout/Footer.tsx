@@ -29,7 +29,7 @@ export function Footer() {
                 placeholder="Seu melhor e-mail"
                 className="px-5 py-4 rounded-lg w-full sm:w-80 text-[#333] bg-white border border-[#D4AF37]/40 focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-all placeholder:text-gray-400"
               />
-              <button className="bg-[#e6226e] hover:bg-[#cc1d60] active:scale-[0.98] text-white font-bold px-8 py-4 rounded-lg uppercase tracking-widest text-xs transition-all shadow-lg shadow-[#e6226e]/20 whitespace-nowrap">
+              <button className="bg-[#2a7e51] hover:bg-[#236843] active:scale-[0.98] text-white font-bold px-8 py-4 rounded-lg uppercase tracking-widest text-xs transition-all shadow-lg shadow-[#2a7e51]/20 whitespace-nowrap">
                 QUERO MEU CUPOM
               </button>
             </div>
@@ -54,7 +54,7 @@ export function Footer() {
                 { to: '/privacidade', label: 'Política de Privacidade' },
               ].map(l => (
                 <li key={l.to}>
-                  <Link to={l.to} className="text-sm text-gray-500 hover:text-[#e6226e] transition-colors">{l.label}</Link>
+                  <Link to={l.to} className="text-sm text-gray-500 hover:text-[#2a7e51] transition-colors">{l.label}</Link>
                 </li>
               ))}
             </ul>
@@ -70,7 +70,7 @@ export function Footer() {
                 { to: '/pagamento', label: 'Formas de Pagamento' },
               ].map(l => (
                 <li key={l.to}>
-                  <Link to={l.to} className="text-sm text-gray-500 hover:text-[#e6226e] transition-colors">{l.label}</Link>
+                  <Link to={l.to} className="text-sm text-gray-500 hover:text-[#2a7e51] transition-colors">{l.label}</Link>
                 </li>
               ))}
             </ul>
@@ -87,7 +87,7 @@ export function Footer() {
                 { to: '/login', label: 'Entrar/Cadastrar' },
               ].map(l => (
                 <li key={l.to}>
-                  <Link to={l.to} className="text-sm text-gray-500 hover:text-[#e6226e] transition-colors">{l.label}</Link>
+                  <Link to={l.to} className="text-sm text-gray-500 hover:text-[#2a7e51] transition-colors">{l.label}</Link>
                 </li>
               ))}
             </ul>
@@ -97,10 +97,10 @@ export function Footer() {
           <div>
             <h4 className="font-bold text-[#333] mb-4 uppercase text-sm">Siga-nos</h4>
             <div className="flex gap-4 mb-8">
-              <span className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-[#e6226e] hover:text-white cursor-pointer transition-colors">
+              <span className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-[#2a7e51] hover:text-white cursor-pointer transition-colors">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
               </span>
-              <span className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-[#e6226e] hover:text-white cursor-pointer transition-colors">
+              <span className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-[#2a7e51] hover:text-white cursor-pointer transition-colors">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
               </span>
             </div>

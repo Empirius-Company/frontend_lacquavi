@@ -1,14 +1,14 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { productsApi } from '../api/catalogApi'
-import { ordersApi, shippingApi } from '../api'
+import { shippingApi } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
 import { Button } from '../components/ui'
 import { formatCurrency, getProductPriceSummary } from '../utils'
 import { getOrderedGallery, getProductPrimaryImage } from '../utils/productImages'
-import type { ApiError, Product, ProductImage, ProductReview, ProductReviewStats, ShippingDestination, ShippingQuote } from '../types'
+import type { ApiError, Product, ProductImage, ProductReview, ProductReviewStats, ShippingQuote } from '../types'
 
 const PRODUCT_DETAIL_ZIP_CACHE_KEY = 'lacquavi_product_detail_zip'
 
@@ -54,10 +54,10 @@ function FloatingBuyBar({ product, onAdd }: { product: Product, onAdd: () => voi
             </div>
 
             <div className="flex items-center gap-4">
-              <button onClick={onAdd} className="bg-[#e6226e] hover:bg-[#cc1d60] text-white px-8 py-2.5 rounded text-sm font-bold uppercase tracking-wide transition-colors">
+              <button onClick={onAdd} className="bg-[#2a7e51] hover:bg-[#236843] text-white px-8 py-2.5 rounded text-sm font-bold uppercase tracking-wide transition-colors">
                 Comprar
               </button>
-              <button className="text-gray-400 hover:text-[#e6226e]">
+              <button className="text-gray-400 hover:text-[#2a7e51]">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
               </button>
             </div>
@@ -107,34 +107,7 @@ export function ProductDetailPage() {
   const [shippingError, setShippingError] = useState('')
   const [shippingQuotes, setShippingQuotes] = useState<ShippingQuote[]>([])
 
-  const resolveDestinationByZip = async (zipInput: string): Promise<ShippingDestination> => {
-    const zipDigits = zipInput.replace(/\D/g, '')
-    const response = await fetch(`https://viacep.com.br/ws/${zipDigits}/json/`)
-    const data = await response.json() as {
-      erro?: boolean
-      cep?: string
-      logradouro?: string
-      bairro?: string
-      localidade?: string
-      uf?: string
-    }
-
-    if (!response.ok || data.erro) {
-      throw new Error('CEP não encontrado. Verifique e tente novamente.')
-    }
-
-    return {
-      zip: data.cep ?? zipInput,
-      street: data.logradouro?.trim() || 'Endereço não informado',
-      number: 'S/N',
-      complement: '',
-      district: data.bairro?.trim() || 'Centro',
-      city: data.localidade?.trim() || '',
-      state: data.uf?.trim().toUpperCase() || '',
-    }
-  }
-
-  const loadReviews = useCallback(async () => {
+const loadReviews = useCallback(async () => {
     if (!id) return
     setReviewsLoading(true)
     try {
@@ -231,24 +204,13 @@ export function ProductDetailPage() {
       return
     }
 
-    if (!isAuthenticated) {
-      toast('Faça login para calcular o frete.', 'warning')
-      navigate(`/login?redirect=${encodeURIComponent(`/products/${id}`)}`)
-      return
-    }
-
     setShippingLoading(true)
     setShippingError('')
 
     try {
-      const destination = await resolveDestinationByZip(zipDigits)
-      const { order } = await ordersApi.create({
+      const result = await shippingApi.publicQuote({
         items: [{ productId: product.id, quantity: 1 }],
-      })
-
-      const result = await shippingApi.quote({
-        orderId: order.id,
-        destination,
+        destinationZip: zipDigits,
       })
 
       if (!result.quotes?.length) {
@@ -350,7 +312,7 @@ export function ProductDetailPage() {
             {galleryImages.length > 1 && (
               <div className="flex flex-col gap-2 w-16 md:w-20 shrink-0">
                 {galleryImages.map((img, idx) => (
-                  <div key={img.id} className={`aspect-square border-2 rounded ${idx === selectedImageIndex ? 'border-[#e6226e]' : 'border-transparent hover:border-gray-200'} cursor-pointer overflow-hidden p-1 bg-white shadow-sm`}>
+                  <div key={img.id} className={`aspect-square border-2 rounded ${idx === selectedImageIndex ? 'border-[#2a7e51]' : 'border-transparent hover:border-gray-200'} cursor-pointer overflow-hidden p-1 bg-white shadow-sm`}>
                     <button type="button" onClick={() => setSelectedImageIndex(idx)} className="w-full h-full">
                       <img src={img.url} alt={img.alt || `${product.name} ${idx + 1}`} className="w-full h-full object-contain" />
                     </button>
@@ -371,7 +333,7 @@ export function ProductDetailPage() {
                 <img src={selectedImage.url} alt={selectedImage.alt || product.name} className="w-full h-full object-contain" />
               ) : (
                 <div className="w-64 h-64 bg-gray-50 flex items-center justify-center rounded-2xl">
-                  <span className="text-[#e6226e] text-6xl font-black italic opacity-20">{product.name[0]}</span>
+                  <span className="text-[#2a7e51] text-6xl font-black italic opacity-20">{product.name[0]}</span>
                 </div>
               )}
 
@@ -391,7 +353,7 @@ export function ProductDetailPage() {
 
             {/* Brand & Stars */}
             <div className="flex justify-between items-start mb-2">
-              <Link to={`/brand/${product.brand}`} className="text-xs text-[#e6226e] hover:underline uppercase tracking-wide">Ver tudo da marca <span className="font-bold">{product.brand || 'DIVERSOS'}</span></Link>
+              <Link to={`/brand/${product.brand}`} className="text-xs text-[#2a7e51] hover:underline uppercase tracking-wide">Ver tudo da marca <span className="font-bold">{product.brand || 'DIVERSOS'}</span></Link>
               <span className="text-xs text-gray-400">Ref: {product.id.split('-')[0].toUpperCase()}</span>
             </div>
 
@@ -413,7 +375,7 @@ export function ProductDetailPage() {
               <div className="flex items-end gap-2">
                 <span className="text-3xl font-black text-black leading-none">{formatCurrency(pricing.finalPrice)}</span>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Vendido e entregue por <span className="text-[#e6226e] font-bold">Lacquavi ›</span></p>
+              <p className="text-xs text-gray-500 mt-2">Vendido e entregue por <span className="text-[#2a7e51] font-bold">Lacquavi ›</span></p>
             </div>
 
             {/* Actions */}
@@ -421,7 +383,7 @@ export function ProductDetailPage() {
               <button
                 onClick={handleAdd}
                 disabled={isOutOfStock}
-                className="w-full bg-[#e6226e] hover:bg-[#cc1d60] transition-colors text-white font-bold text-sm tracking-wide uppercase py-4 rounded shadow-[0_4px_12px_rgba(230,34,110,0.3)] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[#2a7e51] hover:bg-[#236843] transition-colors text-white font-bold text-sm tracking-wide uppercase py-4 rounded shadow-[0_4px_12px_rgba(42,126,81,0.3)] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Comprar
               </button>
@@ -499,7 +461,7 @@ export function ProductDetailPage() {
               {/* Specs */}
               <div className="mb-12">
                 <div className="flex border-b border-pink-200 mb-4">
-                  <h3 className="uppercase text-sm font-bold text-gray-800 tracking-widest border-b-2 border-[#e6226e] pb-2 -mb-px">Especificações</h3>
+                  <h3 className="uppercase text-sm font-bold text-gray-800 tracking-widest border-b-2 border-[#2a7e51] pb-2 -mb-px">Especificações</h3>
                 </div>
                 <div className="border border-pink-100 rounded p-4 text-sm text-gray-600 bg-white shadow-sm">
                   {product.volume && <p><span className="font-medium">Tamanho:</span> {product.volume}</p>}
@@ -508,7 +470,7 @@ export function ProductDetailPage() {
 
               <div className="mb-12">
                 <div className="flex border-b border-pink-200 mb-4">
-                  <h3 className="uppercase text-sm font-bold text-gray-800 tracking-widest border-b-2 border-[#e6226e] pb-2 -mb-px">Avaliações</h3>
+                  <h3 className="uppercase text-sm font-bold text-gray-800 tracking-widest border-b-2 border-[#2a7e51] pb-2 -mb-px">Avaliações</h3>
                 </div>
 
                 <div className="border border-gray-200 rounded p-4 bg-white mb-4">
@@ -559,14 +521,14 @@ export function ProductDetailPage() {
                     <button
                       type="submit"
                       disabled={submittingReview}
-                      className="bg-[#e6226e] hover:bg-[#cc1d60] text-white px-6 py-2.5 rounded text-sm font-bold uppercase tracking-wide transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="bg-[#2a7e51] hover:bg-[#236843] text-white px-6 py-2.5 rounded text-sm font-bold uppercase tracking-wide transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {submittingReview ? 'Enviando...' : 'Enviar avaliação'}
                     </button>
                   </form>
                 ) : (
                   <div className="border border-gray-200 rounded p-4 bg-white mb-4 text-sm text-gray-600">
-                    Faça <Link to={`/login?redirect=${encodeURIComponent(`/products/${id}`)}`} className="text-[#e6226e] font-semibold hover:underline">login</Link> para enviar sua avaliação.
+                    Faça <Link to={`/login?redirect=${encodeURIComponent(`/products/${id}`)}`} className="text-[#2a7e51] font-semibold hover:underline">login</Link> para enviar sua avaliação.
                   </div>
                 )}
 

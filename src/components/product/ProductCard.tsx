@@ -109,8 +109,8 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
             {product.volume && <span className="text-gray-500 font-normal"> {product.volume}</span>}
           </h3>
 
-          {/* Bottom Action Area (Price + Button inline) */}
-          <div className="mt-auto pt-2 grid grid-cols-[1fr_auto] items-end gap-2">
+          {/* Bottom Action Area (Price + Button stacked) */}
+          <div className="mt-auto pt-2 flex flex-col gap-1.5">
             <div className="flex flex-col">
               {pricing.finalPrice > 0 ? (
                 <>
@@ -124,16 +124,16 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
                   </span>
                 </>
               ) : (
-                <span className="text-[12px] text-[#e6226e] font-bold leading-[1.2]">Sob Consulta</span>
+                <span className="text-[12px] text-[#2a7e51] font-bold leading-[1.2]">Sob Consulta</span>
               )}
             </div>
 
             <button
               onClick={handleAddClick}
               disabled={isOutOfStock}
-              className="px-3 py-1.5 font-bold text-[10px] uppercase tracking-wide rounded transition-colors text-white bg-[#e6226e] hover:bg-[#cc1d60] disabled:opacity-50 flex items-center justify-center min-w-[70px]"
+              className="w-full py-2.5 font-bold text-[10px] uppercase tracking-wide rounded transition-colors text-white bg-[#2a7e51] hover:bg-[#236843] disabled:opacity-50 flex items-center justify-center"
             >
-              {isOutOfStock ? 'OFF' : 'COMPRAR'}
+              {isOutOfStock ? 'Esgotado' : 'COMPRAR'}
             </button>
           </div>
 

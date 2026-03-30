@@ -679,6 +679,7 @@ export function AdminCategoriesPage() {
   const [editing, setEditing]       = useState<Category | null>(null)
   const [name, setName]             = useState('')
   const [saving, setSaving]         = useState(false)
+  const [reordering, setReordering] = useState(false)
 
   const load = () => {
     setLoading(true)
@@ -724,6 +725,29 @@ export function AdminCategoriesPage() {
     }
   }
 
+  const handleMove = async (index: number, direction: 'up' | 'down') => {
+    const swapIndex = direction === 'up' ? index - 1 : index + 1
+    if (swapIndex < 0 || swapIndex >= categories.length) return
+
+    // Move o item no array e reatribui displayOrder sequencial
+    const reordered = [...categories]
+    const [moved] = reordered.splice(index, 1)
+    reordered.splice(swapIndex, 0, moved)
+    const withNewOrder = reordered.map((cat, i) => ({ ...cat, displayOrder: i }))
+
+    setCategories(withNewOrder)
+
+    setReordering(true)
+    try {
+      await categoriesApi.reorder(withNewOrder.map(({ id, displayOrder }) => ({ id, displayOrder })))
+    } catch (err) {
+      toast('Erro ao reordenar', 'error')
+      load()
+    } finally {
+      setReordering(false)
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -740,14 +764,35 @@ export function AdminCategoriesPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-obsidian-100 text-left">
+                <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider w-10">Ordem</th>
                 <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Nome</th>
                 <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Slug</th>
                 <th className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
             <tbody>
-              {categories.map(cat => (
+              {categories.map((cat, idx) => (
                 <tr key={cat.id} className="border-b border-obsidian-50 last:border-0">
+                  <td className="px-5 py-4">
+                    <div className="flex flex-col gap-0.5">
+                      <button
+                        onClick={() => handleMove(idx, 'up')}
+                        disabled={idx === 0 || reordering}
+                        className="p-0.5 rounded text-obsidian-400 hover:text-ink hover:bg-obsidian-50 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                        title="Mover para cima"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                      </button>
+                      <button
+                        onClick={() => handleMove(idx, 'down')}
+                        disabled={idx === categories.length - 1 || reordering}
+                        className="p-0.5 rounded text-obsidian-400 hover:text-ink hover:bg-obsidian-50 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                        title="Mover para baixo"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                      </button>
+                    </div>
+                  </td>
                   <td className="px-5 py-4 text-sm font-medium text-ink">{cat.name}</td>
                   <td className="px-5 py-4 text-sm text-obsidian-400 font-mono">{cat.slug}</td>
                   <td className="px-5 py-4">
@@ -972,20 +1017,20 @@ export function AdminOrdersPage() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="bg-gradient-to-r from-rose-50/90 via-white to-rose-100/50 border border-rose-100 rounded-2xl p-5 shadow-card">
-        <p className="text-xs uppercase tracking-widest text-rose-500/80 mb-1">Admin</p>
+      <div className="bg-gradient-to-r from-emerald-50/90 via-white to-emerald-100/50 border border-emerald-100 rounded-2xl p-5 shadow-card">
+        <p className="text-xs uppercase tracking-widest text-emerald-500/80 mb-1">Admin</p>
         <h1 className="font-display text-3xl text-ink">Pedidos</h1>
         <p className="text-sm text-obsidian-500 mt-1">Visão consolidada de operação, pagamento e performance.</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-gradient-to-br from-rose-50 to-white rounded-2xl border border-rose-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
+        <div className="bg-gradient-to-br from-emerald-50 to-white rounded-2xl border border-emerald-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
           <p className="text-xs text-obsidian-400 uppercase tracking-wider">Pedidos no filtro</p>
           <p className="text-2xl font-display text-ink mt-1">{kpis.total}</p>
         </div>
         <div className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
           <p className="text-xs text-obsidian-400 uppercase tracking-wider">Taxa pagamento</p>
-          <p className="text-2xl font-display text-rose-600 mt-1">{kpis.paidRate}%</p>
+          <p className="text-2xl font-display text-emerald-600 mt-1">{kpis.paidRate}%</p>
         </div>
         <div className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
           <p className="text-xs text-obsidian-400 uppercase tracking-wider">Receita no filtro</p>
@@ -997,13 +1042,13 @@ export function AdminOrdersPage() {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-rose-50/70 via-white to-rose-50/40 rounded-2xl border border-rose-100 shadow-card p-5">
+      <div className="bg-gradient-to-r from-emerald-50/70 via-white to-emerald-50/40 rounded-2xl border border-emerald-100 shadow-card p-5">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs uppercase tracking-widest text-rose-500/90">Filtros</p>
+          <p className="text-xs uppercase tracking-widest text-emerald-500/90">Filtros</p>
           <Button
             variant="outline"
             size="sm"
-            className="!px-4 !py-2 border-rose-200 text-rose-600 hover:!bg-rose-50"
+            className="!px-4 !py-2 border-emerald-200 text-emerald-600 hover:!bg-emerald-50"
             onClick={() => {
               setSearch('')
               setStatusFilter('all')
@@ -1017,17 +1062,17 @@ export function AdminOrdersPage() {
           </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3 items-end">
-          <Input label="Busca" className="border-rose-200 focus:!border-rose-500 focus:!ring-rose-200" placeholder="#A1B2C3D4 ou CUPOM" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input label="Busca" className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200" placeholder="#A1B2C3D4 ou CUPOM" value={search} onChange={e => setSearch(e.target.value)} />
           <Select
             label="Status"
-            className="border-rose-200 focus:!border-rose-500 focus:!ring-rose-200"
+            className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200"
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value as 'all' | OrderStatus)}
             options={[{ value: 'all', label: 'Todos' }, ...Object.entries(orderStatusLabel).map(([value, label]) => ({ value, label }))]}
           />
           <Select
             label="Pagamento"
-            className="border-rose-200 focus:!border-rose-500 focus:!ring-rose-200"
+            className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200"
             value={paymentFilter}
             onChange={e => setPaymentFilter(e.target.value as 'all' | 'none' | NonNullable<Order['paymentStatus']>)}
             options={[
@@ -1038,7 +1083,7 @@ export function AdminOrdersPage() {
           />
           <Select
             label="Período"
-            className="border-rose-200 focus:!border-rose-500 focus:!ring-rose-200"
+            className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200"
             value={dateRange}
             onChange={e => setDateRange(e.target.value as DateRangeFilter)}
             options={[
@@ -1048,8 +1093,8 @@ export function AdminOrdersPage() {
               { value: '30d', label: 'Últimos 30 dias' },
             ]}
           />
-          <Input label="Mín (R$)" className="border-rose-200 focus:!border-rose-500 focus:!ring-rose-200" type="number" min="0" value={minTotal} onChange={e => setMinTotal(e.target.value)} />
-          <Input label="Máx (R$)" className="border-rose-200 focus:!border-rose-500 focus:!ring-rose-200" type="number" min="0" value={maxTotal} onChange={e => setMaxTotal(e.target.value)} />
+          <Input label="Mín (R$)" className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200" type="number" min="0" value={minTotal} onChange={e => setMinTotal(e.target.value)} />
+          <Input label="Máx (R$)" className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200" type="number" min="0" value={maxTotal} onChange={e => setMaxTotal(e.target.value)} />
         </div>
       </div>
 
@@ -1062,7 +1107,7 @@ export function AdminOrdersPage() {
           <div className="overflow-x-auto">
           <table className="w-full min-w-[1080px]">
             <thead>
-              <tr className="border-b border-rose-100 text-left bg-rose-50/60">
+              <tr className="border-b border-emerald-100 text-left bg-emerald-50/60">
                 {['Pedido','Cliente','Data','Entrega','Total','Status','Pagamento','Ações'].map(h => (
                   <th key={h} className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">{h}</th>
                 ))}
@@ -1070,7 +1115,7 @@ export function AdminOrdersPage() {
             </thead>
             <tbody>
               {filteredOrders.map(order => (
-                <tr key={order.id} className="border-b border-obsidian-50 last:border-0 hover:bg-rose-50/60 transition-colors duration-200">
+                <tr key={order.id} className="border-b border-obsidian-50 last:border-0 hover:bg-emerald-50/60 transition-colors duration-200">
                   <td className="px-5 py-4 font-mono text-sm text-ink">#{order.id.slice(-8).toUpperCase()}</td>
                   <td className="px-5 py-4 text-sm text-ink">
                     <p className="font-medium">{order.user?.name || 'Cliente não identificado'}</p>
@@ -1257,7 +1302,7 @@ export function AdminOrderDetailPage() {
                   </div>
                 )}
                 {shipment.labelUrl && (
-                  <a href={shipment.labelUrl} target="_blank" rel="noreferrer" className="text-sm text-rose-600 hover:underline">
+                  <a href={shipment.labelUrl} target="_blank" rel="noreferrer" className="text-sm text-emerald-600 hover:underline">
                     Abrir etiqueta
                   </a>
                 )}
@@ -1433,20 +1478,20 @@ export function AdminPaymentsPage() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="bg-gradient-to-r from-rose-50/90 via-white to-rose-100/50 border border-rose-100 rounded-2xl p-5 shadow-card">
-        <p className="text-xs uppercase tracking-widest text-rose-500/80 mb-1">Admin</p>
+      <div className="bg-gradient-to-r from-emerald-50/90 via-white to-emerald-100/50 border border-emerald-100 rounded-2xl p-5 shadow-card">
+        <p className="text-xs uppercase tracking-widest text-emerald-500/80 mb-1">Admin</p>
         <h1 className="font-display text-3xl text-ink">Pagamentos</h1>
         <p className="text-sm text-obsidian-500 mt-1">Acompanhe transações, performance e risco financeiro em um só lugar.</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-gradient-to-br from-rose-50 to-white rounded-2xl border border-rose-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
+        <div className="bg-gradient-to-br from-emerald-50 to-white rounded-2xl border border-emerald-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
           <p className="text-xs text-obsidian-400 uppercase tracking-wider">Transações no filtro</p>
           <p className="text-2xl font-display text-ink mt-1">{paymentKpis.total}</p>
         </div>
         <div className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
           <p className="text-xs text-obsidian-400 uppercase tracking-wider">Taxa de sucesso</p>
-          <p className="text-2xl font-display text-rose-600 mt-1">{paymentKpis.paidRate}%</p>
+          <p className="text-2xl font-display text-emerald-600 mt-1">{paymentKpis.paidRate}%</p>
         </div>
         <div className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
           <p className="text-xs text-obsidian-400 uppercase tracking-wider">Valor total</p>
@@ -1458,13 +1503,13 @@ export function AdminPaymentsPage() {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-rose-50/70 via-white to-rose-50/40 rounded-2xl border border-rose-100 shadow-card p-5">
+      <div className="bg-gradient-to-r from-emerald-50/70 via-white to-emerald-50/40 rounded-2xl border border-emerald-100 shadow-card p-5">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs uppercase tracking-widest text-rose-500/90">Filtros</p>
+          <p className="text-xs uppercase tracking-widest text-emerald-500/90">Filtros</p>
           <Button
             variant="outline"
             size="sm"
-            className="!px-4 !py-2 border-rose-200 text-rose-600 hover:!bg-rose-50"
+            className="!px-4 !py-2 border-emerald-200 text-emerald-600 hover:!bg-emerald-50"
             onClick={() => {
               setSearch('')
               setStatusFilter('all')
@@ -1478,18 +1523,18 @@ export function AdminPaymentsPage() {
           </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3 items-end">
-          <Input label="Busca" className="border-rose-200 focus:!border-rose-500 focus:!ring-rose-200" placeholder="#ABC12345" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input label="Busca" className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200" placeholder="#ABC12345" value={search} onChange={e => setSearch(e.target.value)} />
           <Select
             label="Status"
-            className="border-rose-200 focus:!border-rose-500 focus:!ring-rose-200"
+            className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200"
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value as 'all' | Payment['status'])}
             options={[{ value: 'all', label: 'Todos' }, ...Object.entries(paymentStatusLabel).map(([value, label]) => ({ value, label }))]}
           />
-          <Select label="Provider" className="border-rose-200 focus:!border-rose-500 focus:!ring-rose-200" value={providerFilter} onChange={e => setProviderFilter(e.target.value)} options={providerOptions} />
+          <Select label="Provider" className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200" value={providerFilter} onChange={e => setProviderFilter(e.target.value)} options={providerOptions} />
           <Select
             label="Período"
-            className="border-rose-200 focus:!border-rose-500 focus:!ring-rose-200"
+            className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200"
             value={dateRange}
             onChange={e => setDateRange(e.target.value as DateRangeFilter)}
             options={[
@@ -1499,8 +1544,8 @@ export function AdminPaymentsPage() {
               { value: '30d', label: 'Últimos 30 dias' },
             ]}
           />
-          <Input label="Mín (R$)" className="border-rose-200 focus:!border-rose-500 focus:!ring-rose-200" type="number" min="0" value={minAmount} onChange={e => setMinAmount(e.target.value)} />
-          <Input label="Máx (R$)" className="border-rose-200 focus:!border-rose-500 focus:!ring-rose-200" type="number" min="0" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} />
+          <Input label="Mín (R$)" className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200" type="number" min="0" value={minAmount} onChange={e => setMinAmount(e.target.value)} />
+          <Input label="Máx (R$)" className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200" type="number" min="0" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} />
         </div>
       </div>
 
@@ -1513,7 +1558,7 @@ export function AdminPaymentsPage() {
           <div className="overflow-x-auto">
           <table className="w-full min-w-[860px]">
             <thead>
-              <tr className="border-b border-rose-100 text-left bg-rose-50/60">
+              <tr className="border-b border-emerald-100 text-left bg-emerald-50/60">
                 {['Pagamento','Pedido','Valor','Status','Data','Ações'].map(h => (
                   <th key={h} className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">{h}</th>
                 ))}
@@ -1521,7 +1566,7 @@ export function AdminPaymentsPage() {
             </thead>
             <tbody>
               {filteredPayments.map(p => (
-                <tr key={p.id} className="border-b border-obsidian-50 last:border-0 hover:bg-rose-50/60 transition-colors duration-200">
+                <tr key={p.id} className="border-b border-obsidian-50 last:border-0 hover:bg-emerald-50/60 transition-colors duration-200">
                   <td className="px-5 py-4 font-mono text-xs text-obsidian-500">#{p.id.slice(-8)}</td>
                   <td className="px-5 py-4 font-mono text-xs text-obsidian-500">#{p.orderId.slice(-8)}</td>
                   <td className="px-5 py-4 text-sm font-medium">{formatCurrency(p.amount)}</td>

@@ -20,6 +20,9 @@ export const categoriesApi = {
 
   remove: (id: string): Promise<{ success: boolean; message: string }> =>
     httpClient.delete<{ success: boolean; message: string }>(`/api/categories/${id}`),
+
+  reorder: (order: { id: string; displayOrder: number }[]): Promise<{ success: boolean }> =>
+    httpClient.patch<{ success: boolean }>('/api/categories/reorder', { order }),
 }
 
 // ─── Subcategories ───────────────────────────────────────────────────────────

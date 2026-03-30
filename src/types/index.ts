@@ -27,6 +27,7 @@ export interface Category {
   id: string
   name: string
   slug: string
+  displayOrder: number
 }
 
 export interface Subcategory {

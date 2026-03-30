@@ -67,7 +67,7 @@ function FloatingTotalBar({ order, payment, onSubmit, loading, method }: { order
           <button
             onClick={onSubmit}
             disabled={loading}
-            className="bg-[#e6226e] hover:bg-[#cc1d60] transition-colors text-white font-bold tracking-widest uppercase text-xs px-6 py-3 rounded-xl shadow-[0_4px_14px_rgba(230,34,110,0.3)] disabled:opacity-50"
+            className="bg-[#2a7e51] hover:bg-[#236843] transition-colors text-white font-bold tracking-widest uppercase text-xs px-6 py-3 rounded-xl shadow-[0_4px_14px_rgba(42,126,81,0.3)] disabled:opacity-50"
           >
             {loading ? 'Processando...' : method === 'pix' ? 'Gerar PIX' : 'Finalizar Compra'}
           </button>
@@ -364,16 +364,16 @@ export function PaymentPage() {
                 <div className="flex items-center gap-2">
                   <div className={`
                     w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all
-                    ${done ? 'bg-[#e6226e] text-white' : ''}
-                    ${active ? 'bg-[#e6226e] text-white shadow-[0_0_0_4px_rgba(230,34,110,0.2)]' : ''}
+                    ${done ? 'bg-[#2a7e51] text-white' : ''}
+                    ${active ? 'bg-[#2a7e51] text-white shadow-[0_0_0_4px_rgba(42,126,81,0.2)]' : ''}
                     ${!done && !active ? 'bg-nude-100 text-nude-400' : ''}
                   `}>
                     {done ? '✓' : n}
                   </div>
-                  <span className={`text-xs hidden sm:block ${active ? 'text-[#e6226e] font-bold tracking-wide' : 'text-nude-500'}`}>{s}</span>
+                  <span className={`text-xs hidden sm:block ${active ? 'text-[#2a7e51] font-bold tracking-wide' : 'text-nude-500'}`}>{s}</span>
                 </div>
                 {i < 2 && (
-                  <div className={`w-12 md:w-20 h-px mx-2 ${done ? 'bg-[#e6226e]/50' : 'bg-nude-200'}`} />
+                  <div className={`w-12 md:w-20 h-px mx-2 ${done ? 'bg-[#2a7e51]/50' : 'bg-nude-200'}`} />
                 )}
               </React.Fragment>
             )
@@ -502,7 +502,7 @@ export function PaymentPage() {
                 <button
                   onClick={createPayment}
                   disabled={creating}
-                  className="w-full bg-[#e6226e] hover:bg-[#cc1d60] transition-colors text-white font-bold tracking-widest uppercase text-sm py-4 rounded-xl shadow-[0_4px_14px_rgba(230,34,110,0.3)] disabled:opacity-50 flex justify-center items-center gap-2"
+                  className="w-full bg-[#2a7e51] hover:bg-[#236843] transition-colors text-white font-bold tracking-widest uppercase text-sm py-4 rounded-xl shadow-[0_4px_14px_rgba(42,126,81,0.3)] disabled:opacity-50 flex justify-center items-center gap-2"
                 >
                   {creating ? 'Processando...' : method === 'pix' ? 'Gerar QR Code PIX' : 'Finalizar Minha Compra'}
                 </button>

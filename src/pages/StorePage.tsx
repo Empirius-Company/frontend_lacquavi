@@ -125,7 +125,7 @@ export function StorePage() {
           </nav>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mb-2">Experiência Presencial</p>
+              <p className="text-xs font-bold text-[#2a7e51] uppercase tracking-widest mb-2">Experiência Presencial</p>
               <h1 className="text-4xl md:text-5xl font-black text-[#000000] font-display leading-tight">
                 Nossas Lojas
               </h1>
@@ -181,7 +181,7 @@ export function StorePage() {
                   onClick={() => setActiveId(store.id)}
                   className={`px-6 py-2.5 rounded-lg font-bold text-sm transition-all focus:outline-none ${
                     activeId === store.id
-                      ? 'bg-[#e6226e] text-white shadow-md'
+                      ? 'bg-[#2a7e51] text-white shadow-md'
                       : 'text-gray-500 hover:text-[#000000] hover:bg-white'
                   }`}
                 >
@@ -198,13 +198,13 @@ export function StorePage() {
 
               {/* Status + nome */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-[#e6226e]" />
+                <div className="absolute top-0 left-0 w-full h-1 bg-[#2a7e51]" />
                 <div className="flex items-center gap-2.5 mt-2 mb-3">
                   <span className={`px-2.5 py-1 rounded-md text-[10px] uppercase tracking-widest font-black flex items-center gap-1.5 ${todayIsOpen ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                     <span className={`w-2 h-2 rounded-full ${todayIsOpen ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
                     {todayIsOpen ? 'Aberto Hoje' : 'Fechado Hoje'}
                   </span>
-                  <span className="bg-[#e6226e]/10 text-[#e6226e] px-2.5 py-1 rounded-md text-[10px] uppercase font-black tracking-widest">
+                  <span className="bg-[#2a7e51]/10 text-[#2a7e51] px-2.5 py-1 rounded-md text-[10px] uppercase font-black tracking-widest">
                     ★ Retire Aqui em 1h
                   </span>
                 </div>
@@ -274,7 +274,7 @@ export function StorePage() {
               {/* Botões de ação */}
               <div className="flex gap-3">
                 <a href={s.mapsUrl} target="_blank" rel="noopener noreferrer"
-                  className="flex-1 bg-[#e6226e] text-white py-4 rounded-xl font-bold text-sm text-center hover:bg-[#cc1d60] transition-colors shadow-lg shadow-[#e6226e]/20 flex items-center justify-center gap-2">
+                  className="flex-1 bg-[#2a7e51] text-white py-4 rounded-xl font-bold text-sm text-center hover:bg-[#236843] transition-colors shadow-lg shadow-[#2a7e51]/20 flex items-center justify-center gap-2">
                   <Icon.MapPin /> Como Chegar
                 </a>
                 <a href={`https://wa.me/${s.whatsapp}?text=Olá!%20Gostaria%20de%20visitar%20a%20${encodeURIComponent(s.name)}.`}
@@ -305,14 +305,14 @@ export function StorePage() {
 
               {/* Pin rosa */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-10 pointer-events-none drop-shadow-xl mt-[-15px]">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="#e6226e" stroke="white" strokeWidth="1">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="#2a7e51" stroke="white" strokeWidth="1">
                   <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                 </svg>
               </div>
 
               {/* Hover CTA */}
               <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none bg-gradient-to-t from-black/40 to-transparent flex items-end justify-center pb-8 pt-12 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <span className="bg-[#e6226e] text-white px-6 py-3 rounded-full font-bold shadow-2xl flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                <span className="bg-[#2a7e51] text-white px-6 py-3 rounded-full font-bold shadow-2xl flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                   <Icon.MapPin /> Abrir no Google Maps
                 </span>
               </div>
@@ -369,7 +369,7 @@ export function StorePage() {
 
                 {/* Badge Rosa de Conversão para Retirada */}
                 {exp.title === 'Retirada com Rapidez' && (
-                  <div className="absolute top-4 right-4 w-14 h-14 bg-[#e6226e] rounded-full flex flex-col items-center justify-center text-white z-10 shadow-sm">
+                  <div className="absolute top-4 right-4 w-14 h-14 bg-[#2a7e51] rounded-full flex flex-col items-center justify-center text-white z-10 shadow-sm">
                     <span className="text-[7.5px] font-bold text-center leading-[1.2]">ECONOMIZE<br />NO FRETE</span>
                   </div>
                 )}
@@ -383,7 +383,7 @@ export function StorePage() {
       <section className="bg-white py-12 sm:py-16">
         <div className="container-page">
           <div className="sp-reveal text-center max-w-xl mx-auto">
-            <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mb-3">Visite-nos</p>
+            <p className="text-xs font-bold text-[#2a7e51] uppercase tracking-widest mb-3">Visite-nos</p>
             <h2 className="font-display font-black text-[#000000] leading-tight mb-4"
               style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)' }}>
               Sua assinatura olfativa te espera
@@ -393,7 +393,7 @@ export function StorePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <a href={s.mapsUrl} target="_blank" rel="noopener noreferrer"
-                className="bg-[#e6226e] text-white px-8 py-3.5 rounded-lg font-bold hover:bg-[#cc1d60] transition-colors inline-flex items-center justify-center gap-2 shadow-lg shadow-[#e6226e]/20">
+                className="bg-[#2a7e51] text-white px-8 py-3.5 rounded-lg font-bold hover:bg-[#236843] transition-colors inline-flex items-center justify-center gap-2 shadow-lg shadow-[#2a7e51]/20">
                 <Icon.MapPin /> Visitar a Loja
               </a>
               <a href={`https://wa.me/${s.whatsapp}?text=Olá!%20Vi%20o%20benefício%20de%20visita%20no%20site%20e%20gostaria%20de%20saber%20mais.`}

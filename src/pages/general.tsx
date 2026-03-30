@@ -44,12 +44,12 @@ function AuthLayout({ children, eyebrow, title, sub }: {
 
           {/* Coluna institucional */}
           <div className="hidden lg:flex flex-col bg-white rounded-3xl border border-gray-100 shadow-sm p-10 gap-8 relative overflow-hidden">
-            <div aria-hidden className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-[#e6226e]/10 blur-2xl" />
+            <div aria-hidden className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-[#2a7e51]/10 blur-2xl" />
             <div>
               <Link to="/" className="inline-flex items-center hover:opacity-90 transition-opacity">
                 <img src="/logo.png" alt="Lacquavi" className="h-[43px] md:h-[54px] object-contain" />
               </Link>
-              <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mt-8 mb-3">Experiência Premium</p>
+              <p className="text-xs font-bold text-[#2a7e51] uppercase tracking-widest mt-8 mb-3">Experiência Premium</p>
               <h2 className="font-display text-4xl text-[#000000] font-black leading-tight mb-4">
                 Fragrâncias originais,
                 <br />
@@ -78,7 +78,7 @@ function AuthLayout({ children, eyebrow, title, sub }: {
               </Link>
 
               <div className="mb-7">
-                <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mb-2">{eyebrow}</p>
+                <p className="text-xs font-bold text-[#2a7e51] uppercase tracking-widest mb-2">{eyebrow}</p>
                 <h1 className="font-display text-3xl text-[#000000] font-black leading-tight">{title}</h1>
                 {sub && <p className="text-gray-500 text-sm mt-2 leading-relaxed">{sub}</p>}
               </div>
@@ -146,7 +146,7 @@ export function LoginPage() {
       </form>
       <p className="text-center text-sm text-gray-500 mt-6">
         Não tem conta?{' '}
-        <Link to="/register" className="text-[#e6226e] hover:text-[#cc1d60] font-semibold transition-colors">
+        <Link to="/register" className="text-[#2a7e51] hover:text-[#236843] font-semibold transition-colors">
           Criar conta gratuita
         </Link>
       </p>
@@ -212,7 +212,7 @@ export function RegisterPage() {
       </form>
       <p className="text-center text-sm text-gray-500 mt-6">
         Já tem conta?{' '}
-        <Link to="/login" className="text-[#e6226e] hover:text-[#cc1d60] font-semibold transition-colors">Entrar</Link>
+        <Link to="/login" className="text-[#2a7e51] hover:text-[#236843] font-semibold transition-colors">Entrar</Link>
       </p>
     </AuthLayout>
   )
@@ -350,7 +350,7 @@ export function MyOrdersPage() {
     <div className="min-h-screen bg-[#F5F5F5]">
       <div className="bg-white border-b border-gray-100">
         <div className="container-page py-8 md:py-10">
-          <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mb-2">Conta</p>
+          <p className="text-xs font-bold text-[#2a7e51] uppercase tracking-widest mb-2">Conta</p>
           <h1 className="font-display text-3xl md:text-4xl text-[#000000] font-black">Meus Pedidos</h1>
           <p className="text-sm text-gray-500 mt-2">Acompanhe o status e histórico dos seus pedidos.</p>
         </div>
@@ -380,7 +380,7 @@ export function MyOrdersPage() {
 
                   return (
                 <Link to={`/account/orders/${order.id}`} className="group block">
-                  <div className="bg-white rounded-2xl border border-gray-100 px-6 py-5 shadow-sm hover:border-[#e6226e]/30 hover:shadow-md transition-all duration-300">
+                  <div className="bg-white rounded-2xl border border-gray-100 px-6 py-5 shadow-sm hover:border-[#2a7e51]/30 hover:shadow-md transition-all duration-300">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1.5">
@@ -404,7 +404,7 @@ export function MyOrdersPage() {
                                   event.stopPropagation()
                                   window.open(customerTrackingUrl, '_blank', 'noopener,noreferrer')
                                 }}
-                                className="text-2xs font-medium text-[#e6226e] hover:text-[#cc1d60] underline underline-offset-2"
+                                className="text-2xs font-medium text-[#2a7e51] hover:text-[#236843] underline underline-offset-2"
                               >
                                 Acompanhar entrega
                               </button>
@@ -414,7 +414,7 @@ export function MyOrdersPage() {
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="font-display text-xl text-[#000000]">{formatCurrency(order.total)}</p>
-                        <p className="text-xs text-gray-400 mt-1 group-hover:text-[#e6226e] transition-colors">Ver detalhes →</p>
+                        <p className="text-xs text-gray-400 mt-1 group-hover:text-[#2a7e51] transition-colors">Ver detalhes →</p>
                       </div>
                     </div>
                   </div>
@@ -485,7 +485,7 @@ export function OrderDetailPage() {
           </Link>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mb-2">Pedido</p>
+              <p className="text-xs font-bold text-[#2a7e51] uppercase tracking-widest mb-2">Pedido</p>
               <h1 className="font-display text-3xl md:text-4xl text-[#000000] font-black">
                 #{order.id.slice(-8).toUpperCase()}
               </h1>
@@ -565,7 +565,7 @@ export function OrderDetailPage() {
                           href={customerTrackingUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm font-medium text-[#e6226e] hover:text-[#cc1d60] underline underline-offset-2"
+                          className="text-sm font-medium text-[#2a7e51] hover:text-[#236843] underline underline-offset-2"
                         >
                           Ver rastreio
                         </a>
@@ -651,7 +651,7 @@ export function AccountProfilePage() {
     <div className="min-h-screen bg-[#F5F5F5]">
       <div className="bg-white border-b border-gray-100">
         <div className="container-page py-8 md:py-10">
-          <p className="text-xs font-bold text-[#e6226e] uppercase tracking-widest mb-2">Conta</p>
+          <p className="text-xs font-bold text-[#2a7e51] uppercase tracking-widest mb-2">Conta</p>
           <h1 className="font-display text-3xl md:text-4xl text-[#000000] font-black">Minha Conta</h1>
           <p className="text-sm text-gray-500 mt-2">Gerencie seus dados e acesse rapidamente seus pedidos.</p>
         </div>
@@ -662,7 +662,7 @@ export function AccountProfilePage() {
           {/* Avatar card */}
           <ScrollReveal>
             <div className="bg-white rounded-3xl border border-gray-100 p-7 shadow-sm flex items-center gap-5">
-              <div className="w-16 h-16 rounded-full bg-[#e6226e]/10 border border-[#e6226e]/20 flex items-center justify-center text-2xl font-display text-[#e6226e]">
+              <div className="w-16 h-16 rounded-full bg-[#2a7e51]/10 border border-[#2a7e51]/20 flex items-center justify-center text-2xl font-display text-[#2a7e51]">
                 {user?.name?.[0]?.toUpperCase()}
               </div>
               <div>
@@ -670,7 +670,7 @@ export function AccountProfilePage() {
                 <p className="text-sm text-gray-500">{user?.email}</p>
                 <span className={`mt-1.5 inline-flex items-center px-2 py-0.5 rounded-full text-2xs border font-medium ${
                   user?.role === 'admin'
-                    ? 'bg-[#e6226e]/10 text-[#e6226e] border-[#e6226e]/20'
+                    ? 'bg-[#2a7e51]/10 text-[#2a7e51] border-[#2a7e51]/20'
                     : 'bg-gray-50 text-gray-600 border-gray-200'
                 }`}>
                   {user?.role === 'admin' ? '✦ Admin' : 'Cliente'}
@@ -715,12 +715,12 @@ export function AccountProfilePage() {
           <ScrollReveal delay={200}>
             <div className="bg-white rounded-3xl border border-gray-100 p-7 shadow-sm space-y-3">
               <h2 className="font-display text-lg text-[#000000] font-bold mb-4">Acesso Rápido</h2>
-              <Link to="/account/orders" className="flex items-center justify-between p-4 rounded-2xl border border-gray-100 hover:border-[#e6226e]/25 hover:bg-[#faf7f8] transition-all group">
+              <Link to="/account/orders" className="flex items-center justify-between p-4 rounded-2xl border border-gray-100 hover:border-[#2a7e51]/25 hover:bg-[#f5faf7] transition-all group">
                 <div className="flex items-center gap-3">
                   <span className="text-lg text-gray-400">◎</span>
                   <span className="text-sm font-medium text-[#111111]">Meus Pedidos</span>
                 </div>
-                <span className="text-gray-300 group-hover:text-[#e6226e] transition-colors">→</span>
+                <span className="text-gray-300 group-hover:text-[#2a7e51] transition-colors">→</span>
               </Link>
               <button
                 onClick={handleLogout}

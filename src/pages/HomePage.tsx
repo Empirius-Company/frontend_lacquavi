@@ -59,7 +59,7 @@ function HomeTopBanner() {
   return (
     <section className="bg-white">
       <div className="container-page pt-4 md:pt-6 pb-2 md:pb-3">
-        <div className="relative w-full h-[40vh] min-h-[220px] max-h-[420px] overflow-hidden rounded-2xl border border-[#f0d7d7] shadow-sm">
+        <div className="relative w-full aspect-[1396/642] overflow-hidden rounded-2xl border border-[#c8e6d4] shadow-sm">
           {imageOk ? (
             <img
               src="/banner-home-top.png"
@@ -71,21 +71,10 @@ function HomeTopBanner() {
             <div
               className="absolute inset-0 w-full h-full"
               style={{
-                background: 'linear-gradient(145deg, #f7c9c8 0%, #f2afab 46%, #e89c98 100%)',
+                background: 'linear-gradient(145deg, #b7ddc6 0%, #8dcca7 46%, #6ab88a 100%)',
               }}
             />
           )}
-
-          {/* CTA posicionado na área do retângulo da arte */}
-          <div className="absolute left-1/2 bottom-[16%] -translate-x-1/2">
-            <button
-              type="button"
-              onClick={handleScrollToWeekHighlights}
-              className="inline-flex items-center justify-center min-w-[180px] md:min-w-[220px] px-6 py-2.5 md:py-3 rounded-md border-2 border-white text-white font-semibold tracking-wide bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-[1px]"
-            >
-              COMPRAR AGORA
-            </button>
-          </div>
         </div>
       </div>
     </section>
@@ -236,7 +225,7 @@ function FlashSaleBanner() {
               return (
                 <span
                   key={line}
-                  className={isHighlightLine ? 'text-[#e6226e] [text-shadow:0_0_18px_rgba(230,34,110,0.35)]' : 'text-white'}
+                  className={isHighlightLine ? 'text-[#2a7e51] [text-shadow:0_0_18px_rgba(42,126,81,0.35)]' : 'text-white'}
                 >
                   {line}
                   {index < dynamicTitleLines.length - 1 ? <br /> : null}
@@ -273,9 +262,9 @@ function FlashSaleBanner() {
                     <span className="leading-none text-2xl md:text-3xl font-black tabular-nums">{remainingTime.minutes}</span>
                     <span className="text-[9px] md:text-[10px] uppercase tracking-wide font-semibold text-[#555] mt-1">Min</span>
                   </div>
-                  <div className="rounded-xl px-2.5 md:px-3.5 py-2 min-w-[3.5rem] md:min-w-[4.25rem] flex flex-col items-center justify-center bg-white text-[#111111] shadow-[0_8px_24px_rgba(0,0,0,0.22)] ring-1 ring-[#e6226e]/25">
-                    <span className="leading-none text-2xl md:text-3xl font-black tabular-nums text-[#e6226e]">{remainingTime.seconds}</span>
-                    <span className="text-[9px] md:text-[10px] uppercase tracking-wide font-semibold text-[#9f2054] mt-1">Seg</span>
+                  <div className="rounded-xl px-2.5 md:px-3.5 py-2 min-w-[3.5rem] md:min-w-[4.25rem] flex flex-col items-center justify-center bg-white text-[#111111] shadow-[0_8px_24px_rgba(0,0,0,0.22)] ring-1 ring-[#2a7e51]/25">
+                    <span className="leading-none text-2xl md:text-3xl font-black tabular-nums text-[#2a7e51]">{remainingTime.seconds}</span>
+                    <span className="text-[9px] md:text-[10px] uppercase tracking-wide font-semibold text-[#1a5c36] mt-1">Seg</span>
                   </div>
                 </>
               )}
@@ -283,7 +272,7 @@ function FlashSaleBanner() {
           )}
         </div>
 
-        <div className="bg-white rounded-xl shadow-2xl p-4 md:p-6 flex max-w-sm w-full gap-4 items-center relative">
+        <div className="bg-white rounded-xl shadow-2xl p-4 md:p-6 flex w-full max-w-sm mx-auto md:mx-0 gap-4 items-center relative">
           {bannerDiscountInfo ? (
             <div className="absolute -top-3 -left-3 bg-[#0B1B3D] text-white font-bold text-xs rounded-full w-12 h-12 flex items-center justify-center border-2 border-white shadow-md">
               {bannerDiscountInfo.discountPercent}%<br /><span className="text-[8px]">OFF</span>
@@ -301,7 +290,7 @@ function FlashSaleBanner() {
             {pricing?.showOriginal && <span className="text-xs text-gray-400 line-through">de {formatPrice(pricing.originalPrice)}</span>}
             {pricing && <span className="text-lg font-black text-[#000000]">{formatPrice(pricing.currentPrice)}</span>}
             <button
-              className="bg-[#e6226e] hover:bg-[#cc1d60] transition-colors text-white text-xs font-bold py-2 mt-2 rounded disabled:opacity-50"
+              className="bg-[#2a7e51] hover:bg-[#236843] transition-colors text-white text-xs font-bold py-2 mt-2 rounded disabled:opacity-50"
               onClick={handleCtaClick}
               disabled={!destination}
             >
@@ -412,7 +401,7 @@ function CategoryTiles({ categories, products }: { categories: Category[]; produ
               </span>
               <div className="flex flex-col items-center">
                 <span className="font-semibold text-sm md:text-[15px] text-[#333] text-center line-clamp-2">{tile.label}</span>
-                <span className="mt-2 block h-[2px] w-14 rounded-full bg-[#e6226e]/75"></span>
+                <span className="mt-2 block h-[2px] w-14 rounded-full bg-[#2a7e51]/75"></span>
               </div>
             </Link>
           ))}
@@ -504,8 +493,24 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Categories quick nav */}
-      <CategoryTiles categories={categories} products={sortedProducts} />
+      {/* Categories quick nav — desktop only */}
+      <div className="hidden md:block">
+        <CategoryTiles categories={categories} products={sortedProducts} />
+      </div>
+
+      {/* Mobile-only: produto em destaque no lugar das categorias */}
+      <section className="md:hidden py-10 bg-white">
+        <div className="container-page">
+          <SectionHeader
+            eyebrow="Tendências"
+            title="Mais vendidos da semana"
+            linkTo="/products"
+          />
+          {!error && (
+            <ProductCarousel products={[...sortedProducts].reverse()} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
+          )}
+        </div>
+      </section>
 
       {/* Flash sale banner */}
       <FlashSaleBanner />
@@ -544,23 +549,23 @@ export function HomePage() {
 
       {/* Trust bar simple */}
       <div className="bg-white border-y border-gray-200 py-8 mt-8">
-        <div className="container-page flex flex-wrap justify-between items-center text-center gap-6">
-          <div className="flex-1 min-w-[150px]">
+        <div className="container-page grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div>
             <span className="text-2xl mb-1 block">💳</span>
             <h4 className="font-bold text-sm text-[#333]">Parcele em até 10x</h4>
             <p className="text-xs text-gray-500">Sem juros no cartão</p>
           </div>
-          <div className="flex-1 min-w-[150px]">
+          <div>
             <span className="text-2xl mb-1 block">🔐</span>
             <h4 className="font-bold text-sm text-[#333]">Compra 100% Segura</h4>
             <p className="text-xs text-gray-500">Seus dados protegidos</p>
           </div>
-          <div className="flex-1 min-w-[150px]">
+          <div>
             <span className="text-2xl mb-1 block">📦</span>
             <h4 className="font-bold text-sm text-[#333]">Entrega Rápida</h4>
             <p className="text-xs text-gray-500">Para todo o Brasil</p>
           </div>
-          <div className="flex-1 min-w-[150px]">
+          <div>
             <span className="text-2xl mb-1 block">⭐</span>
             <h4 className="font-bold text-sm text-[#333]">Produtos Originais</h4>
             <p className="text-xs text-gray-500">Com garantia</p>

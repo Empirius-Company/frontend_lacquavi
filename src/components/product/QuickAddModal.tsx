@@ -23,25 +23,36 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
         onClose()
     }
 
+    const finalPrice = getProductFinalPrice(product)
+
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden relative animate-slide-up">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+            {/* Sheet on mobile (slides from bottom), centered modal on sm+ */}
+            <div className="bg-white w-full sm:rounded-xl sm:max-w-md shadow-2xl relative animate-slide-up overflow-hidden">
                 {/* Close button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-black transition-colors"
+                    className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-black transition-colors"
                 >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path d="M18 6L6 18M6 6l12 12" />
                     </svg>
                 </button>
 
-                <div className="p-6">
-                    <h2 className="text-xl font-bold text-center mb-6">De olho nesse item? Coloque na sua sacola!</h2>
+                {/* Drag handle — mobile only */}
+                <div className="flex justify-center pt-3 sm:hidden">
+                    <div className="w-10 h-1 rounded-full bg-gray-200" />
+                </div>
 
-                    <div className="flex gap-6 items-center">
+                <div className="p-4 sm:p-5">
+                    <h2 className="text-sm font-bold text-center mb-4 text-[#333] pr-6">
+                        De olho nesse item? Coloque na sua sacola!
+                    </h2>
+
+                    {/* Product info row */}
+                    <div className="flex gap-3 items-center bg-gray-50 rounded-xl p-3">
                         {/* Image */}
-                        <div className="w-24 h-32 flex-shrink-0 bg-gray-50 rounded-lg flex items-center justify-center p-2">
+                        <div className="w-16 h-20 flex-shrink-0 bg-white rounded-lg flex items-center justify-center p-1.5 border border-gray-100">
                             {primaryImage?.url ? (
                                 <img src={primaryImage.url} alt={primaryImage.alt || product.name} className="w-full h-full object-contain" />
                             ) : (
@@ -49,37 +60,53 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
                             )}
                         </div>
 
-                        {/* Info */}
-                        <div className="flex-1">
-                            <p className="text-sm text-gray-600 mb-1">{product.name} {product.volume && `— ${product.volume}`}</p>
-
-                            <div className="flex items-center justify-between mt-4">
-                                <span className="text-xl font-black text-black">{formatCurrency(getProductFinalPrice(product))}</span>
-
-                                {/* Stepper */}
-                                <div className="flex items-center border border-gray-200 rounded-full h-10">
-                                    <button
-                                        onClick={() => setQty(Math.max(1, qty - 1))}
-                                        className="w-10 h-full flex items-center justify-center text-gray-500 hover:text-black"
-                                    >−</button>
-                                    <span className="w-8 text-center text-sm font-bold">{qty}</span>
-                                    <button
-                                        onClick={() => setQty(Math.min(99, qty + 1))}
-                                        className="w-10 h-full flex items-center justify-center text-gray-500 hover:text-black"
-                                    >+</button>
-                                </div>
-                            </div>
+                        {/* Name + price */}
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-[#222] leading-snug line-clamp-2">
+                                {product.name}
+                            </p>
+                            {product.volume && (
+                                <p className="text-xs text-gray-400 mt-0.5">{product.volume}</p>
+                            )}
+                            <p className="text-lg font-black text-[#111] mt-1">
+                                {formatCurrency(finalPrice)}
+                            </p>
                         </div>
                     </div>
 
+                    {/* Quantity row */}
+                    <div className="flex items-center justify-between mt-4">
+                        <span className="text-sm font-medium text-gray-600">Quantidade</span>
+                        <div className="flex items-center border border-gray-200 rounded-full h-10">
+                            <button
+                                onClick={() => setQty(Math.max(1, qty - 1))}
+                                className="w-10 h-full flex items-center justify-center text-gray-500 hover:text-black transition-colors"
+                            >−</button>
+                            <span className="w-8 text-center text-sm font-bold">{qty}</span>
+                            <button
+                                onClick={() => setQty(Math.min(99, qty + 1))}
+                                className="w-10 h-full flex items-center justify-center text-gray-500 hover:text-black transition-colors"
+                            >+</button>
+                        </div>
+                    </div>
+
+                    {/* Subtotal */}
+                    {qty > 1 && (
+                        <div className="flex justify-between items-center mt-2 text-xs text-gray-400">
+                            <span>Subtotal</span>
+                            <span className="font-semibold text-[#333]">{formatCurrency(finalPrice * qty)}</span>
+                        </div>
+                    )}
+
+                    {/* CTA */}
                     <button
                         onClick={handleAdd}
-                        className="w-full mt-8 bg-[#e6226e] hover:bg-[#cc1d60] transition-colors text-white font-bold py-3 px-4 rounded-md uppercase tracking-wide flex items-center justify-center gap-2"
+                        className="w-full mt-4 bg-[#2a7e51] hover:bg-[#236843] transition-colors text-white font-bold py-3.5 px-4 rounded-xl uppercase tracking-wide flex items-center justify-center gap-2 text-sm"
                     >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
                         </svg>
-                        ADICIONAR À SACOLA
+                        Adicionar à Sacola
                     </button>
                 </div>
             </div>

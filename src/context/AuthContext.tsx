@@ -2,7 +2,7 @@ import {
   createContext, useContext, useEffect, useState, useCallback, ReactNode
 } from 'react'
 import { authApi } from '../api/authApi'
-import { setTokenAccessor, setTokenUpdater, setUnauthorizedHandler } from '../api/httpClient'
+import { setTokenAccessor, setTokenUpdater, setUnauthorizedHandler, setCurrentToken } from '../api/httpClient'
 import type { User, ApiError } from '../types'
 
 interface AuthContextValue {
@@ -28,11 +28,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading]     = useState(true)
 
   const saveSession = useCallback((at: string, u: User) => {
+    setCurrentToken(at)
     setAccessToken(at)
     setUser(u)
   }, [])
 
   const clearSession = useCallback(() => {
+    setCurrentToken(null)
     setAccessToken('')
     setUser(null)
   }, [])
@@ -55,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     authApi.refresh()
       .then(({ accessToken: at }) => {
+        setCurrentToken(at)   // sync — ensures getProfile request carries the token
         setAccessToken(at)
         return authApi.getProfile()
       })

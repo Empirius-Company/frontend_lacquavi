@@ -28,7 +28,7 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
       className={`
         px-4 py-2 rounded-full text-xs font-medium tracking-wide transition-all duration-200
         ${active
-          ? 'bg-[#e6226e] text-white border border-[#e6226e] shadow-sm'
+          ? 'bg-[#2a7e51] text-white border border-[#2a7e51] shadow-sm'
           : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
         }
       `}
@@ -151,14 +151,14 @@ export function ProductListPage() {
 
           {/* Category dropdown */}
           {categories.length > 0 && (
-            <div className="md:ml-auto flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 md:ml-auto w-full md:w-auto">
               <select
                 value={selectedCat}
                 onChange={e => {
                   setParam('category', e.target.value)
                   setParam('subcategory', '')
                 }}
-                className="input-luxury text-sm py-2.5 pr-8 !rounded-full cursor-pointer min-w-[160px] bg-white"
+                className="input-luxury text-sm py-2.5 pr-8 !rounded-full cursor-pointer w-full sm:w-auto sm:min-w-[140px] bg-white"
               >
                 <option value="">Todas Categorias</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -168,7 +168,7 @@ export function ProductListPage() {
                 <select
                   value={selectedSubcategory}
                   onChange={e => setParam('subcategory', e.target.value)}
-                  className="input-luxury text-sm py-2.5 pr-8 !rounded-full cursor-pointer min-w-[180px] bg-white"
+                  className="input-luxury text-sm py-2.5 pr-8 !rounded-full cursor-pointer w-full sm:w-auto sm:min-w-[160px] bg-white"
                 >
                   <option value="">Todas Subcategorias</option>
                   {subcategories.map((subcategory) => (
@@ -180,7 +180,7 @@ export function ProductListPage() {
               <select
                 value={sort}
                 onChange={e => setParam('sort', e.target.value)}
-                className="input-luxury text-sm py-2.5 pr-8 !rounded-full cursor-pointer min-w-[140px] bg-white"
+                className="input-luxury text-sm py-2.5 pr-8 !rounded-full cursor-pointer w-full sm:w-auto sm:min-w-[130px] bg-white"
               >
                 {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -193,31 +193,31 @@ export function ProductListPage() {
           <div className="flex items-center gap-2 mb-6 flex-wrap">
             <span className="text-2xs text-gray-500 uppercase tracking-wide">Filtros ativos:</span>
             {selectedGender && (
-              <button onClick={() => setParam('gender', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e6226e] text-white text-2xs">
+              <button onClick={() => setParam('gender', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2a7e51] text-white text-2xs">
                 {selectedGender} <span className="opacity-60">✕</span>
               </button>
             )}
             {selectedCat && (
-              <button onClick={() => setParam('category', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e6226e] text-white text-2xs">
+              <button onClick={() => setParam('category', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2a7e51] text-white text-2xs">
                 {categories.find(c => c.id === selectedCat)?.name ?? 'Categoria'} <span className="opacity-60">✕</span>
               </button>
             )}
             {selectedSubcategory && (
-              <button onClick={() => setParam('subcategory', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e6226e] text-white text-2xs">
+              <button onClick={() => setParam('subcategory', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2a7e51] text-white text-2xs">
                 {subcategories.find((subcategory) => subcategory.id === selectedSubcategory)?.name ?? 'Subcategoria'} <span className="opacity-60">✕</span>
               </button>
             )}
             {selectedType && (
-              <button onClick={() => setParam('type', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e6226e] text-white text-2xs">
+              <button onClick={() => setParam('type', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2a7e51] text-white text-2xs">
                 {selectedType} <span className="opacity-60">✕</span>
               </button>
             )}
             {searchQuery && (
-              <button onClick={() => setParam('q', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#e6226e] text-white text-2xs">
+              <button onClick={() => setParam('q', '')} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2a7e51] text-white text-2xs">
                 "{searchQuery}" <span className="opacity-60">✕</span>
               </button>
             )}
-            <button onClick={() => setSearchParams({})} className="text-2xs text-[#e6226e] hover:text-[#cc1d60] underline ml-1">
+            <button onClick={() => setSearchParams({})} className="text-2xs text-[#2a7e51] hover:text-[#236843] underline ml-1">
               Limpar tudo
             </button>
           </div>

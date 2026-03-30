@@ -4,10 +4,16 @@ import type { ApiError } from '../types'
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 // Token accessor/updater — wired by AuthContext once mounted
-let _getAccessToken: () => string | null = () => null
+let _currentToken: string | null = null
+let _getAccessToken: () => string | null = () => _currentToken
 let _setAccessToken: (token: string) => void = () => {}
 let _onUnauthorized: () => void = () => {}
 let refreshPromise: Promise<string | null> | null = null
+
+// Synchronous token update — bypasses React state batching
+export const setCurrentToken = (token: string | null) => {
+  _currentToken = token
+}
 
 export const setTokenAccessor = (fn: () => string | null) => {
   _getAccessToken = fn

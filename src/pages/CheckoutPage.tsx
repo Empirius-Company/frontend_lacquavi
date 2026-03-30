@@ -73,16 +73,16 @@ function StepBar({ current }: { current: 1 | 2 | 3 }) {
             <div className="flex items-center gap-2">
               <div className={`
                 w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all
-                ${done ? 'bg-[#e6226e] text-white' : ''}
-                ${active ? 'bg-[#e6226e] text-white shadow-[0_0_0_4px_rgba(230,34,110,0.2)]' : ''}
+                ${done ? 'bg-[#2a7e51] text-white' : ''}
+                ${active ? 'bg-[#2a7e51] text-white shadow-[0_0_0_4px_rgba(42,126,81,0.2)]' : ''}
                 ${!done && !active ? 'bg-nude-100 text-nude-400' : ''}
               `}>
                 {done ? '✓' : n}
               </div>
-              <span className={`text-xs hidden sm:block ${active ? 'text-[#e6226e] font-bold tracking-wide' : 'text-nude-500'}`}>{s}</span>
+              <span className={`text-xs hidden sm:block ${active ? 'text-[#2a7e51] font-bold tracking-wide' : 'text-nude-500'}`}>{s}</span>
             </div>
             {i < 2 && (
-              <div className={`w-12 md:w-20 h-px mx-2 ${done ? 'bg-[#e6226e]/50' : 'bg-nude-200'}`} />
+              <div className={`w-12 md:w-20 h-px mx-2 ${done ? 'bg-[#2a7e51]/50' : 'bg-nude-200'}`} />
             )}
           </React.Fragment>
         )
@@ -109,7 +109,7 @@ function FloatingTotalBar({ total, onSubmit, loading }: { total: number; onSubmi
   if (!isVisible) return null
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_16px_rgba(0,0,0,0.05)] z-40 transform transition-transform animate-slide-up pb-safe hidden lg:block">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_16px_rgba(0,0,0,0.05)] z-40 transform transition-transform animate-slide-up pb-safe block">
       <div className="container-narrow py-3">
         <div className="flex justify-between items-center max-w-5xl mx-auto">
           <div>
@@ -119,7 +119,7 @@ function FloatingTotalBar({ total, onSubmit, loading }: { total: number; onSubmi
           <button
             onClick={onSubmit}
             disabled={loading}
-            className="bg-[#e6226e] hover:bg-[#cc1d60] transition-colors text-white font-bold tracking-widest uppercase text-xs px-6 py-3 rounded-xl shadow-[0_4px_14px_rgba(230,34,110,0.3)] disabled:opacity-50"
+            className="bg-[#2a7e51] hover:bg-[#236843] transition-colors text-white font-bold tracking-widest uppercase text-xs px-6 py-3 rounded-xl shadow-[0_4px_14px_rgba(42,126,81,0.3)] disabled:opacity-50"
           >
             {loading ? 'Processando...' : 'Ir para o Pagamento →'}
           </button>
@@ -637,7 +637,7 @@ export function CheckoutPage() {
                     return (
                       <label
                         key={quote.quoteId}
-                        className={`flex items-center justify-between rounded-xl border px-3 py-2 cursor-pointer transition-colors ${checked ? 'border-[#e6226e] bg-[#e6226e]/5' : 'border-nude-200'}`}
+                        className={`flex items-center justify-between rounded-xl border px-3 py-2 cursor-pointer transition-colors ${checked ? 'border-[#2a7e51] bg-[#2a7e51]/5' : 'border-nude-200'}`}
                       >
                         <div className="flex items-start gap-2">
                           <input
@@ -711,7 +711,7 @@ export function CheckoutPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="w-full bg-[#e6226e] hover:bg-[#cc1d60] transition-colors text-white font-bold tracking-widest uppercase text-sm py-4 rounded-xl shadow-[0_4px_14px_rgba(230,34,110,0.3)] disabled:opacity-50 flex justify-center items-center gap-2"
+                  className="w-full bg-[#2a7e51] hover:bg-[#236843] transition-colors text-white font-bold tracking-widest uppercase text-sm py-4 rounded-xl shadow-[0_4px_14px_rgba(42,126,81,0.3)] disabled:opacity-50 flex justify-center items-center gap-2"
                 >
                   {submitting ? 'Processando...' : 'Ir para o Pagamento →'}
                 </button>

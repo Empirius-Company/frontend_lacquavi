@@ -141,7 +141,15 @@ interface ShippingSelectionInput {
   destination: ShippingDestination
 }
 
+interface PublicQuoteInput {
+  items: { productId: string; quantity: number }[]
+  destinationZip: string
+}
+
 export const shippingApi = {
+  publicQuote: (data: PublicQuoteInput): Promise<ShippingQuoteListResponse> =>
+    httpClient.post<ShippingQuoteListResponse>('/shipping/public-quote', data),
+
   quote: (data: ShippingQuoteInput): Promise<ShippingQuoteListResponse> =>
     httpClient.post<ShippingQuoteListResponse>('/shipping/quotes', data),
 
