@@ -1,3 +1,12 @@
+// ─── Home Tiles ──────────────────────────────────────────────────────────────
+export type HomeTileKey = 'perfumes' | 'hidratantes' | 'mais-vendidos' | 'lancamentos'
+
+export interface HomeTile {
+  key: HomeTileKey
+  imageUrl: string | null
+  updatedAt: string
+}
+
 // ─── User ────────────────────────────────────────────────────────────────────
 export interface User {
   id: string

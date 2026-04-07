@@ -5,6 +5,10 @@ import type { CartItem, Product } from '../types'
 import { getProductFinalPrice } from '../utils'
 
 const CART_KEY = 'lacquavi_cart'
+const MAX_QUANTITY = 99
+
+const sanitizeQuantity = (q: number): number =>
+  Math.max(1, Math.min(MAX_QUANTITY, Math.floor(Number(q) || 1)))
 
 interface CartState {
   items: CartItem[]
@@ -23,12 +27,13 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       return { items: action.items }
 
     case 'ADD_ITEM': {
+      const safeQty = sanitizeQuantity(action.quantity)
       const existing = state.items.find(i => i.productId === action.product.id)
       if (existing) {
         return {
           items: state.items.map(i =>
             i.productId === action.product.id
-              ? { ...i, quantity: i.quantity + action.quantity }
+              ? { ...i, quantity: Math.min(MAX_QUANTITY, i.quantity + safeQty) }
               : i
           )
         }
@@ -36,7 +41,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       return {
         items: [
           ...state.items,
-          { productId: action.product.id, product: action.product, quantity: action.quantity }
+          { productId: action.product.id, product: action.product, quantity: safeQty }
         ]
       }
     }
@@ -44,15 +49,18 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     case 'REMOVE_ITEM':
       return { items: state.items.filter(i => i.productId !== action.productId) }
 
-    case 'UPDATE_QTY':
-      if (action.quantity <= 0) {
+    case 'UPDATE_QTY': {
+      const safeQty = Number(action.quantity)
+      if (!Number.isFinite(safeQty) || safeQty <= 0) {
         return { items: state.items.filter(i => i.productId !== action.productId) }
       }
+      const clampedQty = Math.min(MAX_QUANTITY, Math.floor(safeQty))
       return {
         items: state.items.map(i =>
-          i.productId === action.productId ? { ...i, quantity: action.quantity } : i
+          i.productId === action.productId ? { ...i, quantity: clampedQty } : i
         )
       }
+    }
 
     case 'CLEAR':
       return { items: [] }

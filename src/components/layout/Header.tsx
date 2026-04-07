@@ -184,7 +184,7 @@ export function Header() {
                 </NavLink>
               ))}
 
-              <NavLink to="/nossa-loja" className={({ isActive }) => `text-xs font-semibold whitespace-nowrap transition-colors ${isActive ? 'text-[#000000]' : 'text-gray-500 hover:text-[#000000]'}`}>
+              <NavLink to="/nossa-loja" className={({ isActive }) => `text-xs font-semibold whitespace-nowrap transition-colors px-2.5 py-0.5 rounded-full ${isActive ? 'bg-[#2a7e51]/20 text-[#2a7e51]' : 'bg-[#2a7e51]/10 text-[#2a7e51] hover:bg-[#2a7e51]/20'}`}>
                 Nossa Loja
               </NavLink>
             </nav>
@@ -235,7 +235,7 @@ export function Header() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="10" cy="14" r="5"/><line x1="21" y1="3" x2="15" y2="9"/><polyline points="15 3 21 3 21 9"/></svg>
                 Masculinos
               </Link>
-              <Link to="/nossa-loja" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">
+              <Link to="/nossa-loja" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl text-[#2a7e51] bg-[#2a7e51]/10 hover:bg-[#2a7e51]/20 font-semibold transition-colors">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 Nossa Loja
               </Link>

@@ -16,6 +16,7 @@ const GENDER_OPTIONS = [
 ]
 const SORT_OPTIONS = [
   { value: 'default',       label: 'Em Destaque' },
+  { value: 'newest',        label: 'Lançamentos' },
   { value: 'price-asc',     label: 'Menor Preço' },
   { value: 'price-desc',    label: 'Maior Preço' },
   { value: 'name-asc',      label: 'A → Z' },
@@ -98,6 +99,7 @@ export function ProductListPage() {
     const getSortablePrice = (product: Product) => getProductPriceSummary(product).finalPrice
 
     switch (sort) {
+      case 'newest':     list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); break
       case 'price-asc':  list.sort((a, b) => getSortablePrice(a) - getSortablePrice(b)); break
       case 'price-desc': list.sort((a, b) => getSortablePrice(b) - getSortablePrice(a)); break
       case 'name-asc':   list.sort((a, b) => a.name.localeCompare(b.name));  break

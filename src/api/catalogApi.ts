@@ -1,5 +1,5 @@
 import { httpClient } from './httpClient'
-import type { Category, Product, ProductImage, ProductReview, ProductReviewStats, Subcategory } from '../types'
+import type { Category, HomeTile, HomeTileKey, Product, ProductImage, ProductReview, ProductReviewStats, Subcategory } from '../types'
 
 // ─── Categories ───────────────────────────────────────────────────────────────
 interface CategoriesResponse { success: boolean; data: Category[] }
@@ -135,4 +135,16 @@ export const productsApi = {
 
   createReview: (id: string, data: CreateProductReviewInput): Promise<CreateProductReviewResponse> =>
     httpClient.post<CreateProductReviewResponse>(`/products/${id}/reviews`, data),
+}
+
+// ─── Home Tiles ───────────────────────────────────────────────────────────────
+interface HomeTilesResponse { success: boolean; tiles: HomeTile[] }
+interface HomeTileResponse  { success: boolean; tile: HomeTile }
+
+export const homeTilesApi = {
+  list: (): Promise<HomeTilesResponse> =>
+    httpClient.get<HomeTilesResponse>('/api/home-tiles'),
+
+  updateImage: (key: HomeTileKey, imageUrl: string): Promise<HomeTileResponse> =>
+    httpClient.put<HomeTileResponse>(`/api/home-tiles/${key}`, { imageUrl }),
 }

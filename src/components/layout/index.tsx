@@ -27,6 +27,7 @@ const ADMIN_LINKS = [
   { to: '/admin',             label: 'Dashboard',   icon: '◈', exact: true },
   { to: '/admin/products',    label: 'Produtos',     icon: '◇' },
   { to: '/admin/banners',     label: 'Banners',      icon: '◬' },
+  { to: '/admin/home-tiles',  label: 'Tiles Início', icon: '⊡' },
   { to: '/admin/categories',  label: 'Categorias',   icon: '⊞' },
   { to: '/admin/subcategories',  label: 'Subcategorias', icon: '⊟' },
   { to: '/admin/orders',      label: 'Pedidos',      icon: '◎' },

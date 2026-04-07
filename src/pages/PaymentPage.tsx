@@ -559,7 +559,7 @@ export function PaymentPage() {
                       <div className="flex justify-center mb-6">
                         <div className="p-4 bg-white rounded-2xl border border-nude-100 shadow-sm">
                           <img
-                            src={payment.qr_code_base64}
+                            src={payment.qr_code_base64.startsWith('data:') ? payment.qr_code_base64 : `data:image/png;base64,${payment.qr_code_base64}`}
                             alt="QR Code PIX"
                             className="w-48 h-48"
                           />

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { productsApi, categoriesApi } from '../api/catalogApi'
+import { productsApi, categoriesApi, homeTilesApi } from '../api/catalogApi'
 import { bannersApi } from '../api'
 import { ProductCarousel } from '../components/product/ProductCarousel'
 import { Button } from '../components/ui'
@@ -9,7 +9,7 @@ import { StoreTeaser } from '../components/store/StoreTeaser'
 import { useProductsReviewStats } from '../hooks/useProductsReviewStats'
 import { getProductPriceSummary } from '../utils'
 import { getProductPrimaryImageUrl } from '../utils/productImages'
-import type { Product, Category, Banner } from '../types'
+import type { Product, Category, Banner, HomeTile } from '../types'
 
 function useReveal(dep?: unknown) {
   useEffect(() => {
@@ -50,7 +50,7 @@ function HomeTopBanner() {
   const [imageOk, setImageOk] = useState(true)
 
   const handleScrollToWeekHighlights = () => {
-    document.getElementById('selecao-premium-destaque-semana')?.scrollIntoView({
+    document.getElementById('mais-vendidos-semana')?.scrollIntoView({
       behavior: 'smooth',
       block: 'start',
     })
@@ -59,12 +59,12 @@ function HomeTopBanner() {
   return (
     <section className="bg-white">
       <div className="container-page pt-4 md:pt-6 pb-2 md:pb-3">
-        <div className="relative w-full aspect-[1396/642] overflow-hidden rounded-2xl border border-[#c8e6d4] shadow-sm">
+        <div className="relative w-full aspect-[1396/642] md:aspect-[3/1] overflow-hidden rounded-2xl border border-[#c8e6d4] shadow-sm">
           {imageOk ? (
             <img
               src="/banner-home-top.png"
               alt="Banner Lacquavi"
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover object-top"
               onError={() => setImageOk(false)}
             />
           ) : (
@@ -75,6 +75,13 @@ function HomeTopBanner() {
               }}
             />
           )}
+          <button
+            onClick={handleScrollToWeekHighlights}
+            className="absolute bottom-[36px] left-[66px] md:bottom-[44px] md:left-[74px] bg-[#2a7e51] hover:bg-[#236843] active:scale-[0.97] text-white text-xs md:text-sm font-semibold px-4 py-2 md:px-5 md:py-2.5 rounded-full shadow-lg transition-all duration-200 flex items-center gap-2"
+          >
+            Destaques da semana
+            <span className="text-base leading-none">↓</span>
+          </button>
         </div>
       </div>
     </section>
@@ -303,9 +310,14 @@ function FlashSaleBanner() {
   )
 }
 
-function CategoryTiles({ categories, products }: { categories: Category[]; products: Product[] }) {
-  if (!categories || categories.length === 0) return null
+const TILE_CONFIG: { key: string; label: string; to: (catId?: string) => string }[] = [
+  { key: 'perfumes',      label: 'Perfumes',      to: (id) => id ? `/products?category=${id}` : '/products' },
+  { key: 'hidratantes',   label: 'Hidratantes',   to: (id) => id ? `/products?category=${id}` : '/products' },
+  { key: 'mais-vendidos', label: 'Mais Vendidos', to: ()   => '/products' },
+  { key: 'lancamentos',   label: 'Lançamentos',   to: ()   => '/products?sort=newest' },
+]
 
+function CategoryTiles({ categories, products, homeTiles }: { categories: Category[]; products: Product[]; homeTiles: HomeTile[] }) {
   const normalize = (value: string) =>
     value
       .toLowerCase()
@@ -318,90 +330,60 @@ function CategoryTiles({ categories, products }: { categories: Category[]; produ
       return keywords.every((keyword) => haystack.includes(normalize(keyword)))
     })
 
+  const pickFallbackImage = (categoryId?: string) => {
+    const match = categoryId
+      ? products.find((p) => getProductPrimaryImageUrl(p) && p.categoryId === categoryId)
+      : products.find((p) => getProductPrimaryImageUrl(p))
+    return match ? getProductPrimaryImageUrl(match) ?? undefined : undefined
+  }
+
   const perfumeCategory = findCategory('perfume')
-  const kitsCategory = findCategory('kit')
-  const pickImage = (categoryId: string, keyword?: string) => {
-    const normalizedKeyword = keyword ? normalize(keyword) : ''
-    const directMatch = products.find((product) => {
-      if (!getProductPrimaryImageUrl(product) || product.categoryId !== categoryId) return false
-      if (!normalizedKeyword) return true
-      return normalize(product.name).includes(normalizedKeyword)
-    })
-    const directMatchImage = directMatch ? getProductPrimaryImageUrl(directMatch) : null
-    if (directMatchImage) return directMatchImage
-    const fallbackProduct = products.find((product) => getProductPrimaryImageUrl(product) && product.categoryId === categoryId)
-    return fallbackProduct ? getProductPrimaryImageUrl(fallbackProduct) ?? undefined : undefined
+  const hidratanteCategory = findCategory('hidratante')
+
+  const categoryById: Record<string, string | undefined> = {
+    'perfumes': perfumeCategory?.id,
+    'hidratantes': hidratanteCategory?.id,
   }
 
-  const tiles: Array<{ key: string; label: string; to: string; imageUrl?: string }> = []
-
-  if (perfumeCategory) {
-    tiles.push(
-      {
-        key: 'perfume-lacqua-di-fiori',
-        label: 'Perfumes Femininos',
-        to: `/products?category=${perfumeCategory.id}&type=lacqua di fiori`,
-        imageUrl: pickImage(perfumeCategory.id, 'lacqua di fiori'),
-      },
-      {
-        key: 'perfume-arabes',
-        label: 'Perfumes Masculinos',
-        to: `/products?category=${perfumeCategory.id}&type=arabe`,
-        imageUrl: pickImage(perfumeCategory.id, 'arabe'),
-      }
-    )
-  }
-
-  if (kitsCategory) {
-    tiles.push({
-      key: 'kits',
-      label: 'Kits & Presentes',
-      to: `/products?category=${kitsCategory.id}`,
-      imageUrl: pickImage(kitsCategory.id),
-    })
-  }
-
-  const usedCategoryIds = new Set([
-    perfumeCategory?.id,
-    kitsCategory?.id,
-  ].filter(Boolean))
-
-  if (tiles.length < 4) {
-    for (const category of categories) {
-      if (tiles.length >= 4) break
-      if (usedCategoryIds.has(category.id)) continue
-      tiles.push({
-        key: category.id,
-        label: category.name,
-        to: `/products?category=${category.id}`,
-        imageUrl: pickImage(category.id),
-      })
+  const tiles = TILE_CONFIG.map((cfg) => {
+    const tileData = homeTiles.find((t) => t.key === cfg.key)
+    const catId = categoryById[cfg.key]
+    const imageUrl = tileData?.imageUrl ?? pickFallbackImage(catId)
+    return {
+      key: cfg.key,
+      label: cfg.label,
+      to: cfg.to(catId),
+      imageUrl,
     }
-  }
-
-  if (tiles.length === 0) return null
+  })
 
   return (
     <section className="bg-gradient-to-b from-white to-[#fff5f8] py-10 md:py-12">
       <div className="container-page">
         <h3 className="text-center font-semibold text-[#1A1A1A] text-2xl mb-6 md:mb-8">Explore nossas categorias</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 justify-items-center">
           {tiles.map((tile) => (
             <Link
               key={tile.key}
               to={tile.to}
-              className="group rounded-2xl bg-white flex flex-col items-center justify-between p-6 min-h-[210px] md:min-h-[230px] shadow-[0_10px_30px_rgba(0,0,0,0.05)] transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.10)] active:scale-[0.98]"
+              className="group relative rounded-2xl overflow-hidden aspect-[3/4] w-full max-w-[200px] bg-[#EAEAEA] shadow-[0_10px_30px_rgba(0,0,0,0.08)] transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.15)] active:scale-[0.98] block"
             >
-              <span className="w-full h-[68%] rounded-xl bg-[#FAFAFA] mb-3 overflow-hidden flex items-center justify-center shadow-[0_6px_16px_rgba(0,0,0,0.06)]">
-                {tile.imageUrl ? (
-                  <img src={tile.imageUrl} alt={tile.label} className="w-[90px] md:w-[108px] h-auto object-contain transition-transform duration-300 group-hover:scale-105" loading="lazy" />
-                ) : (
-                  <span className="text-[#000000] font-bold text-2xl">{tile.label.charAt(0).toUpperCase()}</span>
-                )}
-              </span>
-              <div className="flex flex-col items-center">
-                <span className="font-semibold text-sm md:text-[15px] text-[#333] text-center line-clamp-2">{tile.label}</span>
-                <span className="mt-2 block h-[2px] w-14 rounded-full bg-[#2a7e51]/75"></span>
+              {tile.imageUrl ? (
+                <img
+                  src={tile.imageUrl}
+                  alt={tile.label}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-[#999] font-bold text-4xl">
+                  {tile.label.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col items-start">
+                <span className="font-semibold text-sm md:text-base text-white drop-shadow">{tile.label}</span>
+                <span className="mt-1.5 block h-[2px] w-10 rounded-full bg-[#2a7e51]" />
               </div>
             </Link>
           ))}
@@ -414,16 +396,18 @@ function CategoryTiles({ categories, products }: { categories: Category[]; produ
 export function HomePage() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [homeTiles, setHomeTiles] = useState<HomeTile[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useReveal(loading)
 
   useEffect(() => {
-    Promise.all([productsApi.list(), categoriesApi.list()])
-      .then(([pRes, cRes]) => {
+    Promise.all([productsApi.list(), categoriesApi.list(), homeTilesApi.list()])
+      .then(([pRes, cRes, tRes]) => {
         setProducts(pRes.products)
         setCategories(cRes.data || [])
+        setHomeTiles(tRes.tiles || [])
       })
       .catch(() => setError('Não foi possível carregar os produtos.'))
       .finally(() => setLoading(false))
@@ -493,10 +477,8 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Categories quick nav — desktop only */}
-      <div className="hidden md:block">
-        <CategoryTiles categories={categories} products={sortedProducts} />
-      </div>
+      {/* Categories quick nav */}
+      <CategoryTiles categories={categories} products={sortedProducts} homeTiles={homeTiles} />
 
       {/* Mobile-only: produto em destaque no lugar das categorias */}
       <section className="md:hidden py-10 bg-white">

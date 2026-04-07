@@ -2,7 +2,7 @@ import {
   createContext, useContext, useEffect, useState, useCallback, ReactNode
 } from 'react'
 import { authApi } from '../api/authApi'
-import { setTokenAccessor, setTokenUpdater, setUnauthorizedHandler, setCurrentToken } from '../api/httpClient'
+import { setTokenUpdater, setUnauthorizedHandler, setCurrentToken } from '../api/httpClient'
 import type { User, ApiError } from '../types'
 
 interface AuthContextValue {
@@ -39,14 +39,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
-  // Wire httpClient — provide in-memory token
+  // Sync _currentToken whenever accessToken state changes
+  // (keeps the in-memory token used by the request interceptor up-to-date)
   useEffect(() => {
-    setTokenAccessor(() => accessToken || null)
+    setCurrentToken(accessToken || null)
   }, [accessToken])
 
   // Wire httpClient — update in-memory token after silent refresh
   useEffect(() => {
-    setTokenUpdater((token: string) => setAccessToken(token))
+    setTokenUpdater((token: string) => {
+      setCurrentToken(token)   // immediate — no React batching delay
+      setAccessToken(token)
+    })
   }, [])
 
   useEffect(() => {

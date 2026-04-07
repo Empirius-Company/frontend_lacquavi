@@ -146,7 +146,7 @@ export function CheckoutPage() {
   const [zipLookupLoading, setZipLookupLoading] = useState(false)
   const [destination, setDestination] = useState<ShippingDestination>(() => {
     try {
-      const raw = localStorage.getItem(SHIPPING_DESTINATION_KEY)
+      const raw = sessionStorage.getItem(SHIPPING_DESTINATION_KEY)
       if (!raw) return getEmptyDestination()
       return { ...getEmptyDestination(), ...(JSON.parse(raw) as Partial<ShippingDestination>) }
     } catch {
@@ -182,7 +182,7 @@ export function CheckoutPage() {
   const lastZipLookupRef = useRef<string>('')
 
   useEffect(() => {
-    localStorage.setItem(SHIPPING_DESTINATION_KEY, JSON.stringify(destination))
+    sessionStorage.setItem(SHIPPING_DESTINATION_KEY, JSON.stringify(destination))
   }, [destination])
 
   useEffect(() => {
@@ -237,7 +237,7 @@ export function CheckoutPage() {
       setShippingRequired(true)
       setShippingAmountCents(0)
       setShippingDiscountCents(0)
-      localStorage.removeItem(SHIPPING_SESSION_KEY)
+      sessionStorage.removeItem(SHIPPING_SESSION_KEY)
       orderIdempotencyKeyRef.current = generateIdempotencyKey()
     }
     sessionStorage.setItem('lacquavi_checkout_cart_signature', cartSignature)
@@ -246,7 +246,7 @@ export function CheckoutPage() {
   useEffect(() => {
     const loadCachedShippingSession = async () => {
       try {
-        const raw = localStorage.getItem(SHIPPING_SESSION_KEY)
+        const raw = sessionStorage.getItem(SHIPPING_SESSION_KEY)
         if (!raw) return
         const parsed = JSON.parse(raw) as ShippingSessionCache
         if (parsed.cartSignature !== cartSignature) return
@@ -260,7 +260,7 @@ export function CheckoutPage() {
         setShippingAmountCents(order.shippingAmountCents ?? 0)
         setShippingDiscountCents(order.shippingDiscountCents ?? 0)
       } catch {
-        localStorage.removeItem(SHIPPING_SESSION_KEY)
+        sessionStorage.removeItem(SHIPPING_SESSION_KEY)
       }
     }
 
@@ -276,7 +276,7 @@ export function CheckoutPage() {
       selectedQuoteId: next.selectedQuoteId ?? selectedQuoteId ?? null,
     }
     if (!payload.orderId) return
-    localStorage.setItem(SHIPPING_SESSION_KEY, JSON.stringify(payload))
+    sessionStorage.setItem(SHIPPING_SESSION_KEY, JSON.stringify(payload))
   }
 
   const ensureOrderDraft = async (): Promise<Order> => {

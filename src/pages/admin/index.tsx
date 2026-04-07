@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { productsApi, categoriesApi, subcategoriesApi } from '../../api/catalogApi'
+import { productsApi, categoriesApi, subcategoriesApi, homeTilesApi } from '../../api/catalogApi'
 import { uploadProductImageToStorage } from '../../api/storageApi'
 import { ordersApi, paymentsApi, couponsApi, healthApi, bannersApi, shippingApi } from '../../api/index'
 import { useToast } from '../../context/ToastContext'
@@ -35,6 +35,8 @@ import type {
   ShipmentStatus,
   ShipmentSelection,
   ShippingDestination,
+  HomeTile,
+  HomeTileKey,
 } from '../../types'
 
 const MAX_PRODUCT_IMAGES = 6
@@ -2280,6 +2282,101 @@ export function StatusPage() {
           </p>
         </div>
       ) : null}
+    </div>
+  )
+}
+
+// ─── Admin Home Tiles ─────────────────────────────────────────────────────────
+
+const TILE_LABELS: Record<HomeTileKey, string> = {
+  'perfumes':      'Perfumes',
+  'hidratantes':   'Hidratantes',
+  'mais-vendidos': 'Mais Vendidos',
+  'lancamentos':   'Lançamentos',
+}
+
+export function AdminHomeTilesPage() {
+  const { toast } = useToast()
+  const [tiles, setTiles] = useState<HomeTile[]>([])
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState<HomeTileKey | null>(null)
+
+  useEffect(() => {
+    homeTilesApi.list()
+      .then((res) => setTiles(res.tiles || []))
+      .catch(() => toast('Erro ao carregar tiles', 'error'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleImageChange = async (key: HomeTileKey, file: File) => {
+    setUploading(key)
+    try {
+      const { url } = await uploadProductImageToStorage(file)
+      const res = await homeTilesApi.updateImage(key, url)
+      setTiles((prev) => prev.map((t) => t.key === key ? res.tile : t))
+      toast('Imagem atualizada!', 'success')
+    } catch {
+      toast('Erro ao atualizar imagem', 'error')
+    } finally {
+      setUploading(null)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="p-8 grid grid-cols-2 md:grid-cols-4 gap-6">
+        {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-52 rounded-2xl" />)}
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6 md:p-8 max-w-4xl">
+      <h1 className="text-2xl font-bold text-[#1A1A1A] mb-1">Imagens das Categorias</h1>
+      <p className="text-sm text-gray-500 mb-8">Defina a imagem exibida em cada tile na página inicial.</p>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+        {(['perfumes', 'hidratantes', 'mais-vendidos', 'lancamentos'] as HomeTileKey[]).map((key) => {
+          const tile = tiles.find((t) => t.key === key)
+          const isUploading = uploading === key
+
+          return (
+            <div key={key} className="flex flex-col gap-2">
+              <div className="relative rounded-2xl overflow-hidden bg-gray-100 aspect-square border border-gray-200">
+                {tile?.imageUrl ? (
+                  <img src={tile.imageUrl} alt={TILE_LABELS[key]} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  </div>
+                )}
+                {isUploading && (
+                  <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                    <Spinner />
+                  </div>
+                )}
+              </div>
+              <p className="text-sm font-semibold text-[#333] text-center">{TILE_LABELS[key]}</p>
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={isUploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleImageChange(key, file)
+                    e.target.value = ''
+                  }}
+                />
+                <span className="block text-center text-xs py-1.5 px-3 rounded-full border border-gray-300 text-gray-600 hover:border-[#2a7e51] hover:text-[#2a7e51] transition-colors">
+                  {tile?.imageUrl ? 'Trocar imagem' : 'Adicionar imagem'}
+                </span>
+              </label>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
