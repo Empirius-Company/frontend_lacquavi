@@ -402,15 +402,22 @@ export function HomePage() {
 
   useReveal(loading)
 
+  // Fase 1: produtos — desbloqueia o hero e o primeiro carrossel imediatamente
   useEffect(() => {
-    Promise.all([productsApi.list(), categoriesApi.list(), homeTilesApi.list()])
-      .then(([pRes, cRes, tRes]) => {
-        setProducts(pRes.products)
+    productsApi.list()
+      .then((pRes) => setProducts(pRes.products))
+      .catch(() => setError('Não foi possível carregar os produtos.'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  // Fase 2: categorias e tiles — carregam em paralelo, independente dos produtos
+  useEffect(() => {
+    Promise.all([categoriesApi.list(), homeTilesApi.list()])
+      .then(([cRes, tRes]) => {
         setCategories(cRes.data || [])
         setHomeTiles(tRes.tiles || [])
       })
-      .catch(() => setError('Não foi possível carregar os produtos.'))
-      .finally(() => setLoading(false))
+      .catch(() => {})
   }, [])
 
   const sortedProducts = [...products].sort((a, b) => {
