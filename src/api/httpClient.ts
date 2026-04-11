@@ -6,9 +6,9 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 // Token accessor/updater — wired by AuthContext once mounted
 let _currentToken: string | null = null
 let _getAccessToken: () => string | null = () => _currentToken
-let _setAccessToken: (token: string) => void = () => {}
+let _setAccessToken: (token: string, expiresIn?: number) => void = () => {}
 let _onUnauthorized: () => void = () => {}
-let refreshPromise: Promise<string | null> | null = null
+let refreshPromise: Promise<{ accessToken: string; expiresIn?: number } | null> | null = null
 
 // Synchronous token update — bypasses React state batching
 export const setCurrentToken = (token: string | null) => {
@@ -19,7 +19,7 @@ export const setTokenAccessor = (fn: () => string | null) => {
   _getAccessToken = fn
 }
 
-export const setTokenUpdater = (fn: (token: string) => void) => {
+export const setTokenUpdater = (fn: (token: string, expiresIn?: number) => void) => {
   _setAccessToken = fn
 }
 
@@ -67,28 +67,29 @@ instance.interceptors.response.use(
         try {
           if (!refreshPromise) {
             refreshPromise = axios
-              .post<{ accessToken?: string; token?: string }>(
+              .post<{ accessToken?: string; token?: string; expiresIn?: number }>(
                 `${API_BASE_URL}/auth/refresh`,
                 {},
                 { withCredentials: true, headers: { 'Content-Type': 'application/json' } }
               )
               .then((response) => {
                 const newAccessToken = response.data.accessToken || response.data.token || null
+                const expiresIn = response.data.expiresIn
                 if (newAccessToken) {
-                  _setAccessToken(newAccessToken)
+                  _setAccessToken(newAccessToken, expiresIn)
                 }
-                return newAccessToken
+                return newAccessToken ? { accessToken: newAccessToken, expiresIn } : null
               })
               .finally(() => {
                 refreshPromise = null
               })
           }
 
-          const renewedAccessToken = await refreshPromise
-          if (renewedAccessToken) {
+          const refreshResult = await refreshPromise
+          if (refreshResult?.accessToken) {
             originalRequest.headers = {
               ...(originalRequest.headers ?? {}),
-              Authorization: `Bearer ${renewedAccessToken}`,
+              Authorization: `Bearer ${refreshResult.accessToken}`,
             }
             return instance.request(originalRequest)
           }

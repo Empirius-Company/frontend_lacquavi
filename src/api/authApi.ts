@@ -6,8 +6,8 @@ interface LoginInput  { email: string; password: string }
 // ← phone agora incluído, conforme POST /auth/register da collection
 interface RegisterInput { name: string; email: string; password: string; phone?: string }
 
-interface AuthResponse { message: string; user: User; accessToken: string }
-interface RefreshResponse { message: string; accessToken: string }
+interface AuthResponse { message: string; user: User; accessToken: string; expiresIn?: number }
+interface RefreshResponse { message: string; accessToken: string; expiresIn?: number }
 
 // ← phone incluído, conforme PUT /auth/profile da collection
 interface ProfileUpdateInput { name?: string; email?: string; phone?: string }

@@ -1,9 +1,12 @@
 import {
-  createContext, useContext, useEffect, useState, useCallback, ReactNode
+  createContext, useContext, useEffect, useRef, useState, useCallback, ReactNode
 } from 'react'
 import { authApi } from '../api/authApi'
 import { setTokenUpdater, setUnauthorizedHandler, setCurrentToken } from '../api/httpClient'
 import type { User, ApiError } from '../types'
+
+// Refresh the access token when this fraction of its TTL remains (e.g. 0.2 = last 20%)
+const REFRESH_THRESHOLD = 0.2
 
 interface AuthContextValue {
   user: User | null
@@ -26,14 +29,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]               = useState<User | null>(null)
   const [accessToken, setAccessToken] = useState('')
   const [isLoading, setIsLoading]     = useState(true)
+  const refreshTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const saveSession = useCallback((at: string, u: User) => {
+  const scheduleProactiveRefresh = useCallback((expiresInSeconds: number) => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
+    // Refresh when REFRESH_THRESHOLD of the TTL remains
+    const delayMs = Math.max((expiresInSeconds * (1 - REFRESH_THRESHOLD)) * 1000, 5_000)
+    refreshTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await authApi.refresh()
+        setCurrentToken(res.accessToken)
+        setAccessToken(res.accessToken)
+        if (res.expiresIn) scheduleProactiveRefresh(res.expiresIn)
+      } catch {
+        // Refresh token expired — let the 401 interceptor handle logout naturally
+      }
+    }, delayMs)
+  }, [])
+
+  const saveSession = useCallback((at: string, u: User, expiresIn?: number) => {
     setCurrentToken(at)
     setAccessToken(at)
     setUser(u)
-  }, [])
+    if (expiresIn) scheduleProactiveRefresh(expiresIn)
+  }, [scheduleProactiveRefresh])
 
   const clearSession = useCallback(() => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
     setCurrentToken(null)
     setAccessToken('')
     setUser(null)
@@ -47,11 +69,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Wire httpClient — update in-memory token after silent refresh
   useEffect(() => {
-    setTokenUpdater((token: string) => {
+    setTokenUpdater((token: string, expiresIn?: number) => {
       setCurrentToken(token)   // immediate — no React batching delay
       setAccessToken(token)
+      if (expiresIn) scheduleProactiveRefresh(expiresIn)
     })
-  }, [])
+  }, [scheduleProactiveRefresh])
 
   useEffect(() => {
     setUnauthorizedHandler(() => clearSession())
@@ -60,9 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Bootstrap — always restore session via HttpOnly cookie
   useEffect(() => {
     authApi.refresh()
-      .then(({ accessToken: at }) => {
-        setCurrentToken(at)   // sync — ensures getProfile request carries the token
-        setAccessToken(at)
+      .then((res) => {
+        setCurrentToken(res.accessToken)   // sync — ensures getProfile request carries the token
+        setAccessToken(res.accessToken)
+        if (res.expiresIn) scheduleProactiveRefresh(res.expiresIn)
         return authApi.getProfile()
       })
       .then(({ user }) => setUser(user))
@@ -73,12 +97,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ─── Actions ────────────────────────────────────────────────────────────────
   const login = useCallback(async (email: string, password: string) => {
     const res = await authApi.login({ email, password })
-    saveSession(res.accessToken, res.user)
+    saveSession(res.accessToken, res.user, res.expiresIn)
   }, [saveSession])
 
   const register = useCallback(async (name: string, email: string, password: string, phone?: string) => {
     const res = await authApi.register({ name, email, password, ...(phone ? { phone } : {}) })
-    saveSession(res.accessToken, res.user)
+    saveSession(res.accessToken, res.user, res.expiresIn)
   }, [saveSession])
 
   const logout = useCallback(async () => {
