@@ -11,25 +11,23 @@ import { getOrderedGallery, getProductPrimaryImage } from '../utils/productImage
 import type { ApiError, Product, ProductImage, ProductReview, ProductReviewStats, ShippingQuote } from '../types'
 
 const PRODUCT_DETAIL_ZIP_CACHE_KEY = 'lacquavi_product_detail_zip'
+const PENDING_REVIEW_KEY = 'lacquavi_pending_review'
 
 
-function FloatingBuyBar({ product, onAdd }: { product: Product, onAdd: () => void }) {
+function FloatingBuyBar({ product, onAdd, onVisibilityChange }: { product: Product, onAdd: () => void, onVisibilityChange?: (v: boolean) => void }) {
   const [isVisible, setIsVisible] = useState(false)
   const pricing = getProductPriceSummary(product)
   const primaryImage = getProductPrimaryImage(product)
 
   useEffect(() => {
     const toggleVisibility = () => {
-      // Show when scrolling past the main buy button
-      if (window.scrollY > 600) {
-        setIsVisible(true)
-      } else {
-        setIsVisible(false)
-      }
+      const visible = window.scrollY > 600
+      setIsVisible(visible)
+      onVisibilityChange?.(visible)
     }
     window.addEventListener('scroll', toggleVisibility)
     return () => window.removeEventListener('scroll', toggleVisibility)
-  }, [])
+  }, [onVisibilityChange])
 
   if (!isVisible) return null
 
@@ -101,11 +99,22 @@ export function ProductDetailPage() {
   const [reviewsStats, setReviewsStats] = useState<ProductReviewStats>({ total: 0, averageRating: 0 })
   const [reviewsLoading, setReviewsLoading] = useState(true)
   const [submittingReview, setSubmittingReview] = useState(false)
-  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' })
+  const [reviewForm, setReviewForm] = useState(() => {
+    // Restaura review pendente salva antes de redirect para login
+    try {
+      const pending = sessionStorage.getItem(PENDING_REVIEW_KEY)
+      if (pending) {
+        sessionStorage.removeItem(PENDING_REVIEW_KEY)
+        return JSON.parse(pending) as { rating: number; comment: string }
+      }
+    } catch { /* ignore */ }
+    return { rating: 5, comment: '' }
+  })
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [shippingLoading, setShippingLoading] = useState(false)
   const [shippingError, setShippingError] = useState('')
   const [shippingQuotes, setShippingQuotes] = useState<ShippingQuote[]>([])
+  const [floatingBarVisible, setFloatingBarVisible] = useState(false)
 
 const loadReviews = useCallback(async () => {
     if (!id) return
@@ -235,6 +244,10 @@ const loadReviews = useCallback(async () => {
     if (!id || submittingReview || authLoading) return
 
     if (!isAuthenticated) {
+      // Salva o rascunho para restaurar depois do login
+      try {
+        sessionStorage.setItem(PENDING_REVIEW_KEY, JSON.stringify(reviewForm))
+      } catch { /* ignore */ }
       navigate(`/login?redirect=${encodeURIComponent(`/products/${id}`)}`)
       return
     }
@@ -291,7 +304,7 @@ const loadReviews = useCallback(async () => {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-32">
+    <div className={`min-h-screen bg-white ${floatingBarVisible ? 'pb-40' : 'pb-32'}`}>
       <div className="border-b border-gray-200 py-3 text-xs bg-white">
         <div className="container-page flex gap-2 text-gray-500 overflow-x-auto whitespace-nowrap">
           <Link to="/" className="hover:underline opacity-60 flex items-center gap-1"><span className="text-[14px]">🏠</span></Link>
@@ -558,7 +571,7 @@ const loadReviews = useCallback(async () => {
         </div>
       </div>
 
-      <FloatingBuyBar product={product} onAdd={handleAdd} />
+      <FloatingBuyBar product={product} onAdd={handleAdd} onVisibilityChange={setFloatingBarVisible} />
     </div>
   )
 }

@@ -140,6 +140,7 @@ export interface Order {
   shippingDiscountCents?: number | null
   shippingDestinationZip?: string | null
   shippingAddressHash?: string | null
+  pickupLocation?: string | null
   createdAt: string
   items: OrderItem[]
 }
@@ -189,6 +190,7 @@ export type ShipmentStatus =
   | 'delivered'
   | 'failed'
   | 'cancelled'
+  | 'ready_for_pickup'
 
 export interface ShipmentEvent {
   id: string

@@ -21,6 +21,7 @@ const shipmentStatusLabel: Record<ShipmentStatus, string> = {
   delivered: 'Entregue',
   failed: 'Falhou',
   cancelled: 'Cancelado',
+  ready_for_pickup: 'Pronto para retirada',
 }
 
 const buildCustomerTrackingUrl = (trackingCode?: string | null): string | null => {
@@ -571,6 +572,14 @@ export function OrderDetailPage() {
                         </a>
                       }
                     />
+                  )}
+                  {shipment.status === 'ready_for_pickup' && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 mt-1">
+                      <p className="text-sm font-semibold text-emerald-700">Seu pedido está pronto!</p>
+                      <p className="text-sm text-emerald-700 mt-0.5">
+                        Compareça ao ponto de retirada selecionado com seu documento de identidade.
+                      </p>
+                    </div>
                   )}
                   {shipment.status === 'failed' && (
                     <p className="text-sm text-gray-600">

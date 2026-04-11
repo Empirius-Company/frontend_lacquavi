@@ -45,6 +45,7 @@ export function ProductListPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [subcategories, setSubcategories] = useState<Subcategory[]>([])
   const [loading,    setLoading]    = useState(true)
+  const [fetchError, setFetchError] = useState(false)
 
   const selectedCat    = searchParams.get('category') ?? ''
   const selectedSubcategory = searchParams.get('subcategory') ?? ''
@@ -61,6 +62,7 @@ export function ProductListPage() {
 
   useEffect(() => {
     setLoading(true)
+    setFetchError(false)
     Promise.all([
       productsApi.list({
         ...(selectedCat ? { category: selectedCat } : {}),
@@ -70,6 +72,7 @@ export function ProductListPage() {
       categoriesApi.list(),
     ])
       .then(([pd, cd]) => { setProducts(pd.products); setCategories(cd.data) })
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false))
   }, [selectedCat, selectedSubcategory, selectedType])
 
@@ -229,6 +232,15 @@ export function ProductListPage() {
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+          </div>
+        ) : fetchError ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center space-y-5">
+            <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center text-3xl">⚠</div>
+            <div>
+              <h3 className="font-display text-2xl text-noir-950">Não foi possível carregar os produtos</h3>
+              <p className="text-sm text-nude-500 mt-2">Verifique sua conexão e tente novamente</p>
+            </div>
+            <Button onClick={() => window.location.reload()}>Tentar novamente</Button>
           </div>
         ) : visible.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center space-y-5">

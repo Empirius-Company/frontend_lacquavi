@@ -66,6 +66,12 @@ const shipmentStatusLabel: Record<ShipmentStatus, string> = {
   delivered: 'Entregue',
   failed: 'Falhou',
   cancelled: 'Cancelado',
+  ready_for_pickup: 'Pronto para retirada',
+}
+
+const pickupLocationLabel: Record<string, string> = {
+  lagoa_santa: 'Lagoa Santa',
+  minas_shopping: 'Minas Shopping',
 }
 
 const formatZipCode = (zip?: string | null) => {
@@ -1171,6 +1177,7 @@ export function AdminOrderDetailPage() {
   const [status, setStatus]     = useState<OrderStatus>('pending')
   const [updating, setUpdating] = useState(false)
   const [processingLabel, setProcessingLabel] = useState(false)
+  const [markingPickupReady, setMarkingPickupReady] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -1242,6 +1249,20 @@ export function AdminOrderDetailPage() {
     }
   }
 
+  const handleMarkPickupReady = async () => {
+    if (!id) return
+    setMarkingPickupReady(true)
+    try {
+      await shippingApi.markPickupReady(id)
+      toast('Pedido marcado como pronto para retirada!', 'success')
+      await reloadShipment()
+    } catch (err) {
+      toast((err as ApiError).message || 'Erro ao marcar como pronto para retirada', 'error')
+    } finally {
+      setMarkingPickupReady(false)
+    }
+  }
+
   if (loading) return <div className="flex justify-center py-12"><Spinner size="lg" /></div>
   if (!order) return <EmptyState title="Pedido não encontrado" />
 
@@ -1295,6 +1316,20 @@ export function AdminOrderDetailPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-obsidian-500">Serviço</span>
                     <span className="font-medium text-ink">{shipment.serviceName || shipmentSelection?.serviceName || order.shippingServiceName}</span>
+                  </div>
+                )}
+                {order.shippingProvider === 'STORE_PICKUP' && order.pickupLocation && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-obsidian-500">Ponto de retirada</span>
+                    <span className="font-medium text-ink">{pickupLocationLabel[order.pickupLocation] ?? order.pickupLocation}</span>
+                  </div>
+                )}
+                {shipment.status === 'ready_for_pickup' && (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                    <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Pronto para retirada</p>
+                    <p className="text-sm text-emerald-700 mt-0.5">
+                      Cliente pode retirar em {order.pickupLocation ? (pickupLocationLabel[order.pickupLocation] ?? order.pickupLocation) : 'loja'}.
+                    </p>
                   </div>
                 )}
                 {shipment.trackingCode && (
@@ -1354,9 +1389,21 @@ export function AdminOrderDetailPage() {
             <Button onClick={handleUpdateStatus} loading={updating} fullWidth>
               Salvar Status
             </Button>
-            <Button variant="outline" onClick={handleProcessLabel} loading={processingLabel} fullWidth>
-              Processar Etiqueta
-            </Button>
+            {order.shippingProvider === 'STORE_PICKUP' ? (
+              <Button
+                variant="outline"
+                onClick={handleMarkPickupReady}
+                loading={markingPickupReady}
+                fullWidth
+                disabled={shipment?.status === 'ready_for_pickup' || shipment?.status === 'delivered'}
+              >
+                {shipment?.status === 'ready_for_pickup' ? 'Já marcado como pronto' : 'Marcar pronto para retirada'}
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={handleProcessLabel} loading={processingLabel} fullWidth>
+                Processar Etiqueta
+              </Button>
+            )}
           </div>
 
           <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card p-5 space-y-2.5 text-sm">
@@ -1400,7 +1447,12 @@ export function AdminOrderDetailPage() {
                 <span className="text-right">{[shippingDestination?.city, shippingDestination?.state].filter(Boolean).join(' / ')}</span>
               </div>
             )}
-            {(order.shippingServiceName || shipmentSelection?.serviceName) && (
+            {order.shippingProvider === 'STORE_PICKUP' && order.pickupLocation ? (
+              <div className="flex justify-between gap-2">
+                <span className="text-obsidian-500">Retirada</span>
+                <span className="text-right font-medium">{pickupLocationLabel[order.pickupLocation] ?? order.pickupLocation}</span>
+              </div>
+            ) : (order.shippingServiceName || shipmentSelection?.serviceName) && (
               <div className="flex justify-between gap-2">
                 <span className="text-obsidian-500">Serviço</span>
                 <span className="text-right">{order.shippingServiceName || shipmentSelection?.serviceName}</span>

@@ -13,14 +13,23 @@ const PAYMENT_METHODS = [
   { id: 'credit_card', label: 'Cartão de Crédito', sub: 'Visa, Master, Amex', icon: '💳' },
 ]
 
-function CountdownTimer({ expiresAt }: { expiresAt: string }) {
+function CountdownTimer({ expiresAt, onExpired }: { expiresAt: string; onExpired?: () => void }) {
   const [remaining, setRemaining] = useState('')
   const [expired, setExpired] = useState(false)
+  const onExpiredRef = React.useRef(onExpired)
+  onExpiredRef.current = onExpired
 
   useEffect(() => {
     const update = () => {
       const diff = new Date(expiresAt).getTime() - Date.now()
-      if (diff <= 0) { setExpired(true); setRemaining('00:00'); return }
+      if (diff <= 0) {
+        if (!expired) {
+          setExpired(true)
+          setRemaining('00:00')
+          onExpiredRef.current?.()
+        }
+        return
+      }
       const m = Math.floor(diff / 60000)
       const s = Math.floor((diff % 60000) / 1000)
       setRemaining(`${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`)
@@ -28,7 +37,7 @@ function CountdownTimer({ expiresAt }: { expiresAt: string }) {
     update()
     const t = setInterval(update, 1000)
     return () => clearInterval(t)
-  }, [expiresAt])
+  }, [expiresAt]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className={`flex items-center gap-2 text-sm ${expired ? 'text-red-400' : 'text-amber-400'}`}>
@@ -93,6 +102,7 @@ export function PaymentPage() {
   const [error, setError] = useState('')
   const [method, setMethod] = useState('pix')
   const [copied, setCopied] = useState(false)
+  const [pixExpired, setPixExpired] = useState(false)
   const isCreatingRef = useRef(false)
   const lastAttemptKeyRef = useRef<string | null>(null)
   const canReuseLastAttemptKeyRef = useRef(false)
@@ -550,72 +560,102 @@ export function PaymentPage() {
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="font-display text-xl text-noir-950">Escaneie o QR Code</h2>
                       {payment.expiresAt && !payment.isExpired && (
-                        <CountdownTimer expiresAt={payment.expiresAt} />
+                        <CountdownTimer
+                          expiresAt={payment.expiresAt}
+                          onExpired={() => setPixExpired(true)}
+                        />
                       )}
                     </div>
 
-                    {/* QR Image */}
-                    {payment.qr_code_base64 ? (
-                      <div className="flex justify-center mb-6">
-                        <div className="p-4 bg-white rounded-2xl border border-nude-100 shadow-sm">
-                          <img
-                            src={payment.qr_code_base64.startsWith('data:') ? payment.qr_code_base64 : `data:image/png;base64,${payment.qr_code_base64}`}
-                            alt="QR Code PIX"
-                            className="w-48 h-48"
-                          />
+                    {/* PIX expirado — bloqueia UI e oferece verificar ou recomeçar */}
+                    {(pixExpired || payment.isExpired) ? (
+                      <div className="text-center py-6 space-y-4">
+                        <div className="w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center text-2xl mx-auto">⚠</div>
+                        <div>
+                          <h3 className="font-display text-lg text-noir-950">PIX expirado</h3>
+                          <p className="text-sm text-nude-600 mt-1">O código de pagamento não é mais válido.</p>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="flex justify-center mb-6">
-                        <div className="w-48 h-48 bg-nude-50 rounded-2xl border border-nude-200 flex items-center justify-center">
-                          <p className="text-3xl">⚡</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Copy code */}
-                    {payment.qr_code && (
-                      <div className="mb-6">
-                        <p className="text-2xs text-nude-500 uppercase tracking-wide mb-2">Código PIX Copia e Cola</p>
-                        <div className="flex gap-2">
-                          <input
-                            readOnly
-                            value={payment.qr_code}
-                            className="input-luxury font-mono text-xs flex-1 select-all"
-                          />
+                        <div className="flex flex-col gap-2">
+                          <Button variant="outline" fullWidth onClick={checkStatus} loading={checking}>
+                            Verificar se foi pago mesmo assim
+                          </Button>
                           <button
-                            onClick={copyCode}
-                            className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all ${copied
-                              ? 'border-green-400 text-green-600 bg-green-50'
-                              : 'border-nude-200 text-nude-700 hover:border-nude-400 hover:bg-nude-50'
-                              }`}
+                            onClick={() => {
+                              setPixExpired(false)
+                              setPayment(null)
+                            }}
+                            className="text-sm text-[#2a7e51] hover:underline"
                           >
-                            {copied ? '✓ Copiado' : 'Copiar'}
+                            Gerar novo PIX
                           </button>
                         </div>
                       </div>
-                    )}
+                    ) : (
+                      <>
+                        {/* QR Image */}
+                        {payment.qr_code_base64 ? (
+                          <div className="flex justify-center mb-6">
+                            <div className="p-4 bg-white rounded-2xl border border-nude-100 shadow-sm">
+                              <img
+                                src={payment.qr_code_base64.startsWith('data:') ? payment.qr_code_base64 : `data:image/png;base64,${payment.qr_code_base64}`}
+                                alt="QR Code PIX"
+                                className="w-48 h-48"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex justify-center mb-6">
+                            <div className="w-48 h-48 bg-nude-50 rounded-2xl border border-nude-200 flex items-center justify-center">
+                              <p className="text-3xl">⚡</p>
+                            </div>
+                          </div>
+                        )}
 
-                    {/* Instructions */}
-                    <div className="bg-nude-50 rounded-2xl p-4 mb-6 space-y-2">
-                      {[
-                        'Abra o app do seu banco',
-                        'Escolha pagar com PIX',
-                        'Escaneie o QR ou cole o código',
-                        'Confirme o pagamento',
-                      ].map((step, i) => (
-                        <div key={step} className="flex items-center gap-3 text-xs text-nude-700">
-                          <span className="w-5 h-5 rounded-full bg-gold-500/20 text-gold-700 flex items-center justify-center text-2xs font-medium flex-shrink-0">
-                            {i + 1}
-                          </span>
-                          {step}
+                        {/* Copy code */}
+                        {payment.qr_code && (
+                          <div className="mb-6">
+                            <p className="text-2xs text-nude-500 uppercase tracking-wide mb-2">Código PIX Copia e Cola</p>
+                            <div className="flex gap-2">
+                              <input
+                                readOnly
+                                value={payment.qr_code}
+                                className="input-luxury font-mono text-xs flex-1 select-all"
+                              />
+                              <button
+                                onClick={copyCode}
+                                className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-medium border transition-all ${copied
+                                  ? 'border-green-400 text-green-600 bg-green-50'
+                                  : 'border-nude-200 text-nude-700 hover:border-nude-400 hover:bg-nude-50'
+                                  }`}
+                              >
+                                {copied ? '✓ Copiado' : 'Copiar'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Instructions */}
+                        <div className="bg-nude-50 rounded-2xl p-4 mb-6 space-y-2">
+                          {[
+                            'Abra o app do seu banco',
+                            'Escolha pagar com PIX',
+                            'Escaneie o QR ou cole o código',
+                            'Confirme o pagamento',
+                          ].map((step, i) => (
+                            <div key={step} className="flex items-center gap-3 text-xs text-nude-700">
+                              <span className="w-5 h-5 rounded-full bg-gold-500/20 text-gold-700 flex items-center justify-center text-2xs font-medium flex-shrink-0">
+                                {i + 1}
+                              </span>
+                              {step}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
 
-                    <Button variant="outline" fullWidth onClick={checkStatus} loading={checking}>
-                      Verificar Pagamento
-                    </Button>
+                        <Button variant="outline" fullWidth onClick={checkStatus} loading={checking}>
+                          Verificar Pagamento
+                        </Button>
+                      </>
+                    )}
                   </>
                 )}
               </div>

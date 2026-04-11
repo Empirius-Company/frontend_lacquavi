@@ -411,13 +411,14 @@ export function HomePage() {
   }, [])
 
   // Fase 2: categorias e tiles — carregam em paralelo, independente dos produtos
+  // Falha silenciosa intencional: essas seções são secundárias e já têm fallback visual
   useEffect(() => {
     Promise.all([categoriesApi.list(), homeTilesApi.list()])
       .then(([cRes, tRes]) => {
         setCategories(cRes.data || [])
         setHomeTiles(tRes.tiles || [])
       })
-      .catch(() => {})
+      .catch(() => { /* tiles e categorias têm fallback visual — página segue funcional */ })
   }, [])
 
   const sortedProducts = [...products].sort((a, b) => {

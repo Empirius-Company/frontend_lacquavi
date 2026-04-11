@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
@@ -80,10 +81,20 @@ export function CartPage() {
   const { items, subtotal, clearCart } = useCart()
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
+  const [confirmingClear, setConfirmingClear] = useState(false)
 
   const handleCheckout = () => {
     if (!isAuthenticated) { navigate('/login?redirect=/checkout'); return }
     navigate('/checkout')
+  }
+
+  const handleClearCart = () => {
+    if (confirmingClear) {
+      clearCart()
+      setConfirmingClear(false)
+    } else {
+      setConfirmingClear(true)
+    }
   }
 
   if (items.length === 0) {
@@ -126,12 +137,30 @@ export function CartPage() {
           <div className="lg:col-span-7 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-display text-lg text-[#000000] font-bold">Produtos</h2>
-              <button
-                onClick={clearCart}
-                className="text-xs text-gray-400 hover:text-red-700 transition-colors"
-              >
-                Esvaziar
-              </button>
+              {confirmingClear ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">Tem certeza?</span>
+                  <button
+                    onClick={handleClearCart}
+                    className="text-xs text-red-600 hover:text-red-800 font-semibold transition-colors"
+                  >
+                    Sim, esvaziar
+                  </button>
+                  <button
+                    onClick={() => setConfirmingClear(false)}
+                    className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleClearCart}
+                  className="text-xs text-gray-400 hover:text-red-700 transition-colors"
+                >
+                  Esvaziar
+                </button>
+              )}
             </div>
             <div className="px-6">
               {items.map(item => <CartItem key={item.productId} item={item} />)}

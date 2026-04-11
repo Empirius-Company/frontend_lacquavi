@@ -138,6 +138,7 @@ export function CheckoutPage() {
   const [coupon, setCoupon] = useState<CouponValidation | null>(null)
   const [couponError, setCouponError] = useState('')
   const [validating, setValidating] = useState(false)
+  const couponErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [shippingError, setShippingError] = useState('')
@@ -291,6 +292,13 @@ export function CheckoutPage() {
     return order
   }
 
+  const setCouponErrorWithTimeout = (msg: string) => {
+    setCouponError(msg)
+    if (couponErrorTimerRef.current) clearTimeout(couponErrorTimerRef.current)
+    // Mantém o erro visível por 6s antes de sumir — evita desaparecer antes de ser lido
+    couponErrorTimerRef.current = setTimeout(() => setCouponError(''), 6000)
+  }
+
   const validateCoupon = async () => {
     if (!couponCode.trim()) return
     setValidating(true); setCouponError(''); setCoupon(null)
@@ -299,7 +307,7 @@ export function CheckoutPage() {
       setCoupon(result)
       toast(`Cupom aplicado! Desconto de ${formatCurrency(result.discount)}`, 'success')
     } catch (err) {
-      setCouponError((err as ApiError).message)
+      setCouponErrorWithTimeout((err as ApiError).message)
     } finally { setValidating(false) }
   }
 
@@ -393,46 +401,12 @@ export function CheckoutPage() {
       if (!validQuotes.length) {
         setShippingError('Nenhuma opção de frete disponível para este endereço no momento.')
       } else {
-        toast('Frete calculado com sucesso. Selecione e confirme o serviço.', 'success')
+        toast('Frete calculado! Clique na opção desejada para confirmar.', 'success')
       }
     } catch (err) {
       handleShippingBusinessError(err as ApiError)
     } finally {
       setShippingLoading(false)
-    }
-  }
-
-  const handleConfirmShipping = async () => {
-    if (!orderDraft || !selectedQuoteId) {
-      setShippingError('Selecione um serviço de frete antes de continuar.')
-      return
-    }
-    if (!isDestinationComplete(destination)) {
-      setShippingError('Endereço inválido para seleção de frete.')
-      return
-    }
-
-    setSelectingShipping(true)
-    setShippingError('')
-    try {
-      const selectionResponse = await shippingApi.select({
-        orderId: orderDraft.id,
-        quoteId: selectedQuoteId,
-        destination: normalizeDestination(destination),
-      })
-      const freshOrder = await ordersApi.getById(orderDraft.id)
-      setOrderDraft(freshOrder.order)
-      setShippingConfirmed(true)
-      setShippingRequired(true)
-      setShippingAmountCents(selectionResponse.selection.shippingAmountCents)
-      setShippingDiscountCents(selectionResponse.selection.shippingDiscountCents)
-      persistShippingSession({ selectedQuoteId })
-      toast('Frete selecionado com sucesso!', 'success')
-    } catch (err) {
-      handleShippingBusinessError(err as ApiError)
-      setShippingConfirmed(false)
-    } finally {
-      setSelectingShipping(false)
     }
   }
 
@@ -526,7 +500,10 @@ export function CheckoutPage() {
                         <p className="text-sm font-medium text-green-800 font-mono">{coupon.coupon.code}</p>
                         <p className="text-xs text-green-700 mt-0.5">Desconto: {formatCurrency(coupon.discount)}</p>
                       </div>
-                      <button onClick={() => { setCoupon(null); setCouponCode('') }} className="text-xs text-green-700 hover:text-red-600 transition-colors">
+                      <button
+                        onClick={() => { setCoupon(null); setCouponCode(''); toast('Cupom removido.', 'info') }}
+                        className="text-xs text-green-700 hover:text-red-600 transition-colors"
+                      >
                         Remover
                       </button>
                     </div>
@@ -534,144 +511,323 @@ export function CheckoutPage() {
                     <div className="flex gap-2">
                       <input
                         type="text"
+                        id="coupon-code-input"
                         value={couponCode}
-                        onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError('') }}
+                        onChange={e => {
+                          setCouponCode(e.target.value.toUpperCase())
+                          // Limpa erro com delay para o usuário ter tempo de ler
+                          if (couponErrorTimerRef.current) clearTimeout(couponErrorTimerRef.current)
+                          couponErrorTimerRef.current = setTimeout(() => setCouponError(''), 2000)
+                        }}
                         onKeyDown={e => e.key === 'Enter' && validateCoupon()}
                         placeholder="CÓDIGO DO CUPOM"
                         className="input-luxury font-mono uppercase text-sm flex-1 tracking-wider"
+                        aria-describedby={couponError ? 'coupon-error' : undefined}
                       />
                       <Button variant="outline" onClick={validateCoupon} loading={validating} className="flex-shrink-0">
                         Aplicar
                       </Button>
                     </div>
                   )}
-                  {couponError && <p className="text-xs text-red-500 mt-2">{couponError}</p>}
+                  {couponError && <p id="coupon-error" role="alert" className="text-xs text-red-500 mt-2">{couponError}</p>}
                 </>
               )}
             </div>
 
             {/* Shipping */}
-            {shippingRequired && (
-            <div className="bg-pearl rounded-2xl border border-nude-100 p-5 shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-display text-base text-noir-950">Entrega</h3>
-                <span className="text-xs text-nude-500">Frete via Melhor Envio</span>
-              </div>
+            {shippingRequired && (() => {
+              const isPickupMode = shippingQuotes.length > 0 && shippingQuotes.every(q => q.provider === 'STORE_PICKUP')
+              return (
+              <div className="bg-pearl rounded-2xl border border-nude-100 p-5 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-display text-base text-noir-950">Entrega</h3>
+                  {!isPickupMode && <span className="text-xs text-nude-500">Frete via SEDEX</span>}
+                </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  value={destination.zip}
-                  onChange={e => {
-                    const digits = e.target.value.replace(/\D/g, '').slice(0, 8)
-                    const masked = digits.length > 5
-                      ? `${digits.slice(0, 5)}-${digits.slice(5)}`
-                      : digits
-                    handleDestinationChange('zip', masked)
-                  }}
-                  placeholder="CEP"
-                  className="input-luxury text-sm"
-                />
-                <input
-                  type="text"
-                  value={destination.state}
-                  onChange={e => handleDestinationChange('state', e.target.value.toUpperCase().slice(0, 2))}
-                  placeholder="UF"
-                  className="input-luxury text-sm"
-                />
-                <input
-                  type="text"
-                  value={destination.street}
-                  onChange={e => handleDestinationChange('street', e.target.value)}
-                  placeholder="Rua"
-                  className="input-luxury text-sm sm:col-span-2"
-                />
-                <input
-                  type="text"
-                  value={destination.number}
-                  onChange={e => handleDestinationChange('number', e.target.value)}
-                  placeholder="Número"
-                  className="input-luxury text-sm"
-                />
-                <input
-                  type="text"
-                  value={destination.complement ?? ''}
-                  onChange={e => handleDestinationChange('complement', e.target.value)}
-                  placeholder="Complemento (opcional)"
-                  className="input-luxury text-sm"
-                />
-                <input
-                  type="text"
-                  value={destination.district}
-                  onChange={e => handleDestinationChange('district', e.target.value)}
-                  placeholder="Bairro"
-                  className="input-luxury text-sm"
-                />
-                <input
-                  type="text"
-                  value={destination.city}
-                  onChange={e => handleDestinationChange('city', e.target.value)}
-                  placeholder="Cidade"
-                  className="input-luxury text-sm"
-                />
-              </div>
+                {/* Address form — shown only when not in pickup mode or before quotes are loaded */}
+                {!isPickupMode && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label htmlFor="dest-zip" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">CEP</label>
+                        <input
+                          id="dest-zip"
+                          type="text"
+                          inputMode="numeric"
+                          value={destination.zip}
+                          onChange={e => {
+                            const digits = e.target.value.replace(/\D/g, '').slice(0, 8)
+                            const masked = digits.length > 5
+                              ? `${digits.slice(0, 5)}-${digits.slice(5)}`
+                              : digits
+                            handleDestinationChange('zip', masked)
+                          }}
+                          placeholder="00000-000"
+                          className="input-luxury text-sm"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label htmlFor="dest-state" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">UF</label>
+                        <input
+                          id="dest-state"
+                          type="text"
+                          value={destination.state}
+                          onChange={e => handleDestinationChange('state', e.target.value.toUpperCase().slice(0, 2))}
+                          placeholder="MG"
+                          maxLength={2}
+                          className="input-luxury text-sm"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1 sm:col-span-2">
+                        <label htmlFor="dest-street" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">Rua / Logradouro</label>
+                        <input
+                          id="dest-street"
+                          type="text"
+                          value={destination.street}
+                          onChange={e => handleDestinationChange('street', e.target.value)}
+                          placeholder="Rua das Flores"
+                          className="input-luxury text-sm"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label htmlFor="dest-number" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">Número</label>
+                        <input
+                          id="dest-number"
+                          type="text"
+                          value={destination.number}
+                          onChange={e => handleDestinationChange('number', e.target.value)}
+                          placeholder="123"
+                          className="input-luxury text-sm"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label htmlFor="dest-complement" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">
+                          Complemento <span className="normal-case text-nude-400">(opcional)</span>
+                        </label>
+                        <input
+                          id="dest-complement"
+                          type="text"
+                          value={destination.complement ?? ''}
+                          onChange={e => handleDestinationChange('complement', e.target.value)}
+                          placeholder="Apto 12"
+                          className="input-luxury text-sm"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label htmlFor="dest-district" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">Bairro</label>
+                        <input
+                          id="dest-district"
+                          type="text"
+                          value={destination.district}
+                          onChange={e => handleDestinationChange('district', e.target.value)}
+                          placeholder="Centro"
+                          className="input-luxury text-sm"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label htmlFor="dest-city" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">Cidade</label>
+                        <input
+                          id="dest-city"
+                          type="text"
+                          value={destination.city}
+                          onChange={e => handleDestinationChange('city', e.target.value)}
+                          placeholder="Belo Horizonte"
+                          className="input-luxury text-sm"
+                        />
+                      </div>
+                    </div>
 
-              {zipLookupLoading && (
-                <p className="text-xs text-nude-500">Buscando endereço pelo CEP...</p>
-              )}
+                    {zipLookupLoading && (
+                      <p className="text-xs text-nude-500">Buscando endereço pelo CEP...</p>
+                    )}
 
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handleQuoteShipping} loading={shippingLoading} className="flex-1">
-                  Calcular frete
-                </Button>
-                <Button variant="primary" onClick={handleConfirmShipping} loading={selectingShipping} className="flex-1">
-                  Confirmar frete
-                </Button>
-              </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={handleQuoteShipping} loading={shippingLoading} fullWidth>
+                        Calcular frete
+                      </Button>
+                    </div>
+                  </>
+                )}
 
-              {shippingQuotes.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs text-nude-500 uppercase tracking-wide">Selecione o serviço</p>
-                  {shippingQuotes.map(quote => {
-                    const checked = selectedQuoteId === quote.quoteId
-                    return (
-                      <label
-                        key={quote.quoteId}
-                        className={`flex items-center justify-between rounded-xl border px-3 py-2 cursor-pointer transition-colors ${checked ? 'border-[#2a7e51] bg-[#2a7e51]/5' : 'border-nude-200'}`}
-                      >
-                        <div className="flex items-start gap-2">
-                          <input
-                            type="radio"
-                            name="shipping-quote"
-                            checked={checked}
-                            onChange={() => {
-                              setSelectedQuoteId(quote.quoteId)
-                              setShippingConfirmed(false)
-                              persistShippingSession({ selectedQuoteId: quote.quoteId })
-                            }}
-                            className="mt-1"
-                          />
-                          <div>
-                            <p className="text-sm font-medium text-noir-950">{quote.serviceName}</p>
-                            <p className="text-xs text-nude-500">Entrega em até {quote.deliveryDays} dias</p>
+                {/* Pickup mode — no delivery address needed */}
+                {isPickupMode && (
+                  <div className="space-y-3">
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                      SEDEX não disponível para este CEP. Selecione um ponto de retirada:
+                    </div>
+
+                    <div className="space-y-2">
+                      {shippingQuotes.map(quote => {
+                        const checked = selectedQuoteId === quote.quoteId
+                        const locationLabel = quote.serviceCode === 'lagoa_santa' ? 'Lagoa Santa' : 'Minas Shopping'
+                        return (
+                          <label
+                            key={quote.quoteId}
+                            className={`flex items-center justify-between rounded-xl border px-3 py-3 cursor-pointer transition-colors ${
+                              selectingShipping && checked
+                                ? 'border-[#2a7e51] bg-[#2a7e51]/5 opacity-70'
+                                : checked
+                                ? 'border-[#2a7e51] bg-[#2a7e51]/5'
+                                : 'border-nude-200 hover:border-nude-300'
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <input
+                                type="radio"
+                                name="shipping-quote"
+                                checked={checked}
+                                disabled={selectingShipping}
+                                onChange={async () => {
+                                  setSelectedQuoteId(quote.quoteId)
+                                  setShippingConfirmed(false)
+                                  persistShippingSession({ selectedQuoteId: quote.quoteId })
+                                  // Auto-confirma ao selecionar ponto de retirada
+                                  if (!orderDraft) return
+                                  setSelectingShipping(true)
+                                  setShippingError('')
+                                  try {
+                                    const selectionResponse = await shippingApi.select({
+                                      orderId: orderDraft.id,
+                                      quoteId: quote.quoteId,
+                                      destination: normalizeDestination(destination),
+                                    })
+                                    const freshOrder = await ordersApi.getById(orderDraft.id)
+                                    setOrderDraft(freshOrder.order)
+                                    setShippingConfirmed(true)
+                                    setShippingRequired(true)
+                                    setShippingAmountCents(selectionResponse.selection.shippingAmountCents)
+                                    setShippingDiscountCents(selectionResponse.selection.shippingDiscountCents)
+                                    persistShippingSession({ selectedQuoteId: quote.quoteId })
+                                    toast(`Retirada em ${locationLabel} confirmada!`, 'success')
+                                  } catch (err) {
+                                    handleShippingBusinessError(err as ApiError)
+                                    setShippingConfirmed(false)
+                                  } finally {
+                                    setSelectingShipping(false)
+                                  }
+                                }}
+                                className="mt-0.5"
+                              />
+                              <div>
+                                <p className="text-sm font-medium text-noir-950">Retirar em {locationLabel}</p>
+                                <p className="text-xs text-nude-500">Você retira no local após notificação</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {selectingShipping && checked && (
+                                <svg className="animate-spin w-3.5 h-3.5 text-[#2a7e51]" viewBox="0 0 24 24" fill="none">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                </svg>
+                              )}
+                              <p className="text-sm font-semibold text-green-600">Grátis</p>
+                            </div>
+                          </label>
+                        )
+                      })}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShippingQuotes([])
+                        setSelectedQuoteId('')
+                        setShippingConfirmed(false)
+                        setShippingAmountCents(0)
+                      }}
+                      className="text-xs text-nude-500 hover:text-noir-950 transition-colors w-full text-center"
+                    >
+                      Tentar outro CEP
+                    </button>
+                  </div>
+                )}
+
+                {/* SEDEX quotes list — clicar numa opção já confirma o frete */}
+                {!isPickupMode && shippingQuotes.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-nude-500 uppercase tracking-wide">Selecione o serviço de entrega</p>
+                    {shippingQuotes.map(quote => {
+                      const checked = selectedQuoteId === quote.quoteId
+                      return (
+                        <label
+                          key={quote.quoteId}
+                          className={`flex items-center justify-between rounded-xl border px-3 py-2 cursor-pointer transition-colors ${
+                            selectingShipping && checked
+                              ? 'border-[#2a7e51] bg-[#2a7e51]/5 opacity-70'
+                              : checked
+                              ? 'border-[#2a7e51] bg-[#2a7e51]/5'
+                              : 'border-nude-200 hover:border-nude-300'
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <input
+                              type="radio"
+                              name="shipping-quote"
+                              checked={checked}
+                              disabled={selectingShipping}
+                              onChange={async () => {
+                                setSelectedQuoteId(quote.quoteId)
+                                setShippingConfirmed(false)
+                                persistShippingSession({ selectedQuoteId: quote.quoteId })
+                                // Auto-confirma ao selecionar
+                                if (!orderDraft) return
+                                setSelectingShipping(true)
+                                setShippingError('')
+                                try {
+                                  const selectionResponse = await shippingApi.select({
+                                    orderId: orderDraft.id,
+                                    quoteId: quote.quoteId,
+                                    destination: normalizeDestination(destination),
+                                  })
+                                  const freshOrder = await ordersApi.getById(orderDraft.id)
+                                  setOrderDraft(freshOrder.order)
+                                  setShippingConfirmed(true)
+                                  setShippingRequired(true)
+                                  setShippingAmountCents(selectionResponse.selection.shippingAmountCents)
+                                  setShippingDiscountCents(selectionResponse.selection.shippingDiscountCents)
+                                  persistShippingSession({ selectedQuoteId: quote.quoteId })
+                                  toast('Frete selecionado!', 'success')
+                                } catch (err) {
+                                  handleShippingBusinessError(err as ApiError)
+                                  setShippingConfirmed(false)
+                                } finally {
+                                  setSelectingShipping(false)
+                                }
+                              }}
+                              className="mt-1"
+                            />
+                            <div>
+                              <p className="text-sm font-medium text-noir-950">{quote.serviceName}</p>
+                              <p className="text-xs text-nude-500">Entrega em até {quote.deliveryDays} dias</p>
+                            </div>
                           </div>
-                        </div>
-                        <p className="text-sm font-medium text-noir-950">{formatCurrency(quote.priceCents / 100)}</p>
-                      </label>
-                    )
-                  })}
-                </div>
-              )}
+                          <div className="flex items-center gap-2">
+                            {selectingShipping && checked && (
+                              <svg className="animate-spin w-3.5 h-3.5 text-[#2a7e51]" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                              </svg>
+                            )}
+                            <p className="text-sm font-medium text-noir-950">{formatCurrency(quote.priceCents / 100)}</p>
+                          </div>
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
 
-              {shippingConfirmed && (
-                <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
-                  Frete confirmado para este pedido.
-                </div>
-              )}
+                {shippingConfirmed && (
+                  <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+                    {isPickupMode
+                      ? `Retirada confirmada em ${shippingQuotes.find(q => q.quoteId === selectedQuoteId)?.serviceCode === 'lagoa_santa' ? 'Lagoa Santa' : 'Minas Shopping'}.`
+                      : 'Frete confirmado para este pedido.'}
+                  </div>
+                )}
 
-              {shippingError && <p className="text-xs text-red-500">{shippingError}</p>}
-            </div>
-            )}
+                {shippingError && <p className="text-xs text-red-500">{shippingError}</p>}
+              </div>
+              )
+            })()}
 
             {!shippingRequired && (
               <div className="bg-pearl rounded-2xl border border-nude-100 p-5 shadow-sm">
@@ -693,11 +849,26 @@ export function CheckoutPage() {
                 {discount > 0 && (
                   <Row label="Desconto" value={`−${formatCurrency(discount)}`} valueClass="text-green-600" />
                 )}
-                <Row
-                  label="Frete"
-                  value={!shippingRequired ? 'Não aplicável' : shippingConfirmed ? formatCurrency(shippingAmount) : 'A calcular'}
-                  valueClass={!shippingRequired ? 'text-green-700 text-xs' : shippingConfirmed ? 'text-noir-950' : 'text-nude-500 text-xs'}
-                />
+                {(() => {
+                  const isPickupConfirmed = shippingConfirmed && shippingQuotes.some(q => q.quoteId === selectedQuoteId && q.provider === 'STORE_PICKUP')
+                  return (
+                    <Row
+                      label="Frete"
+                      value={
+                        !shippingRequired ? 'Não aplicável'
+                        : isPickupConfirmed ? 'Grátis (retirada)'
+                        : shippingConfirmed ? formatCurrency(shippingAmount)
+                        : 'A calcular'
+                      }
+                      valueClass={
+                        !shippingRequired ? 'text-green-700 text-xs'
+                        : isPickupConfirmed ? 'text-green-600 text-sm'
+                        : shippingConfirmed ? 'text-noir-950'
+                        : 'text-nude-500 text-xs'
+                      }
+                    />
+                  )
+                })()}
                 <div className="h-px bg-nude-100 my-1" />
                 <div className="flex justify-between items-end">
                   <span className="font-medium text-noir-950">Total</span>

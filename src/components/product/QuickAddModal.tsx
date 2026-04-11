@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { formatCurrency, getProductFinalPrice } from '../../utils'
 import { useCart } from '../../context/CartContext'
@@ -15,6 +15,24 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
     const { addItem } = useCart()
     const [qty, setQty] = useState(1)
     const primaryImage = getProductPrimaryImage(product)
+    const addButtonRef = useRef<HTMLButtonElement>(null)
+
+    useEffect(() => {
+        if (isOpen) {
+            // Pequeno delay para garantir que o portal foi renderizado
+            const timer = setTimeout(() => addButtonRef.current?.focus(), 50)
+            return () => clearTimeout(timer)
+        }
+    }, [isOpen])
+
+    useEffect(() => {
+        if (!isOpen) return
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose()
+        }
+        document.addEventListener('keydown', handleKeyDown)
+        return () => document.removeEventListener('keydown', handleKeyDown)
+    }, [isOpen, onClose])
 
     if (!isOpen) return null
 
@@ -26,12 +44,19 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
     const finalPrice = getProductFinalPrice(product)
 
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+        <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Adicionar ${product.name} à sacola`}
+            onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+        >
             {/* Sheet on mobile (slides from bottom), centered modal on sm+ */}
             <div className="bg-white w-full sm:rounded-xl sm:max-w-md shadow-2xl relative animate-slide-up overflow-hidden">
                 {/* Close button */}
                 <button
                     onClick={onClose}
+                    aria-label="Fechar"
                     className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-black transition-colors"
                 >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -100,6 +125,7 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
 
                     {/* CTA */}
                     <button
+                        ref={addButtonRef}
                         onClick={handleAdd}
                         className="w-full mt-4 bg-[#2a7e51] hover:bg-[#236843] transition-colors text-white font-bold py-3.5 px-4 rounded-xl uppercase tracking-wide flex items-center justify-center gap-2 text-sm"
                     >

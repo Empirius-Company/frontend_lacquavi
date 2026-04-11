@@ -1,10 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { categoriesApi } from '../../api/catalogApi'
 import { MiniCart } from './MiniCart'
 import type { Category } from '../../types'
+
+function CategoryNavSkeleton() {
+  return (
+    <div className="flex items-center gap-6 animate-pulse">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="h-3 rounded-full bg-gray-200" style={{ width: `${48 + (i % 3) * 16}px` }} />
+      ))}
+    </div>
+  )
+}
 
 export function Header() {
   const { user, isAuthenticated, isAdmin, logout } = useAuth()
@@ -13,11 +23,16 @@ export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [userOpen, setUserOpen] = useState(false)
   const [categoryOpen, setCategoryOpen] = useState(false)
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
+  const categoryTriggerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    categoriesApi.list().then(res => setCategories(res.data || [])).catch(() => { })
+    categoriesApi.list()
+      .then(res => setCategories(res.data || []))
+      .catch(() => { /* falha silenciosa — menu principal ainda funciona */ })
+      .finally(() => setCategoriesLoading(false))
   }, [])
 
   const handleLogout = async () => {
@@ -144,49 +159,80 @@ export function Header() {
 
             {/* Categories */}
             <nav className="flex-1 flex items-center justify-between overflow-visible no-scrollbar">
-              <div
-                className="relative flex items-center h-full group"
-                onMouseEnter={() => setCategoryOpen(true)}
-                onMouseLeave={() => setCategoryOpen(false)}
-              >
-                <button className="text-xs font-semibold text-[#333] hover:text-[#000000] whitespace-nowrap flex items-center gap-1 cursor-pointer py-2">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-                  Ver tudo
-                </button>
+              {categoriesLoading ? (
+                <CategoryNavSkeleton />
+              ) : (
+                <>
+                  <div
+                    ref={categoryTriggerRef}
+                    className="relative flex items-center h-full group"
+                    onMouseEnter={() => setCategoryOpen(true)}
+                    onMouseLeave={() => setCategoryOpen(false)}
+                    onFocus={() => setCategoryOpen(true)}
+                    onBlur={(e) => {
+                      if (!categoryTriggerRef.current?.contains(e.relatedTarget as Node)) {
+                        setCategoryOpen(false)
+                      }
+                    }}
+                  >
+                    <button
+                      className="text-xs font-semibold text-[#333] hover:text-[#000000] whitespace-nowrap flex items-center gap-1 cursor-pointer py-2"
+                      aria-haspopup="true"
+                      aria-expanded={categoryOpen}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCategoryOpen(v => !v) }
+                        if (e.key === 'Escape') setCategoryOpen(false)
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                      Ver tudo
+                    </button>
 
-                {categoryOpen && (
-                  <div className="absolute top-full left-0 -mt-1 w-64 bg-white border border-gray-100 shadow-xl rounded-b-lg rounded-tr-lg py-3 z-50 animate-fade-in before:absolute before:-top-3 before:left-0 before:w-full before:h-4">
-                    <Link to="/products" className="block px-5 py-2 text-sm font-bold text-[#2a7e51] hover:bg-gray-50 border-b border-gray-50 mb-1">
-                      Todos os Produtos
-                    </Link>
-                    <div className="max-h-[60vh] overflow-y-auto no-scrollbar">
-                      {categories.map(cat => (
+                    {categoryOpen && (
+                      <div
+                        role="menu"
+                        className="absolute top-full left-0 -mt-1 w-64 bg-white border border-gray-100 shadow-xl rounded-b-lg rounded-tr-lg py-3 z-50 animate-fade-in before:absolute before:-top-3 before:left-0 before:w-full before:h-4"
+                      >
                         <Link
-                          key={`dropdown-${cat.id}`}
-                          to={`/products?category=${cat.id}`}
-                          className="block px-5 py-2 text-sm text-[#4A4A4A] hover:bg-gray-50 hover:text-[#000000]"
+                          to="/products"
+                          role="menuitem"
+                          onClick={() => setCategoryOpen(false)}
+                          className="block px-5 py-2 text-sm font-bold text-[#2a7e51] hover:bg-gray-50 border-b border-gray-50 mb-1"
                         >
-                          {cat.name}
+                          Todos os Produtos
                         </Link>
-                      ))}
-                    </div>
+                        <div className="max-h-[60vh] overflow-y-auto no-scrollbar">
+                          {categories.map(cat => (
+                            <Link
+                              key={`dropdown-${cat.id}`}
+                              to={`/products?category=${cat.id}`}
+                              role="menuitem"
+                              onClick={() => setCategoryOpen(false)}
+                              className="block px-5 py-2 text-sm text-[#4A4A4A] hover:bg-gray-50 hover:text-[#000000]"
+                            >
+                              {cat.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {categories.slice(0, 5).map(cat => (
-                <NavLink
-                  key={cat.id}
-                  to={`/products?category=${cat.id}`}
-                  className={({ isActive }) => `text-xs font-semibold whitespace-nowrap transition-colors ${isActive ? 'text-[#000000]' : 'text-gray-500 hover:text-[#000000]'}`}
-                >
-                  {cat.name}
-                </NavLink>
-              ))}
+                  {categories.slice(0, 5).map(cat => (
+                    <NavLink
+                      key={cat.id}
+                      to={`/products?category=${cat.id}`}
+                      className={({ isActive }) => `text-xs font-semibold whitespace-nowrap transition-colors ${isActive ? 'text-[#000000]' : 'text-gray-500 hover:text-[#000000]'}`}
+                    >
+                      {cat.name}
+                    </NavLink>
+                  ))}
 
-              <NavLink to="/nossa-loja" className={({ isActive }) => `text-xs font-semibold whitespace-nowrap transition-colors px-2.5 py-0.5 rounded-full ${isActive ? 'bg-[#2a7e51]/20 text-[#2a7e51]' : 'bg-[#2a7e51]/10 text-[#2a7e51] hover:bg-[#2a7e51]/20'}`}>
-                Nossa Loja
-              </NavLink>
+                  <NavLink to="/nossa-loja" className={({ isActive }) => `text-xs font-semibold whitespace-nowrap transition-colors px-2.5 py-0.5 rounded-full ${isActive ? 'bg-[#2a7e51]/20 text-[#2a7e51]' : 'bg-[#2a7e51]/10 text-[#2a7e51] hover:bg-[#2a7e51]/20'}`}>
+                    Nossa Loja
+                  </NavLink>
+                </>
+              )}
             </nav>
           </div>
         </div>
