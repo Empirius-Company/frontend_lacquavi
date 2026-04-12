@@ -751,25 +751,67 @@ export function AccountProfilePage() {
 // ─── NOT FOUND ────────────────────────────────────────────────────────────────
 export function NotFoundPage() {
   return (
-    <div className="min-h-screen bg-noir-950 flex items-center justify-center relative overflow-hidden">
-      <div className="absolute inset-0"
-        style={{ background: 'radial-gradient(ellipse 50% 50% at 50% 50%, rgba(212,175,122,0.06) 0%, transparent 70%)' }} />
-      <div className="relative text-center px-6">
-        <p className="font-display text-[10rem] md:text-[16rem] text-pearl/5 font-light leading-none select-none">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 relative overflow-hidden">
+      {/* Decorative background circles */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full pointer-events-none"
+        style={{ background: 'rgba(42,126,81,0.04)', transform: 'translate(33%, -50%)' }} />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-[#F5F5F5] pointer-events-none"
+        style={{ transform: 'translate(-25%, 33%)' }} />
+
+      <div className="relative text-center max-w-lg w-full animate-fade-in">
+        {/* Perfume bottle SVG */}
+        <div className="flex justify-center mb-6">
+          <svg
+            width="72" height="96" viewBox="0 0 72 96" fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="opacity-80"
+          >
+            <rect x="26" y="0" width="20" height="10" rx="3" fill="#000000" />
+            <rect x="30" y="10" width="12" height="12" rx="2" fill="#000000" />
+            <path d="M22 22 Q36 18 50 22 L54 30 H18 L22 22Z" fill="#000000" />
+            <rect x="12" y="30" width="48" height="54" rx="10" fill="#000000" />
+            <rect x="18" y="42" width="36" height="30" rx="5" fill="white" opacity="0.12" />
+            <rect x="22" y="50" width="28" height="2.5" rx="1.25" fill="white" opacity="0.5" />
+            <rect x="26" y="56" width="20" height="2" rx="1" fill="white" opacity="0.3" />
+            <rect x="28" y="61" width="16" height="1.5" rx="0.75" fill="white" opacity="0.2" />
+            <rect x="16" y="34" width="4" height="22" rx="2" fill="white" opacity="0.08" />
+          </svg>
+        </div>
+
+        {/* 404 watermark */}
+        <p
+          className="text-[7rem] md:text-[9rem] font-bold leading-none select-none -mb-4"
+          style={{ color: '#F0F0F0' }}
+        >
           404
         </p>
-        <div className="-mt-8 md:-mt-16">
-          <p className="section-eyebrow-light mb-4">Página não encontrada</p>
-          <h1 className="font-display text-3xl md:text-4xl text-pearl font-light mb-4">
-            Esta página não existe
-          </h1>
-          <p className="text-nude-500 text-sm mb-8 max-w-sm mx-auto leading-relaxed">
-            A página que você procura pode ter sido removida ou o endereço está incorreto.
+
+        {/* Message */}
+        <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
+          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-[#2a7e51] mb-3">
+            Página não encontrada
           </p>
-          <Link to="/">
-            <Button variant="primary">Voltar ao Início</Button>
-          </Link>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#111111] mb-3 leading-snug">
+            Ops! Esta página não existe.
+          </h1>
+          <p className="text-sm text-[#7A7A7A] mb-8 max-w-sm mx-auto leading-relaxed">
+            O endereço pode estar incorreto ou a página foi removida. Mas temos
+            muitos perfumes esperando por você.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link to="/">
+              <Button variant="primary" size="md">Voltar ao início</Button>
+            </Link>
+            <Link to="/products">
+              <Button variant="outline" size="md">Ver produtos</Button>
+            </Link>
+          </div>
         </div>
+
+        <p className="mt-12 text-xs text-[#AAAAAA] tracking-widest uppercase">
+          Lacqua · Perfumaria Premium
+        </p>
       </div>
     </div>
   )
