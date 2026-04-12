@@ -51,7 +51,7 @@ export function Header() {
     <>
       <header className="fixed top-0 inset-x-0 z-40 bg-white shadow-sm flex flex-col">
         {/* Tier 1: Top Promo Bar */}
-        <div className="bg-[#2a7e51] py-1.5 text-center px-4 flex justify-center items-center gap-2 shadow-sm">
+        <div className="bg-[#2a7e51] py-1 text-center px-4 flex justify-center items-center gap-2 shadow-sm">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white drop-shadow-sm">
             <rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle>
           </svg>
@@ -61,11 +61,11 @@ export function Header() {
         </div>
 
         {/* Tier 2: Main Area (Logo, Search, Actions) */}
-        <div className="container-page py-3 flex items-center justify-between gap-6 md:gap-10">
+        <div className="container-page py-2.5 flex items-center justify-between gap-6 md:gap-10">
 
           {/* Logo */}
           <Link to="/" className="flex-shrink-0 flex items-center hover:opacity-90 transition-opacity">
-            <img src="/logo.png" alt="Lacquavi" className="h-[43px] md:h-[54px] object-contain" />
+            <img src="/logo.png" alt="Lacquavi" className="h-[39px] md:h-[50px] object-contain" />
           </Link>
 
           {/* Search Bar - Desktop */}
@@ -155,7 +155,7 @@ export function Header() {
 
         {/* Tier 3: Category Nav Bar */}
         <div className="hidden md:flex border-t border-gray-100">
-          <div className="container-page flex items-center h-9">
+          <div className="container-page flex items-center h-8">
 
             {/* Categories */}
             <nav className="flex-1 flex items-center justify-between overflow-visible no-scrollbar">
@@ -228,7 +228,8 @@ export function Header() {
                     </NavLink>
                   ))}
 
-                  <NavLink to="/nossa-loja" className={({ isActive }) => `text-xs font-semibold whitespace-nowrap transition-colors px-2.5 py-0.5 rounded-full ${isActive ? 'bg-[#2a7e51]/20 text-[#2a7e51]' : 'bg-[#2a7e51]/10 text-[#2a7e51] hover:bg-[#2a7e51]/20'}`}>
+                  <NavLink to="/nossa-loja" className={({ isActive }) => `flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${isActive ? 'text-[#2a7e51]' : 'text-gray-500 hover:text-[#2a7e51]'}`}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#2a7e51] flex-shrink-0" />
                     Nossa Loja
                   </NavLink>
                 </>
