@@ -384,18 +384,12 @@ export function CheckoutPage() {
       const validQuotes = response.quotes.filter(q => new Date(q.expiresAt).getTime() > Date.now())
       setShippingQuotes(validQuotes)
 
-      const bestQuote = validQuotes.reduce<ShippingQuote | null>((best, current) => {
-        if (!best) return current
-        return current.priceCents < best.priceCents ? current : best
-      }, null)
-
-      const nextSelectedQuoteId = bestQuote?.quoteId ?? ''
-      setSelectedQuoteId(nextSelectedQuoteId)
+      setSelectedQuoteId('')
       setShippingConfirmed(false)
       persistShippingSession({
         orderId: draftOrder.id,
         quotes: validQuotes,
-        selectedQuoteId: nextSelectedQuoteId || null,
+        selectedQuoteId: null,
       })
 
       if (!validQuotes.length) {
