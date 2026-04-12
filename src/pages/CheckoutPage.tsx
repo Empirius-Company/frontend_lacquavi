@@ -143,7 +143,6 @@ export function CheckoutPage() {
   const [error, setError] = useState('')
   const [shippingError, setShippingError] = useState('')
   const [shippingLoading, setShippingLoading] = useState(false)
-  const [selectingShipping, setSelectingShipping] = useState(false)
   const [zipLookupLoading, setZipLookupLoading] = useState(false)
   const [destination, setDestination] = useState<ShippingDestination>(() => {
     try {
@@ -418,18 +417,26 @@ export function CheckoutPage() {
   const handleSubmit = async () => {
     if (items.length === 0) return
     const draftOrder = orderDraft ?? await ensureOrderDraft()
-    if (shippingRequired && (!shippingConfirmed || !draftOrder.shippingQuoteId)) {
+    if (shippingRequired && (!shippingConfirmed || !selectedQuoteId)) {
       setError('Calcule e confirme o frete antes de seguir para o pagamento.')
       return
     }
-    setSubmitting(true); setError('')
+    setSubmitting(true)
+    setError('')
     try {
+      if (shippingRequired && selectedQuoteId) {
+        await shippingApi.select({
+          orderId: draftOrder.id,
+          quoteId: selectedQuoteId,
+          destination: normalizeDestination(destination),
+        })
+      }
       clearCart()
-      toast('Pedido criado com sucesso! Direcionando para pagamento...', 'success')
       navigate(`/checkout/payment/${draftOrder.id}`)
     } catch (err) {
-      setError((err as ApiError).message ?? 'Erro ao criar pedido')
-    } finally { setSubmitting(false) }
+      handleShippingBusinessError(err as ApiError)
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -669,9 +676,7 @@ export function CheckoutPage() {
                           <label
                             key={quote.quoteId}
                             className={`flex items-center justify-between rounded-xl border px-3 py-3 cursor-pointer transition-colors ${
-                              selectingShipping && checked
-                                ? 'border-[#2a7e51] bg-[#2a7e51]/5 opacity-70'
-                                : checked
+                              checked
                                 ? 'border-[#2a7e51] bg-[#2a7e51]/5'
                                 : 'border-nude-200 hover:border-nude-300'
                             }`}
@@ -681,35 +686,13 @@ export function CheckoutPage() {
                                 type="radio"
                                 name="shipping-quote"
                                 checked={checked}
-                                disabled={selectingShipping}
-                                onChange={async () => {
+                                onChange={() => {
                                   setSelectedQuoteId(quote.quoteId)
-                                  setShippingConfirmed(false)
+                                  setShippingConfirmed(true)
+                                  setShippingRequired(true)
+                                  setShippingAmountCents(0)
+                                  setShippingDiscountCents(0)
                                   persistShippingSession({ selectedQuoteId: quote.quoteId })
-                                  // Auto-confirma ao selecionar ponto de retirada
-                                  if (!orderDraft) return
-                                  setSelectingShipping(true)
-                                  setShippingError('')
-                                  try {
-                                    const selectionResponse = await shippingApi.select({
-                                      orderId: orderDraft.id,
-                                      quoteId: quote.quoteId,
-                                      destination: normalizeDestination(destination),
-                                    })
-                                    const freshOrder = await ordersApi.getById(orderDraft.id)
-                                    setOrderDraft(freshOrder.order)
-                                    setShippingConfirmed(true)
-                                    setShippingRequired(true)
-                                    setShippingAmountCents(selectionResponse.selection.shippingAmountCents)
-                                    setShippingDiscountCents(selectionResponse.selection.shippingDiscountCents)
-                                    persistShippingSession({ selectedQuoteId: quote.quoteId })
-                                    toast(`Retirada em ${locationLabel} confirmada!`, 'success')
-                                  } catch (err) {
-                                    handleShippingBusinessError(err as ApiError)
-                                    setShippingConfirmed(false)
-                                  } finally {
-                                    setSelectingShipping(false)
-                                  }
                                 }}
                                 className="mt-0.5"
                               />
@@ -718,15 +701,7 @@ export function CheckoutPage() {
                                 <p className="text-xs text-nude-500">Você retira no local após notificação</p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {selectingShipping && checked && (
-                                <svg className="animate-spin w-3.5 h-3.5 text-[#2a7e51]" viewBox="0 0 24 24" fill="none">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                                </svg>
-                              )}
-                              <p className="text-sm font-semibold text-green-600">Grátis</p>
-                            </div>
+                            <p className="text-sm font-semibold text-green-600">Grátis</p>
                           </label>
                         )
                       })}
@@ -757,9 +732,7 @@ export function CheckoutPage() {
                         <label
                           key={quote.quoteId}
                           className={`flex items-center justify-between rounded-xl border px-3 py-2 cursor-pointer transition-colors ${
-                            selectingShipping && checked
-                              ? 'border-[#2a7e51] bg-[#2a7e51]/5 opacity-70'
-                              : checked
+                            checked
                               ? 'border-[#2a7e51] bg-[#2a7e51]/5'
                               : 'border-nude-200 hover:border-nude-300'
                           }`}
@@ -769,35 +742,13 @@ export function CheckoutPage() {
                               type="radio"
                               name="shipping-quote"
                               checked={checked}
-                              disabled={selectingShipping}
-                              onChange={async () => {
+                              onChange={() => {
                                 setSelectedQuoteId(quote.quoteId)
-                                setShippingConfirmed(false)
+                                setShippingConfirmed(true)
+                                setShippingRequired(true)
+                                setShippingAmountCents(quote.priceCents)
+                                setShippingDiscountCents(orderDraft?.shippingDiscountCents ?? 0)
                                 persistShippingSession({ selectedQuoteId: quote.quoteId })
-                                // Auto-confirma ao selecionar
-                                if (!orderDraft) return
-                                setSelectingShipping(true)
-                                setShippingError('')
-                                try {
-                                  const selectionResponse = await shippingApi.select({
-                                    orderId: orderDraft.id,
-                                    quoteId: quote.quoteId,
-                                    destination: normalizeDestination(destination),
-                                  })
-                                  const freshOrder = await ordersApi.getById(orderDraft.id)
-                                  setOrderDraft(freshOrder.order)
-                                  setShippingConfirmed(true)
-                                  setShippingRequired(true)
-                                  setShippingAmountCents(selectionResponse.selection.shippingAmountCents)
-                                  setShippingDiscountCents(selectionResponse.selection.shippingDiscountCents)
-                                  persistShippingSession({ selectedQuoteId: quote.quoteId })
-                                  toast('Frete selecionado!', 'success')
-                                } catch (err) {
-                                  handleShippingBusinessError(err as ApiError)
-                                  setShippingConfirmed(false)
-                                } finally {
-                                  setSelectingShipping(false)
-                                }
                               }}
                               className="mt-1"
                             />
@@ -806,15 +757,7 @@ export function CheckoutPage() {
                               <p className="text-xs text-nude-500">Entrega em até {quote.deliveryDays} dias</p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {selectingShipping && checked && (
-                              <svg className="animate-spin w-3.5 h-3.5 text-[#2a7e51]" viewBox="0 0 24 24" fill="none">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                              </svg>
-                            )}
-                            <p className="text-sm font-medium text-noir-950">{formatCurrency(quote.priceCents / 100)}</p>
-                          </div>
+                          <p className="text-sm font-medium text-noir-950">{formatCurrency(quote.priceCents / 100)}</p>
                         </label>
                       )
                     })}
@@ -887,10 +830,23 @@ export function CheckoutPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="w-full bg-[#2a7e51] hover:bg-[#236843] transition-colors text-white font-bold tracking-widest uppercase text-sm py-4 rounded-xl shadow-[0_4px_14px_rgba(42,126,81,0.3)] disabled:opacity-50 flex justify-center items-center gap-2"
+                  className="w-full bg-[#2a7e51] hover:bg-[#236843] transition-colors text-white font-bold tracking-widest uppercase text-sm py-4 rounded-xl shadow-[0_4px_14px_rgba(42,126,81,0.3)] disabled:opacity-80 flex justify-center items-center gap-2"
                 >
-                  {submitting ? 'Processando...' : 'Ir para o Pagamento →'}
+                  {submitting ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                      </svg>
+                      Preparando seu pedido...
+                    </>
+                  ) : 'Ir para o Pagamento →'}
                 </button>
+                {submitting && (
+                  <p className="text-center text-xs text-nude-500 mt-2">
+                    Confirmando frete e finalizando — só um instante
+                  </p>
+                )}
 
                 <div className="flex items-center justify-center gap-2 text-xs text-green-700 mt-4 font-medium bg-green-50 py-2 rounded-lg border border-green-100">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
