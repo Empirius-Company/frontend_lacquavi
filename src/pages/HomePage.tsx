@@ -312,9 +312,6 @@ function FlashSaleBanner() {
 
 const TILE_CONFIG: { key: string; label: string; to: (catId?: string) => string }[] = [
   { key: 'perfumes',      label: 'Perfumes',      to: (id) => id ? `/products?category=${id}` : '/products' },
-  { key: 'femininos',     label: 'Femininos',     to: (id) => id ? `/products?category=${id}` : '/products' },
-  { key: 'masculinos',    label: 'Masculinos',    to: (id) => id ? `/products?category=${id}` : '/products' },
-  { key: 'kits',          label: 'Kits',          to: (id) => id ? `/products?category=${id}` : '/products' },
   { key: 'hidratantes',   label: 'Hidratantes',   to: (id) => id ? `/products?category=${id}` : '/products' },
   { key: 'mais-vendidos', label: 'Mais Vendidos', to: ()   => '/products' },
   { key: 'lancamentos',   label: 'Lançamentos',   to: ()   => '/products?sort=newest' },
@@ -340,17 +337,11 @@ function CategoryTiles({ categories, products, homeTiles }: { categories: Catego
     return match ? getProductPrimaryImageUrl(match) ?? undefined : undefined
   }
 
-  const perfumeCategory  = findCategory('perfume')
-  const femininoCategory = findCategory('feminin')
-  const masculinoCategory = findCategory('masculin')
-  const kitCategory      = findCategory('kit')
+  const perfumeCategory = findCategory('perfume')
   const hidratanteCategory = findCategory('hidratante')
 
   const categoryById: Record<string, string | undefined> = {
-    'perfumes':    perfumeCategory?.id,
-    'femininos':   femininoCategory?.id,
-    'masculinos':  masculinoCategory?.id,
-    'kits':        kitCategory?.id,
+    'perfumes': perfumeCategory?.id,
     'hidratantes': hidratanteCategory?.id,
   }
 
@@ -370,7 +361,7 @@ function CategoryTiles({ categories, products, homeTiles }: { categories: Catego
     <section className="bg-gradient-to-b from-white to-[#fff5f8] py-10 md:py-12">
       <div className="container-page">
         <h3 className="text-center font-semibold text-[#1A1A1A] text-2xl mb-6 md:mb-8">Explore nossas categorias</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-5 justify-items-center">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 justify-items-center">
           {tiles.map((tile) => (
             <Link
               key={tile.key}
@@ -456,16 +447,26 @@ export function HomePage() {
     return grouped
   }, [sortedProducts])
 
-  const categorySections = useMemo(
-    () => categories
-      .map((category) => ({
-        category,
-        products: productsByCategory.get(category.id) ?? [],
-      }))
-      .filter((section) => section.products.length > 0)
-      .slice(0, 5),
-    [categories, productsByCategory]
-  )
+  const normalize = (value: string) =>
+    value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
+  const FIXED_SECTIONS = [
+    { key: 'femininos',  keywords: ['feminin'] },
+    { key: 'masculinos', keywords: ['masculin'] },
+    { key: 'kits',       keywords: ['kit'] },
+  ]
+
+  const categorySections = useMemo(() => {
+    return FIXED_SECTIONS.flatMap(({ keywords }) => {
+      const category = categories.find((c) => {
+        const haystack = `${normalize(c.name)} ${normalize(c.slug)}`
+        return keywords.every((kw) => haystack.includes(normalize(kw)))
+      })
+      if (!category) return []
+      const products = productsByCategory.get(category.id) ?? []
+      return [{ category, products }]
+    })
+  }, [categories, productsByCategory])
 
   return (
     <div className="bg-[#F5F5F5] min-h-screen pb-16">
