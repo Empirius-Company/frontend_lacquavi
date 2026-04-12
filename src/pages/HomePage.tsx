@@ -465,7 +465,7 @@ export function HomePage() {
       <HomeTopBanner />
 
       {/* Hero Section at the top */}
-      <BestSellersHero products={topProducts} reviewStatsByProduct={statsByProduct} />
+      <BestSellersHero products={topProducts} reviewStatsByProduct={statsByProduct} loading={loading} />
 
       {/* Main product showcase - Tudo para o verão (White Background) */}
       <section className="py-12 bg-white">

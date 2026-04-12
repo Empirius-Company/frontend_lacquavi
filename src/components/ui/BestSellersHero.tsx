@@ -2,14 +2,36 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getProductPrimaryImage } from '../../utils/productImages'
 import { getProductFinalPrice } from '../../utils'
+import { Skeleton } from './index'
 import type { Product, ProductReviewStats } from '../../types'
 
 interface BestSellersHeroProps {
     products: Product[]
     reviewStatsByProduct?: Record<string, ProductReviewStats>
+    loading?: boolean
 }
 
-export function BestSellersHero({ products, reviewStatsByProduct = {} }: BestSellersHeroProps) {
+function BestSellersHeroSkeleton() {
+  return (
+    <section className="my-4 mx-2 sm:mx-4 rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/80 via-white to-emerald-50/60">
+      <div className="px-5 py-6 md:px-10 md:py-8 max-w-5xl mx-auto">
+        <div className="flex flex-col md:grid md:grid-cols-[1fr_1fr] items-center gap-6 md:gap-10">
+          <div className="order-2 md:order-1 w-full space-y-3">
+            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-5 w-28 mt-2" />
+            <Skeleton className="h-10 w-36 rounded-full mt-4" />
+          </div>
+          <div className="order-1 md:order-2 flex items-center justify-center h-[220px] md:h-[270px] w-full">
+            <Skeleton className="w-[165px] h-[190px] md:w-[225px] md:h-[255px] rounded-2xl" />
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export function BestSellersHero({ products, reviewStatsByProduct = {}, loading = false }: BestSellersHeroProps) {
     const [mounted, setMounted] = useState(false)
     const [currentIndex, setCurrentIndex] = useState(0)
 
@@ -26,6 +48,7 @@ export function BestSellersHero({ products, reviewStatsByProduct = {} }: BestSel
         return () => clearInterval(interval)
     }, [products.length])
 
+    if (loading) return <BestSellersHeroSkeleton />
     if (!products || products.length === 0) return null
 
     const handleNext = () => setCurrentIndex((prev) => (prev + 1) % products.length)

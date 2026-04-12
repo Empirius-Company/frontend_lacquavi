@@ -4,7 +4,7 @@ import { ordersApi, paymentsApi } from '../api/index'
 import { authApi } from '../api/authApi'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import { Button, Input, EmptyState, ErrorMessage, Spinner, Skeleton } from '../components/ui'
+import { Button, Input, EmptyState, ErrorMessage, Spinner, Skeleton, OrderDetailSkeleton } from '../components/ui'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
 import {
   formatCurrency, formatDate, formatDateTime,
@@ -471,7 +471,7 @@ export function OrderDetailPage() {
     } finally { setCanceling(false) }
   }
 
-  if (loading) return <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center"><Spinner size="lg" /></div>
+  if (loading) return <OrderDetailSkeleton />
   if (!order)  return null
 
   const canCancel = !['delivered', 'cancelled'].includes(order.status)

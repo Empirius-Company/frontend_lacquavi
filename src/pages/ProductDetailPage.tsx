@@ -5,7 +5,7 @@ import { shippingApi } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
-import { Button } from '../components/ui'
+import { Button, ProductDetailSkeleton, ReviewSkeleton } from '../components/ui'
 import { formatCurrency, getProductPriceSummary } from '../utils'
 import { getOrderedGallery, getProductPrimaryImage } from '../utils/productImages'
 import type { ApiError, Product, ProductImage, ProductReview, ProductReviewStats, ShippingQuote } from '../types'
@@ -178,13 +178,7 @@ const loadReviews = useCallback(async () => {
     }
   }, [zipCode])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-gray-200 border-t-black rounded-full animate-spin" />
-      </div>
-    )
-  }
+  if (loading) return <ProductDetailSkeleton />
   if (!product) return null
 
   const orderedImages = getOrderedGallery(productImages.length > 0 ? productImages : product.images)
@@ -547,7 +541,10 @@ const loadReviews = useCallback(async () => {
 
                 <div className="space-y-3">
                   {reviewsLoading ? (
-                    <div className="border border-gray-200 rounded p-4 bg-white text-sm text-gray-500">Carregando avaliações...</div>
+                    <>
+                      <ReviewSkeleton />
+                      <ReviewSkeleton />
+                    </>
                   ) : reviews.length === 0 ? (
                     <div className="border border-gray-200 rounded p-4 bg-white text-sm text-gray-500">Este produto ainda não possui avaliações.</div>
                   ) : (

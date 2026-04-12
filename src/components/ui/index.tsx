@@ -325,6 +325,85 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 }
 
+// ─── Product Detail Skeleton ──────────────────────────────────────────────────
+export function ProductDetailSkeleton() {
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="border-b border-gray-200 py-3">
+        <div className="container-page">
+          <Skeleton className="h-3 w-64" />
+        </div>
+      </div>
+      <div className="container-page py-8">
+        <div className="flex flex-col md:flex-row gap-12 lg:gap-16 max-w-6xl mx-auto">
+          <div className="w-full md:w-[45%] flex gap-4">
+            <div className="flex flex-col gap-2 w-16 shrink-0">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-square w-full rounded-lg" />
+              ))}
+            </div>
+            <Skeleton className="flex-1 aspect-[3/4] rounded-xl" />
+          </div>
+          <div className="w-full md:w-[55%] space-y-4">
+            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-7 w-3/4" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-9 w-40" />
+            <Skeleton className="h-12 w-full rounded-full mt-4" />
+            <div className="pt-6 space-y-2">
+              <Skeleton className="h-3 w-48" />
+              <Skeleton className="h-11 w-full rounded" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Review Skeleton ──────────────────────────────────────────────────────────
+export function ReviewSkeleton() {
+  return (
+    <div className="border border-gray-200 rounded p-4 bg-white space-y-2">
+      <div className="flex justify-between">
+        <div className="space-y-1">
+          <Skeleton className="h-3.5 w-28" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <Skeleton className="h-3.5 w-16" />
+      </div>
+      <Skeleton className="h-3 w-full" />
+      <Skeleton className="h-3 w-4/5" />
+    </div>
+  )
+}
+
+// ─── Order Detail Skeleton ────────────────────────────────────────────────────
+export function OrderDetailSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#F5F5F5]">
+      <div className="bg-white border-b border-gray-100">
+        <div className="container-page py-8 md:py-10 space-y-3">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-3 w-32" />
+        </div>
+      </div>
+      <div className="container-page py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-7 space-y-3">
+            <Skeleton className="h-64 rounded-3xl" />
+            <Skeleton className="h-32 rounded-3xl" />
+          </div>
+          <div className="lg:col-span-5">
+            <Skeleton className="h-64 rounded-3xl" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Error Message ────────────────────────────────────────────────────────────
 export function ErrorMessage({ message, dark = false }: { message: string; dark?: boolean }) {
   if (!message) return null
