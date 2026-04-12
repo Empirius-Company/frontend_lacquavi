@@ -651,6 +651,10 @@ export function PaymentPage() {
                         <Button variant="outline" fullWidth onClick={checkStatus} loading={checking}>
                           Verificar Pagamento
                         </Button>
+
+                        <p className="text-center text-xs text-nude-500 mt-3 leading-relaxed">
+                          Após pagar, a confirmação pode levar até alguns minutos para aparecer aqui. Fique tranquilo — assim que identificarmos o pagamento, seu pedido será atualizado automaticamente.
+                        </p>
                       </>
                     )}
                   </>

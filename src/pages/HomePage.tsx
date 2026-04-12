@@ -434,39 +434,17 @@ export function HomePage() {
   const topProducts = sortedProducts.slice(0, 4);
   const { statsByProduct } = useProductsReviewStats(sortedProducts.map((product) => product.id))
 
-  const productsByCategory = useMemo(() => {
-    const grouped = new Map<string, Product[]>()
+  const fixedSections = useMemo(() => {
+    const femininos  = sortedProducts.filter(p => p.gender?.toLowerCase().startsWith('feminin'))
+    const masculinos = sortedProducts.filter(p => p.gender?.toLowerCase().startsWith('masculin'))
+    const kits       = sortedProducts.filter(p => p.name.toLowerCase().startsWith('kit'))
 
-    sortedProducts.forEach((product) => {
-      if (!product.categoryId) return
-      const current = grouped.get(product.categoryId) ?? []
-      current.push(product)
-      grouped.set(product.categoryId, current)
-    })
-
-    return grouped
+    return [
+      { key: 'femininos',  title: 'Femininos',  linkTo: '/products?gender=feminino',  products: femininos  },
+      { key: 'masculinos', title: 'Masculinos', linkTo: '/products?gender=masculino', products: masculinos },
+      { key: 'kits',       title: 'Kits',       linkTo: '/products',                  products: kits       },
+    ].filter(s => s.products.length > 0)
   }, [sortedProducts])
-
-  const normalize = (value: string) =>
-    value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-
-  const FIXED_SECTIONS = [
-    { key: 'femininos',  keywords: ['feminin'] },
-    { key: 'masculinos', keywords: ['masculin'] },
-    { key: 'kits',       keywords: ['kit'] },
-  ]
-
-  const categorySections = useMemo(() => {
-    return FIXED_SECTIONS.flatMap(({ keywords }) => {
-      const category = categories.find((c) => {
-        const haystack = `${normalize(c.name)} ${normalize(c.slug)}`
-        return keywords.every((kw) => haystack.includes(normalize(kw)))
-      })
-      if (!category) return []
-      const products = productsByCategory.get(category.id) ?? []
-      return [{ category, products }]
-    })
-  }, [categories, productsByCategory])
 
   return (
     <div className="bg-[#F5F5F5] min-h-screen pb-16">
@@ -529,12 +507,12 @@ export function HomePage() {
         </div>
       </section>
 
-      {categorySections.map((section, index) => (
-        <section key={section.category.id} className={`py-12 ${index % 2 === 0 ? 'bg-white' : 'bg-[#F5F5F5]'}`}>
+      {fixedSections.map((section, index) => (
+        <section key={section.key} className={`py-12 ${index % 2 === 0 ? 'bg-white' : 'bg-[#F5F5F5]'}`}>
           <div className="container-page">
             <SectionHeader
-              title={section.category.name}
-              linkTo={`/products?category=${section.category.id}`}
+              title={section.title}
+              linkTo={section.linkTo}
             />
             {error ? null : (
               <ProductCarousel products={section.products} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
