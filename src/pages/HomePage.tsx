@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { productsApi, categoriesApi, homeTilesApi } from '../api/catalogApi'
 import { bannersApi } from '../api'
 import { ProductCarousel } from '../components/product/ProductCarousel'
-import { Button, Skeleton } from '../components/ui'
+import { Button } from '../components/ui'
 import { BestSellersHero } from '../components/ui/BestSellersHero'
 import { StoreTeaser } from '../components/store/StoreTeaser'
 import { useProductsReviewStats } from '../hooks/useProductsReviewStats'
@@ -398,7 +398,6 @@ export function HomePage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [homeTiles, setHomeTiles] = useState<HomeTile[]>([])
   const [loading, setLoading] = useState(true)
-  const [categoriesLoading, setCategoriesLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useReveal(loading)
@@ -420,7 +419,6 @@ export function HomePage() {
         setHomeTiles(tRes.tiles || [])
       })
       .catch(() => { /* tiles e categorias têm fallback visual — página segue funcional */ })
-      .finally(() => setCategoriesLoading(false))
   }, [])
 
   const sortedProducts = [...products].sort((a, b) => {
