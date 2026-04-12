@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { productsApi, categoriesApi, homeTilesApi } from '../api/catalogApi'
 import { bannersApi } from '../api'
 import { ProductCarousel } from '../components/product/ProductCarousel'
-import { Button } from '../components/ui'
+import { Button, Skeleton } from '../components/ui'
 import { BestSellersHero } from '../components/ui/BestSellersHero'
 import { StoreTeaser } from '../components/store/StoreTeaser'
 import { useProductsReviewStats } from '../hooks/useProductsReviewStats'
@@ -398,6 +398,7 @@ export function HomePage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [homeTiles, setHomeTiles] = useState<HomeTile[]>([])
   const [loading, setLoading] = useState(true)
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useReveal(loading)
@@ -419,6 +420,7 @@ export function HomePage() {
         setHomeTiles(tRes.tiles || [])
       })
       .catch(() => { /* tiles e categorias têm fallback visual — página segue funcional */ })
+      .finally(() => setCategoriesLoading(false))
   }, [])
 
   const sortedProducts = [...products].sort((a, b) => {
@@ -519,19 +521,30 @@ export function HomePage() {
         </div>
       </section>
 
-      {categorySections.map((section, index) => (
-        <section key={section.category.id} className={`py-12 ${index % 2 === 0 ? 'bg-white' : 'bg-[#F5F5F5]'}`}>
-          <div className="container-page">
-            <SectionHeader
-              title={section.category.name}
-              linkTo={`/products?category=${section.category.id}`}
-            />
-            {error ? null : (
-              <ProductCarousel products={section.products} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
-            )}
-          </div>
-        </section>
-      ))}
+      {categoriesLoading ? (
+        [0, 1].map((i) => (
+          <section key={i} className={`py-12 ${i % 2 === 0 ? 'bg-white' : 'bg-[#F5F5F5]'}`}>
+            <div className="container-page">
+              <Skeleton className="h-8 w-48 mb-3" />
+              <ProductCarousel products={[]} loading={true} count={5} />
+            </div>
+          </section>
+        ))
+      ) : (
+        categorySections.map((section, index) => (
+          <section key={section.category.id} className={`py-12 ${index % 2 === 0 ? 'bg-white' : 'bg-[#F5F5F5]'}`}>
+            <div className="container-page">
+              <SectionHeader
+                title={section.category.name}
+                linkTo={`/products?category=${section.category.id}`}
+              />
+              {error ? null : (
+                <ProductCarousel products={section.products} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
+              )}
+            </div>
+          </section>
+        ))
+      )}
 
      
       {/* Physical Store Teaser */}
