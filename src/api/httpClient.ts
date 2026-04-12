@@ -55,7 +55,7 @@ instance.interceptors.request.use((config) => {
 instance.interceptors.response.use(
   (res) => res,
   async (err: AxiosError<{ error?: string; message?: string; code?: string; retryAfter?: number }>) => {
-    const originalRequest = err.config as (AxiosRequestConfig & { _retry?: boolean; _refreshAttempts?: number }) | undefined
+    const originalRequest = err.config as (AxiosRequestConfig & { _retry?: boolean; _refreshAttempts?: number; _refreshSucceeded?: boolean }) | undefined
     const isUnauthorized = err.response?.status === 401
     const isAuthEndpoint = originalRequest?.url?.includes('/auth/')
 
@@ -87,6 +87,9 @@ instance.interceptors.response.use(
 
           const refreshResult = await refreshPromise
           if (refreshResult?.accessToken) {
+            // Mark that refresh succeeded so a subsequent 401 from the retried
+            // request (e.g. a Mercado Pago error) does NOT trigger a logout.
+            originalRequest._refreshSucceeded = true
             originalRequest.headers = {
               ...(originalRequest.headers ?? {}),
               Authorization: `Bearer ${refreshResult.accessToken}`,
@@ -99,7 +102,14 @@ instance.interceptors.response.use(
       }
     }
 
-    if (isUnauthorized) {
+    // Only clear the session when we know the token is truly invalid:
+    // - auth endpoints returning 401 (e.g. expired cookie on bootstrap refresh)
+    // - non-auth requests that failed 401 AND the token refresh also failed
+    //   (_refreshSucceeded is unset)
+    // Do NOT logout when a non-auth endpoint (e.g. /payments) keeps returning 401
+    // after a successful token refresh — that 401 is from the endpoint/provider,
+    // not from an expired session.
+    if (isUnauthorized && !originalRequest?._refreshSucceeded) {
       _onUnauthorized()
     }
 

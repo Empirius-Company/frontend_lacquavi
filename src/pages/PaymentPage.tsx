@@ -298,14 +298,11 @@ export function PaymentPage() {
 
         await recoverPaymentFromOrder(orderId)
       } else if (apiError.statusCode === 401) {
-        if (/Unauthorized use of live credentials/i.test(apiError.message)) {
-          setError('Falha na integração de pagamento (credenciais do provedor inválidas no backend).')
-          toast('Falha no provedor de pagamento. Avise o suporte para ajustar credenciais do backend.', 'error')
-        } else {
-          setError('Sua sessão expirou. Faça login novamente para gerar o PIX.')
-          toast('Sessão inválida para pagamento. Entre novamente.', 'error')
-          navigate('/login', { replace: true })
-        }
+        // 401 aqui pode ser erro do provedor (Mercado Pago) e não necessariamente
+        // sessão expirada. O httpClient já cuida de deslogar quando o refresh falha.
+        // Não redirecionar para /login — o guard de rota faz isso se necessário.
+        setError('Falha na integração de pagamento. Tente novamente ou contate o suporte.')
+        toast('Erro no provedor de pagamento. Tente novamente.', 'error')
       } else {
         setError(apiError.message ?? 'Erro ao criar pagamento')
       }

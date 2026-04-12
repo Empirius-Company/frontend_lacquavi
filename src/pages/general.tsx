@@ -57,7 +57,7 @@ function AuthLayout({ children, eyebrow, title, sub }: {
                 <span className="italic font-bold">curadoria exclusiva.</span>
               </h2>
               <p className="text-gray-500 text-sm leading-relaxed max-w-md">
-                Faça login para acompanhar seus pedidos ou crie sua conta para receber ofertas e novidades da Lacquavi.
+                Faça login para acompanhar seus pedidos ou crie sua conta para receber ofertas e novidades da Lacqua Minas.
               </p>
             </div>
 

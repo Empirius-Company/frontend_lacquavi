@@ -521,30 +521,19 @@ export function HomePage() {
         </div>
       </section>
 
-      {categoriesLoading ? (
-        [0, 1].map((i) => (
-          <section key={i} className={`py-12 ${i % 2 === 0 ? 'bg-white' : 'bg-[#F5F5F5]'}`}>
-            <div className="container-page">
-              <Skeleton className="h-8 w-48 mb-3" />
-              <ProductCarousel products={[]} loading={true} count={5} />
-            </div>
-          </section>
-        ))
-      ) : (
-        categorySections.map((section, index) => (
-          <section key={section.category.id} className={`py-12 ${index % 2 === 0 ? 'bg-white' : 'bg-[#F5F5F5]'}`}>
-            <div className="container-page">
-              <SectionHeader
-                title={section.category.name}
-                linkTo={`/products?category=${section.category.id}`}
-              />
-              {error ? null : (
-                <ProductCarousel products={section.products} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
-              )}
-            </div>
-          </section>
-        ))
-      )}
+      {categorySections.map((section, index) => (
+        <section key={section.category.id} className={`py-12 ${index % 2 === 0 ? 'bg-white' : 'bg-[#F5F5F5]'}`}>
+          <div className="container-page">
+            <SectionHeader
+              title={section.category.name}
+              linkTo={`/products?category=${section.category.id}`}
+            />
+            {error ? null : (
+              <ProductCarousel products={section.products} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
+            )}
+          </div>
+        </section>
+      ))}
 
      
       {/* Physical Store Teaser */}
