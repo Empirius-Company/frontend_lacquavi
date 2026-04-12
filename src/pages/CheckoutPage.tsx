@@ -147,7 +147,7 @@ export function CheckoutPage() {
   const [zipLookupLoading, setZipLookupLoading] = useState(false)
   const [destination, setDestination] = useState<ShippingDestination>(() => {
     try {
-      const raw = sessionStorage.getItem(SHIPPING_DESTINATION_KEY)
+      const raw = localStorage.getItem(SHIPPING_DESTINATION_KEY)
       if (!raw) return getEmptyDestination()
       return { ...getEmptyDestination(), ...(JSON.parse(raw) as Partial<ShippingDestination>) }
     } catch {
@@ -183,7 +183,7 @@ export function CheckoutPage() {
   const lastZipLookupRef = useRef<string>('')
 
   useEffect(() => {
-    sessionStorage.setItem(SHIPPING_DESTINATION_KEY, JSON.stringify(destination))
+    localStorage.setItem(SHIPPING_DESTINATION_KEY, JSON.stringify(destination))
   }, [destination])
 
   useEffect(() => {
@@ -246,26 +246,37 @@ export function CheckoutPage() {
 
   useEffect(() => {
     const loadCachedShippingSession = async () => {
+      let foundValidSession = false
       try {
         const raw = sessionStorage.getItem(SHIPPING_SESSION_KEY)
-        if (!raw) return
-        const parsed = JSON.parse(raw) as ShippingSessionCache
-        if (parsed.cartSignature !== cartSignature) return
-        if (!parsed.orderId) return
-
-        const { order } = await ordersApi.getById(parsed.orderId)
-        setOrderDraft(order)
-        setShippingQuotes(parsed.quotes ?? [])
-        setSelectedQuoteId(parsed.selectedQuoteId ?? '')
-        setShippingConfirmed(Boolean(order.shippingQuoteId))
-        setShippingAmountCents(order.shippingAmountCents ?? 0)
-        setShippingDiscountCents(order.shippingDiscountCents ?? 0)
+        if (raw) {
+          const parsed = JSON.parse(raw) as ShippingSessionCache
+          if (parsed.cartSignature === cartSignature && parsed.orderId) {
+            const { order } = await ordersApi.getById(parsed.orderId)
+            setOrderDraft(order)
+            setShippingQuotes(parsed.quotes ?? [])
+            setSelectedQuoteId(parsed.selectedQuoteId ?? '')
+            setShippingConfirmed(Boolean(order.shippingQuoteId))
+            setShippingAmountCents(order.shippingAmountCents ?? 0)
+            setShippingDiscountCents(order.shippingDiscountCents ?? 0)
+            foundValidSession = true
+          } else {
+            sessionStorage.removeItem(SHIPPING_SESSION_KEY)
+          }
+        }
       } catch {
         sessionStorage.removeItem(SHIPPING_SESSION_KEY)
+      }
+
+      // Sem sessão válida: cria o rascunho em background para que esteja pronto
+      // quando o usuário clicar em "Calcular Frete" (elimina 1 request em série)
+      if (!foundValidSession && items.length > 0) {
+        void ensureOrderDraft()
       }
     }
 
     void loadCachedShippingSession()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartSignature])
 
   const persistShippingSession = (next: Partial<ShippingSessionCache> = {}) => {
