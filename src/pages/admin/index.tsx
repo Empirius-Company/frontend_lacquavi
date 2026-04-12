@@ -330,6 +330,7 @@ export function AdminProductFormPage() {
     brand: '',
     volume: '',
     gender: '',
+    olfactoryFamily: '',
     categoryId: '',
     subcategoryId: '',
     isActive: true,
@@ -354,7 +355,8 @@ export function AdminProductFormPage() {
             name: p.name, description: p.description, price: p.price.toString(),
             discount: (p.discount ?? 0).toString(),
             stock: p.stock.toString(), brand: p.brand ?? '', volume: p.volume ?? '',
-            gender: p.gender ?? '', categoryId: p.categoryId ?? '',
+            gender: p.gender ?? '', olfactoryFamily: p.olfactoryFamily ?? '',
+            categoryId: p.categoryId ?? '',
             subcategoryId: p.subcategoryId ?? '',
             isActive: p.isActive !== false,
             requiresShipping: p.requiresShipping ?? true,
@@ -450,6 +452,7 @@ export function AdminProductFormPage() {
         brand: form.brand.trim() ? form.brand.trim() : null,
         volume: form.volume.trim() ? form.volume.trim() : null,
         gender: form.gender.trim() ? form.gender.trim() : null,
+        olfactoryFamily: form.olfactoryFamily.trim() ? form.olfactoryFamily.trim() : null,
         categoryId: form.categoryId.trim() ? form.categoryId.trim() : null,
         subcategoryId: form.subcategoryId.trim() ? form.subcategoryId.trim() : null,
         isActive: form.isActive,
@@ -547,6 +550,7 @@ export function AdminProductFormPage() {
             <Input label="Marca" value={form.brand} onChange={set('brand')} />
             <Input label="Volume (ex: 100ml)" value={form.volume} onChange={set('volume')} />
           </div>
+          <Input label="Família Olfativa (ex: Floral Gourmand)" value={form.olfactoryFamily} onChange={set('olfactoryFamily')} />
           <div className="grid grid-cols-2 gap-4">
             <Select
               label="Gênero"
@@ -1748,6 +1752,8 @@ export function AdminCouponsPage() {
   const navigate = useNavigate()
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const load = () => {
     setLoading(true)
@@ -1755,6 +1761,19 @@ export function AdminCouponsPage() {
   }
 
   useEffect(load, [])
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id)
+    try {
+      await couponsApi.delete(id)
+      setCoupons(prev => prev.filter(c => c.id !== id))
+    } catch (err: any) {
+      alert(err?.response?.data?.error ?? 'Erro ao excluir cupom')
+    } finally {
+      setDeletingId(null)
+      setConfirmDeleteId(null)
+    }
+  }
 
   const sortedCoupons = useMemo(() => {
     return [...coupons].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -1834,7 +1853,31 @@ export function AdminCouponsPage() {
                     </span>
                   </td>
                   <td className="px-5 py-4">
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/admin/coupons/${c.id}/edit`)}>Editar</Button>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/admin/coupons/${c.id}/edit`)}>Editar</Button>
+                      {confirmDeleteId === c.id ? (
+                        <>
+                          <Button
+                            size="sm"
+                            className="bg-red-600 hover:bg-red-700 text-white border-0"
+                            onClick={() => handleDelete(c.id)}
+                            disabled={deletingId === c.id}
+                          >
+                            {deletingId === c.id ? 'Excluindo…' : 'Confirmar'}
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => setConfirmDeleteId(null)}>Cancelar</Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={() => setConfirmDeleteId(c.id)}
+                        >
+                          Excluir
+                        </Button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

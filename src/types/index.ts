@@ -69,6 +69,7 @@ export interface Product {
   brand: string | null
   volume: string | null
   gender: 'masculino' | 'feminino' | 'unissex' | null
+  olfactoryFamily: string | null
   requiresShipping?: boolean
   weightGrams?: number | null
   createdAt: string

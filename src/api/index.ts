@@ -121,6 +121,9 @@ export const couponsApi = {
 
   update: (id: string, data: CouponUpdateInput): Promise<{ message: string; coupon: Coupon }> =>
     httpClient.patch<{ message: string; coupon: Coupon }>(`/api/admin/coupons/${id}`, data),
+
+  delete: (id: string): Promise<{ message: string }> =>
+    httpClient.delete<{ message: string }>(`/api/admin/coupons/${id}`),
 }
 
 // ─── Health API ───────────────────────────────────────────────────────────────

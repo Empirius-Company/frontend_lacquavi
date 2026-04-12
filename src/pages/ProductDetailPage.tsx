@@ -470,8 +470,11 @@ const loadReviews = useCallback(async () => {
                 <div className="flex border-b border-pink-200 mb-4">
                   <h3 className="uppercase text-sm font-bold text-gray-800 tracking-widest border-b-2 border-[#2a7e51] pb-2 -mb-px">Especificações</h3>
                 </div>
-                <div className="border border-pink-100 rounded p-4 text-sm text-gray-600 bg-white shadow-sm">
+                <div className="border border-pink-100 rounded p-4 text-sm text-gray-600 bg-white shadow-sm space-y-1">
                   {product.volume && <p><span className="font-medium">Tamanho:</span> {product.volume}</p>}
+                  {product.olfactoryFamily && <p><span className="font-medium">Família Olfativa:</span> {product.olfactoryFamily}</p>}
+                  {product.gender && <p><span className="font-medium">Gênero:</span> {product.gender.charAt(0).toUpperCase() + product.gender.slice(1)}</p>}
+                  {product.brand && <p><span className="font-medium">Marca:</span> {product.brand}</p>}
                 </div>
               </div>
 
