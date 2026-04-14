@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { STORES } from '../config/store'
 
+// Serializa um objeto para JSON seguro para uso em script type="application/ld+json".
+// Escapa </script> e <!-- para prevenir injeção de HTML dentro da tag script.
+const escapeForJsonLd = (data: unknown): string =>
+  JSON.stringify(data)
+    .replace(/<\/script>/gi, '<\\/script>')
+    .replace(/<!--/g, '<\\!--')
+
 /* ══════════════════════════════════════════════════════════════════
   NOSSA LOJA — /nossa-loja
    ══════════════════════════════════════════════════════════════════ */
@@ -407,11 +414,12 @@ export function StorePage() {
       </section>
 
       {/* ══ SEO LOCAL — structured data ═══════════════════════════ */}
-      {/* JSON-LD injetado no head via script tag — LocalBusiness Schema */}
+      {/* JSON-LD injetado via script tag — LocalBusiness Schema.
+          Campos sanitizados com escapeForJsonLd para prevenir XSS. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: escapeForJsonLd({
             '@context': 'https://schema.org',
             '@type': 'Store',
             name: s.name,

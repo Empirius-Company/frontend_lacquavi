@@ -1,7 +1,17 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios'
 import type { ApiError } from '../types'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+const API_BASE_URL: string = (() => {
+  const url = import.meta.env.VITE_API_URL
+  if (!url) {
+    if (import.meta.env.PROD) {
+      throw new Error('VITE_API_URL não está configurada. Defina a variável de ambiente antes do build.')
+    }
+    // Em desenvolvimento, usar localhost como fallback conveniente
+    return 'http://localhost:3000'
+  }
+  return url
+})()
 
 // Token accessor/updater — wired by AuthContext once mounted
 let _currentToken: string | null = null
