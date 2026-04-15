@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
 import { Button, ProductDetailSkeleton, ReviewSkeleton } from '../components/ui'
+import { useSEO, ProductSchema, BreadcrumbSchema } from '../components/seo'
 import { formatCurrency, getProductPriceSummary } from '../utils'
 import { getOrderedGallery, getProductPrimaryImage } from '../utils/productImages'
 import type { ApiError, Product, ProductImage, ProductReview, ProductReviewStats, ShippingQuote } from '../types'
@@ -115,6 +116,14 @@ export function ProductDetailPage() {
   const [shippingError, setShippingError] = useState('')
   const [shippingQuotes, setShippingQuotes] = useState<ShippingQuote[]>([])
   const [floatingBarVisible, setFloatingBarVisible] = useState(false)
+
+  // SEO Meta Tags
+  useSEO({
+    title: product ? `${product.name} | Lacqua Minas Shopping` : 'Produto | Lacqua Minas Shopping',
+    description: product?.description || `Fragrância premium e original em Lacqua Minas Shopping, Belo Horizonte.`,
+    image: product ? getProductPrimaryImage(product)?.url : undefined,
+    type: 'product',
+  })
 
 const loadReviews = useCallback(async () => {
     if (!id) return
@@ -299,6 +308,32 @@ const loadReviews = useCallback(async () => {
 
   return (
     <div className={`min-h-screen bg-white ${floatingBarVisible ? 'pb-40' : 'pb-32'}`}>
+      {/* Schema para SEO */}
+      {product && (
+        <>
+          <ProductSchema
+            product={{
+              id: product.id,
+              name: product.name,
+              description: product.description,
+              imageUrl: getProductPrimaryImage(product)?.url,
+              price: getProductPriceSummary(product).finalPrice,
+              brand: product.brand,
+              inStock: true,
+            }}
+            ratingValue={reviewsStats.averageRating?.toString() || '4.8'}
+            ratingCount={reviewsStats.total?.toString() || '150'}
+          />
+          <BreadcrumbSchema
+            items={[
+              { name: 'Início', url: '/' },
+              { name: 'Produtos', url: '/products' },
+              { name: product.name, url: `/products/${product.id}` },
+            ]}
+          />
+        </>
+      )}
+
       <div className="border-b border-gray-200 py-3 text-xs bg-white">
         <div className="container-page flex gap-2 text-gray-500 overflow-x-auto whitespace-nowrap">
           <Link to="/" className="hover:underline opacity-60 flex items-center gap-1"><span className="text-[14px]">🏠</span></Link>

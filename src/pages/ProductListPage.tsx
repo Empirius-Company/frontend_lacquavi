@@ -4,6 +4,7 @@ import { productsApi, categoriesApi, subcategoriesApi } from '../api/catalogApi'
 import { ProductCard } from '../components/product/ProductCard'
 import { ProductCardSkeleton, Button } from '../components/ui'
 import { ScrollReveal } from '../components/ui/ScrollReveal'
+import { useSEO, BreadcrumbSchema } from '../components/seo'
 import { useProductsReviewStats } from '../hooks/useProductsReviewStats'
 import { getProductPriceSummary } from '../utils'
 import type { Product, Category, Subcategory } from '../types'
@@ -53,6 +54,14 @@ export function ProductListPage() {
   const selectedGender = searchParams.get('gender')   ?? ''
   const searchQuery    = searchParams.get('q')        ?? ''
   const sort           = searchParams.get('sort')     ?? 'default'
+
+  // SEO Meta Tags
+  const catName = selectedCat ? categories.find(c => c.slug === selectedCat)?.name || 'Fragrâncias' : 'Fragrâncias'
+  useSEO({
+    title: `${catName} | Lacqua Minas Shopping`,
+    description: `Explore nossa coleção completa de ${catName.toLowerCase()} em Lacqua Minas Shopping, Belo Horizonte. Fragrâncias premium, originais e importadas com entrega rápida.`,
+    image: 'https://lacquaminas.com.br/og-image-products.png',
+  })
 
   const setParam = (k: string, v: string) => {
     const p = new URLSearchParams(searchParams)
@@ -115,6 +124,14 @@ export function ProductListPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
+      {/* Schema para SEO */}
+      <BreadcrumbSchema
+        items={[
+          { name: 'Início', url: '/' },
+          { name: 'Produtos', url: '/products' },
+          ...(selectedCat ? [{ name: catName, url: `/products?category=${selectedCat}` }] : []),
+        ]}
+      />
 
       {/* ── Page header ─────────────────────────────── */}
       <div className="bg-white border-b border-gray-100">

@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 interface SEOProps {
   title: string;
   description: string;
-  image?: string;
+  image?: string | null;
   canonical?: string;
   twitterHandle?: string;
   type?: 'website' | 'article' | 'product' | 'business.business';
@@ -35,6 +35,9 @@ export function useSEO({
   type = 'website',
 }: SEOProps) {
   useEffect(() => {
+    // Ensure image is never null
+    const finalImage = image || 'https://lacquaminas.com.br/og-image.png';
+
     // Title
     document.title = `${title} | Lacqua Minas Shopping`;
 
@@ -45,7 +48,7 @@ export function useSEO({
     // Open Graph
     updateOrCreateMetaTag('og:title', `${title} | Lacqua Minas Shopping`, true);
     updateOrCreateMetaTag('og:description', description, true);
-    updateOrCreateMetaTag('og:image', image, true);
+    updateOrCreateMetaTag('og:image', finalImage, true);
     updateOrCreateMetaTag('og:type', type, true);
     updateOrCreateMetaTag('og:url', canonical, true);
     updateOrCreateMetaTag('og:site_name', 'Lacqua Minas Shopping', true);
@@ -54,7 +57,7 @@ export function useSEO({
     updateOrCreateMetaTag('twitter:card', 'summary_large_image');
     updateOrCreateMetaTag('twitter:title', title);
     updateOrCreateMetaTag('twitter:description', description);
-    updateOrCreateMetaTag('twitter:image', image);
+    updateOrCreateMetaTag('twitter:image', finalImage);
     updateOrCreateMetaTag('twitter:creator', twitterHandle);
 
     // Canonical

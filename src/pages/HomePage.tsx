@@ -7,6 +7,7 @@ import { Button } from '../components/ui'
 import { BestSellersHero } from '../components/ui/BestSellersHero'
 import { StoreTeaser } from '../components/store/StoreTeaser'
 import { useProductsReviewStats } from '../hooks/useProductsReviewStats'
+import { useSEO } from '../components/seo'
 import { getProductPriceSummary } from '../utils'
 import { getProductPrimaryImageUrl } from '../utils/productImages'
 import type { Product, Category, Banner, HomeTile } from '../types'
@@ -399,6 +400,14 @@ export function HomePage() {
   const [homeTiles, setHomeTiles] = useState<HomeTile[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // SEO Meta Tags
+  useSEO({
+    title: 'Fragrâncias Premium | Lacqua Minas Shopping',
+    description: 'Descubra fragrâncias premium e originais no Minas Shopping, Belo Horizonte. Perfumaria de luxo com entrega rápida e pagamento seguro.',
+    image: 'https://lacquaminas.com.br/og-image-home.png',
+    type: 'website',
+  })
 
   useReveal(loading)
 

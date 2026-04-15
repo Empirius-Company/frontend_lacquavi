@@ -1,6 +1,10 @@
 # Robots.txt - Lacqua Minas Shopping
 # https://www.robotstxt.org/robotstxt.html
 
+# Sitemaps
+Sitemap: https://lacquaminas.com.br/api/sitemaps/index.xml
+Sitemap: https://lacquaminas.com.br/api/sitemaps/pages.xml
+
 # Allow all bots
 User-agent: *
 Allow: /
