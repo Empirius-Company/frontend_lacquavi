@@ -135,6 +135,66 @@ export function PaymentPage() {
   const cardBrand = detectCardBrand(cardForm.cardNumber)
   const cardBin = cardForm.cardNumber.replace(/\D/g, '').slice(0, 6)
 
+  // ── Card field formatters ────────────────────────────────────────────────────
+
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawDigits = e.target.value.replace(/\D/g, '')
+    const newBrand = detectCardBrand(rawDigits)
+    const maxLen = newBrand === 'amex' ? 15 : 16
+    const limited = rawDigits.slice(0, maxLen)
+    let formatted: string
+    if (newBrand === 'amex') {
+      // Amex: 4-6-5 grouping
+      formatted = [limited.slice(0, 4), limited.slice(4, 10), limited.slice(10)]
+        .filter(p => p.length > 0).join(' ')
+    } else {
+      formatted = limited.match(/.{1,4}/g)?.join(' ') ?? limited
+    }
+    setCardForm(prev => ({ ...prev, cardNumber: formatted }))
+  }
+
+  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const prevVal = cardForm.expiryDate
+    const raw = e.target.value
+    const isDeleting = raw.length < prevVal.length
+    const digits = raw.replace(/\D/g, '').slice(0, 4)
+
+    let formatted = digits
+    if (!isDeleting && digits.length === 1 && parseInt(digits, 10) > 1) {
+      // First digit > 1 can't start a valid month alone — auto-prepend 0: "2" → "02/"
+      formatted = '0' + digits + '/'
+    } else if (digits.length > 2) {
+      formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`
+    } else if (digits.length === 2 && !isDeleting) {
+      formatted = digits + '/'
+    }
+
+    setCardForm(prev => ({ ...prev, expiryDate: formatted }))
+  }
+
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 11)
+    let formatted = digits
+    if (digits.length > 9) {
+      formatted = `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
+    } else if (digits.length > 6) {
+      formatted = `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
+    } else if (digits.length > 3) {
+      formatted = `${digits.slice(0, 3)}.${digits.slice(3)}`
+    }
+    setCardForm(prev => ({ ...prev, cpf: formatted }))
+  }
+
+  const handleSecurityCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const maxLen = cardBrand === 'amex' ? 4 : 3
+    const digits = e.target.value.replace(/\D/g, '').slice(0, maxLen)
+    setCardForm(prev => ({ ...prev, securityCode: digits }))
+  }
+
+  const handleCardholderNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCardForm(prev => ({ ...prev, cardholderName: e.target.value.toUpperCase() }))
+  }
+
   const mpBrandMap: Record<string, string> = {
     visa: 'visa',
     mastercard: 'master',
@@ -531,11 +591,13 @@ export function PaymentPage() {
                       <div>
                         <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">Número do Cartão</label>
                         <input
-                          type="text"
+                          type="tel"
+                          inputMode="numeric"
+                          autoComplete="cc-number"
                           placeholder="0000 0000 0000 0000"
-                          className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white"
+                          className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white font-mono tracking-wider"
                           value={cardForm.cardNumber}
-                          onChange={(e) => setCardForm({ ...cardForm, cardNumber: e.target.value })}
+                          onChange={handleCardNumberChange}
                         />
                         <div className="mt-2">
                           <PaymentIconsCheckout detectedBrand={detectCardBrand(cardForm.cardNumber)} />
@@ -547,20 +609,23 @@ export function PaymentPage() {
                           <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">Nome no Cartão</label>
                           <input
                             type="text"
+                            autoComplete="cc-name"
                             placeholder="NOME IGUAL AO CARTÃO"
                             className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white uppercase"
                             value={cardForm.cardholderName}
-                            onChange={(e) => setCardForm({ ...cardForm, cardholderName: e.target.value })}
+                            onChange={handleCardholderNameChange}
                           />
                         </div>
                         <div>
                           <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">CPF do Titular</label>
                           <input
-                            type="text"
+                            type="tel"
+                            inputMode="numeric"
+                            autoComplete="off"
                             placeholder="000.000.000-00"
                             className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white"
                             value={cardForm.cpf}
-                            onChange={(e) => setCardForm({ ...cardForm, cpf: e.target.value })}
+                            onChange={handleCpfChange}
                           />
                         </div>
                       </div>
@@ -569,21 +634,27 @@ export function PaymentPage() {
                         <div>
                           <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">Validade</label>
                           <input
-                            type="text"
+                            type="tel"
+                            inputMode="numeric"
+                            autoComplete="cc-exp"
                             placeholder="MM/AA"
+                            maxLength={5}
                             className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white"
                             value={cardForm.expiryDate}
-                            onChange={(e) => setCardForm({ ...cardForm, expiryDate: e.target.value })}
+                            onChange={handleExpiryChange}
                           />
                         </div>
                         <div>
                           <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">CVV</label>
                           <input
-                            type="text"
-                            placeholder="123"
+                            type="tel"
+                            inputMode="numeric"
+                            autoComplete="cc-csc"
+                            placeholder={cardBrand === 'amex' ? '0000' : '000'}
+                            maxLength={cardBrand === 'amex' ? 4 : 3}
                             className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white"
                             value={cardForm.securityCode}
-                            onChange={(e) => setCardForm({ ...cardForm, securityCode: e.target.value })}
+                            onChange={handleSecurityCodeChange}
                           />
                         </div>
                       </div>
