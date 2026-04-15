@@ -672,51 +672,21 @@ export function PaymentPage() {
                       </div>
 
                       {installmentOptions.length > 0 ? (
-                        <div className="space-y-2">
-                          {installmentOptions.map((opt) => {
-                            const selected = installments === opt.installments
-                            return (
-                              <label
-                                key={opt.installments}
-                                className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all duration-150 ${
-                                  selected
-                                    ? 'border-gold-500/60 bg-gold-500/5'
-                                    : 'border-nude-200 hover:border-nude-300 bg-white'
-                                }`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <input
-                                    type="radio"
-                                    name="installments"
-                                    value={opt.installments}
-                                    checked={selected}
-                                    onChange={() => setInstallments(opt.installments)}
-                                    disabled={creating}
-                                    className="accent-gold-500"
-                                  />
-                                  <span className="text-sm text-noir-950 font-medium">
-                                    {opt.installments === 1 ? (
-                                      <>À vista — {formatCurrency(opt.installmentAmount)}</>
-                                    ) : (
-                                      <>{opt.installments}x de {formatCurrency(opt.installmentAmount)}</>
-                                    )}
-                                  </span>
-                                </div>
-                                <div className="text-right">
-                                  {opt.hasInterest ? (
-                                    <span className="text-2xs text-nude-500">
-                                      total {formatCurrency(opt.totalAmount)}
-                                    </span>
-                                  ) : (
-                                    <span className="text-2xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                                      sem juros
-                                    </span>
-                                  )}
-                                </div>
-                              </label>
-                            )
-                          })}
-                        </div>
+                        <select
+                          value={installments}
+                          onChange={(e) => setInstallments(Number(e.target.value))}
+                          disabled={creating || loadingInstallments}
+                          className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white text-noir-950 disabled:opacity-50"
+                        >
+                          {installmentOptions.map((opt) => (
+                            <option key={opt.installments} value={opt.installments}>
+                              {opt.installments === 1
+                                ? `À vista — ${formatCurrency(opt.installmentAmount)}`
+                                : `${opt.installments}x de ${formatCurrency(opt.installmentAmount)}${opt.hasInterest ? ` (total ${formatCurrency(opt.totalAmount)})` : ' — sem juros'}`
+                              }
+                            </option>
+                          ))}
+                        </select>
                       ) : loadingInstallments ? (
                         <div className="py-4 flex justify-center">
                           <Spinner size="sm" />

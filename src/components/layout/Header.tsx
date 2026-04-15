@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { categoriesApi } from '../../api/catalogApi'
@@ -20,6 +20,8 @@ export function Header() {
   const { user, isAuthenticated, isAdmin, logout } = useAuth()
   const { totalItems, openCart } = useCart()
   const navigate = useNavigate()
+  const location = useLocation()
+  const isCheckoutFlow = location.pathname.startsWith('/checkout')
   const [menuOpen, setMenuOpen] = useState(false)
   const [userOpen, setUserOpen] = useState(false)
   const [categoryOpen, setCategoryOpen] = useState(false)
@@ -153,8 +155,8 @@ export function Header() {
           </div>
         </div>
 
-        {/* Tier 3: Category Nav Bar */}
-        <div className="hidden md:flex border-t border-gray-100">
+        {/* Tier 3: Category Nav Bar — hidden on checkout/payment */}
+        <div className={`hidden border-t border-gray-100 ${isCheckoutFlow ? '' : 'md:flex'}`}>
           <div className="container-page flex items-center h-8">
 
             {/* Categories */}
@@ -230,7 +232,7 @@ export function Header() {
 
                   <NavLink to="/nossa-loja" className={({ isActive }) => `flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap transition-colors ${isActive ? 'text-[#2a7e51]' : 'text-gray-500 hover:text-[#2a7e51]'}`}>
                     <span className="w-1.5 h-1.5 rounded-full bg-[#2a7e51] flex-shrink-0" />
-                    Nossa Loja
+                    Nossas Lojas
                   </NavLink>
                 </>
               )}
@@ -284,7 +286,7 @@ export function Header() {
               </Link>
               <Link to="/nossa-loja" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl text-[#2a7e51] bg-[#2a7e51]/10 hover:bg-[#2a7e51]/20 font-semibold transition-colors">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                Nossa Loja
+                Nossas Lojas
               </Link>
 
               <div className="border-t border-gray-100 my-2 mx-2" />

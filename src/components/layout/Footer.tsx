@@ -1,11 +1,14 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { PaymentIconsBar } from '../ui/PaymentMethodIcons'
 
 export function Footer() {
+  const location = useLocation()
+  const isCheckoutFlow = location.pathname.startsWith('/checkout')
+
   return (
     <footer className="bg-white border-t border-gray-200 mt-auto">
-      {/* Newsletter Section */}
-      <div className="px-4 py-12 md:py-16" style={{ background: 'linear-gradient(180deg, #111111 0%, #000000 100%)' }}>
+      {/* Newsletter Section — hidden on checkout/payment */}
+      {!isCheckoutFlow && <div className="px-4 py-12 md:py-16" style={{ background: 'linear-gradient(180deg, #111111 0%, #000000 100%)' }}>
         <div className="container-page flex flex-col lg:flex-row items-center justify-between gap-8 md:gap-12 max-w-6xl mx-auto">
 
           <div className="flex items-center gap-5 w-full lg:w-auto">
@@ -40,7 +43,7 @@ export function Footer() {
           </div>
 
         </div>
-      </div>
+      </div>}
 
       <div className="container-page py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
