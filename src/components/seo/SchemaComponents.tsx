@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { getSchemaPhone } from '../../config/contactConfig';
 
 /**
  * ProductSchema - Renderiza Schema.org para produtos
@@ -165,7 +166,7 @@ export function LocalBusinessSchema() {
         postalCode: '30140-073',
         addressCountry: 'BR',
       },
-      telephone: '+55 31 XXXX-XXXX',
+      telephone: getSchemaPhone(),
       priceRange: 'R$ 100 - R$ 2000',
       aggregateRating: {
         '@type': 'AggregateRating',

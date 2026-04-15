@@ -4,6 +4,7 @@ import { ordersApi, paymentsApi } from '../api/index'
 import { useToast } from '../context/ToastContext'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
+import { useLoginModal } from '../context/LoginModalContext'
 import { Button, Spinner, ErrorMessage } from '../components/ui'
 import { PaymentBrandBadges, PaymentIconsCheckout, detectCardBrand } from '../components/ui/PaymentMethodIcons'
 import { formatCurrency, generateIdempotencyKey } from '../utils'
@@ -93,6 +94,7 @@ export function PaymentPage() {
   const { toast } = useToast()
   const { clearCart } = useCart()
   const { isAuthenticated, accessToken } = useAuth()
+  const { openLoginModal } = useLoginModal()
 
   const [order, setOrder] = useState<Order | null>(null)
   const [payment, setPayment] = useState<Payment | null>(null)
@@ -320,8 +322,8 @@ export function PaymentPage() {
     if (isCreatingRef.current) return
 
     if (!isAuthenticated || !accessToken) {
-      toast('Sua sessão expirou. Faça login novamente para gerar o PIX.', 'error')
-      navigate('/login', { replace: true })
+      toast('Sua sessão expirou. Faça login novamente para continuar.', 'error')
+      openLoginModal()
       return
     }
 

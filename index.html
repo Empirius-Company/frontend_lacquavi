@@ -16,8 +16,10 @@
     <meta property="og:title" content="Lacqua | Perfumaria Premium — Fragrâncias Originais" />
     <meta property="og:description" content="Fragrâncias importadas e nacionais com autenticidade garantida. Descubra a curadoria Lacqua — perfumaria premium em Belo Horizonte com entrega para todo o Brasil." />
     <meta property="og:url" content="https://lacquaminas.com.br" />
-    <meta property="og:image" content="https://lacquaminas.com.br/og-image.png" />
+    <meta property="og:image" content="https://lacquaminas.com.br/og-image.svg" />
     <meta property="og:image:alt" content="Lacqua Minas Shopping - Fragrâncias Premium" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="Lacqua Minas Shopping" />
     <meta property="og:locale" content="pt_BR" />
     
@@ -25,7 +27,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Lacqua | Perfumaria Premium — Fragrâncias Originais" />
     <meta name="twitter:description" content="Fragrâncias importadas e nacionais com autenticidade garantida. Entrega para todo o Brasil. Descubra a curadoria Lacqua." />
-    <meta name="twitter:image" content="https://lacquaminas.com.br/og-image.png" />
+    <meta name="twitter:image" content="https://lacquaminas.com.br/og-image.svg" />
     
     <!-- Local Business Schema (JSON-LD) -->
     <script type="application/ld+json">
@@ -33,10 +35,16 @@
       "@context": "https://schema.org",
       "@type": "LocalBusiness",
       "name": "Lacqua Minas Shopping",
-      "description": "Fragrâncias premium e originais - Perfumaria de luxo",
+      "alternateName": ["Lacqua", "Lacqua Minas", "Perfumaria Lacqua"],
+      "description": "Fragrâncias premium e originais — Perfumaria de luxo em Minas Shopping, Belo Horizonte",
       "url": "https://lacquaminas.com.br",
       "telephone": "+55 31 97501-9000",
       "email": "contato@lacquaminas.com.br",
+      "image": "https://lacquaminas.com.br/logo.png",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://lacquaminas.com.br/logo.png"
+      },
       "address": {
         "@type": "PostalAddress",
         "streetAddress": "Minas Shopping",
@@ -50,33 +58,24 @@
         "latitude": "-19.9106642",
         "longitude": "-43.9269849"
       },
-      "image": "https://lacquaminas.com.br/logo.png",
       "priceRange": "R$ 100 - R$ 2000",
-      "industry": "Perfumaria",
-      "openingHoursSpecification": {
-        "@type": "OpeningHoursSpecification",
-        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-        "opens": "10:00",
-        "closes": "22:00"
-      },
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+          "opens": "10:00",
+          "closes": "22:00"
+        },
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": "Saturday",
+          "opens": "10:00",
+          "closes": "22:00"
+        }
+      ],
       "sameAs": [
         "https://www.instagram.com/lacqua.minas"
       ],
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.8",
-        "ratingCount": "150"
-      }
-    }
-    </script>
-    
-    <!-- Additional Microdata for E-commerce -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "OnlineStore",
-      "name": "Lacqua Minas Shopping",
-      "url": "https://lacquaminas.com.br",
       "potentialAction": {
         "@type": "SearchAction",
         "target": {
@@ -104,8 +103,7 @@
 
     <!-- Favicon & App Icons -->
     <link rel="icon" type="image/svg+xml" href="/iconLacqua.svg?v=3" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />

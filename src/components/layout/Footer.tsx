@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
+import { CONTACT_CONFIG } from '../../config/contactConfig'
 import { PaymentIconsBar } from '../ui/PaymentMethodIcons'
 
 export function Footer() {
@@ -110,8 +111,8 @@ export function Footer() {
             </div>
 
             <h4 className="font-bold text-[#333] mb-2 uppercase text-sm">Atendimento</h4>
-            <p className="text-2xl font-black text-[#000000] mb-1">31 97501-9000</p>
-            <p className="text-xs text-gray-500">Seg. a Sex. das 8h às 22h<br />Sáb. das 9h às 14h</p>
+            <p className="text-2xl font-black text-[#000000] mb-1">{CONTACT_CONFIG.displayPhone}</p>
+            <p className="text-xs text-gray-500">{CONTACT_CONFIG.businessHours}</p>
           </div>
 
         </div>

@@ -418,3 +418,6 @@ export function ErrorMessage({ message, dark = false }: { message: string; dark?
     </div>
   )
 }
+
+// ─── WhatsApp Floating Button ─────────────────────────────────────────────────
+export { WhatsAppFloatingButton } from './WhatsAppFloatingButton'

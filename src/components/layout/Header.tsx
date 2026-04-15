@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
+import { useLoginModal } from '../../context/LoginModalContext'
 import { categoriesApi } from '../../api/catalogApi'
 import { MiniCart } from './MiniCart'
 import type { Category } from '../../types'
@@ -19,6 +20,7 @@ function CategoryNavSkeleton() {
 export function Header() {
   const { user, isAuthenticated, isAdmin, logout } = useAuth()
   const { totalItems, openCart } = useCart()
+  const { openLoginModal } = useLoginModal()
   const navigate = useNavigate()
   const location = useLocation()
   const isCheckoutFlow = location.pathname.startsWith('/checkout')
@@ -117,8 +119,8 @@ export function Header() {
                     </>
                   ) : (
                     <>
-                      <Link to="/login" className="block px-4 py-2 text-sm text-[#4A4A4A] hover:bg-gray-50 hover:text-[#000000]">Entrar</Link>
-                      <Link to="/register" className="block px-4 py-2 text-sm text-[#4A4A4A] hover:bg-gray-50 hover:text-[#000000]">Cadastrar</Link>
+                      <button onClick={() => { setUserOpen(false); openLoginModal({ mode: 'login' }) }} className="w-full text-left px-4 py-2 text-sm text-[#4A4A4A] hover:bg-gray-50 hover:text-[#000000]">Entrar</button>
+                      <button onClick={() => { setUserOpen(false); openLoginModal({ mode: 'register' }) }} className="w-full text-left px-4 py-2 text-sm text-[#4A4A4A] hover:bg-gray-50 hover:text-[#000000]">Cadastrar</button>
                     </>
                   )}
                 </div>
@@ -315,14 +317,14 @@ export function Header() {
                 </>
               ) : (
                 <>
-                  <Link to="/login" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-[#000000] hover:bg-gray-50 transition-colors">
+                  <button onClick={() => { setMenuOpen(false); openLoginModal({ mode: 'login' }) }} className="flex items-center gap-3 px-3 py-3 rounded-xl font-bold text-[#000000] hover:bg-gray-50 transition-colors w-full text-left">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                     Entrar
-                  </Link>
-                  <Link to="/register" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">
+                  </button>
+                  <button onClick={() => { setMenuOpen(false); openLoginModal({ mode: 'register' }) }} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors w-full text-left">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     Criar conta
-                  </Link>
+                  </button>
                 </>
               )}
             </div>

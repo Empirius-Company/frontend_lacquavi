@@ -1,6 +1,8 @@
-import { Routes, Route } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Routes, Route, useNavigate } from 'react-router-dom'
 import { MainLayout, AdminLayout } from '../components/layout'
 import { ProtectedRoute, AdminRoute } from './guards'
+import { useLoginModal, type AuthModalMode } from '../context/LoginModalContext'
 
 // Public pages
 import { HomePage }          from '../pages/HomePage'
@@ -11,14 +13,23 @@ import { StorePage }         from '../pages/StorePage'
 
 // Auth / account / utility pages
 import {
-  LoginPage,
-  RegisterPage,
   AccountProfilePage,
   MyOrdersPage,
   OrderDetailPage,
   PaymentResultPage,
   NotFoundPage,
 } from '../pages/general'
+
+// Redirects /login and /register to the current page with the modal open
+function AuthModalRedirect({ mode }: { mode: AuthModalMode }) {
+  const { openLoginModal } = useLoginModal()
+  const navigate = useNavigate()
+  useEffect(() => {
+    navigate(-1)
+    openLoginModal({ mode })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  return null
+}
 
 // Checkout
 import { CheckoutPage } from '../pages/CheckoutPage'
@@ -56,9 +67,9 @@ export function AppRoutes() {
         <Route path="/nossa-loja"    element={<StorePage />} />
       </Route>
 
-      {/* ── Auth pages (full-screen, no nav layout) ───────────── */}
-      <Route path="/login"    element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      {/* ── Auth pages — open modal and go back, no fullscreen page ── */}
+      <Route path="/login"    element={<AuthModalRedirect mode="login" />} />
+      <Route path="/register" element={<AuthModalRedirect mode="register" />} />
 
       {/* ── Protected customer routes ──────────────────────────── */}
       <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>

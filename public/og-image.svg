@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#18130f"/>
+
+  <!-- Outer border -->
+  <rect x="28" y="28" width="1144" height="574" fill="none" stroke="#c9a26a" stroke-width="0.6" opacity="0.35"/>
+
+  <!-- Inner border -->
+  <rect x="36" y="36" width="1128" height="558" fill="none" stroke="#c9a26a" stroke-width="0.3" opacity="0.2"/>
+
+  <!-- Decorative top line -->
+  <line x1="440" y1="192" x2="760" y2="192" stroke="#c9a26a" stroke-width="0.6" opacity="0.5"/>
+
+  <!-- Brand name -->
+  <text
+    x="600"
+    y="330"
+    text-anchor="middle"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="110"
+    font-weight="300"
+    fill="#F9F5F0"
+    letter-spacing="28"
+  >LACQUA</text>
+
+  <!-- Decorative middle line -->
+  <line x1="440" y1="368" x2="760" y2="368" stroke="#c9a26a" stroke-width="0.6" opacity="0.5"/>
+
+  <!-- Tagline -->
+  <text
+    x="600"
+    y="425"
+    text-anchor="middle"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="22"
+    font-weight="300"
+    fill="#c9a26a"
+    letter-spacing="10"
+  >PERFUMARIA PREMIUM</text>
+
+  <!-- Subtitle -->
+  <text
+    x="600"
+    y="472"
+    text-anchor="middle"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="14"
+    fill="#F9F5F0"
+    opacity="0.45"
+    letter-spacing="5"
+  >FRAGRÂNCIAS ORIGINAIS · BELO HORIZONTE</text>
+
+  <!-- Bottom decorative dot cluster -->
+  <circle cx="576" cy="516" r="1.5" fill="#c9a26a" opacity="0.4"/>
+  <circle cx="596" cy="516" r="1.5" fill="#c9a26a" opacity="0.6"/>
+  <circle cx="616" cy="516" r="1.5" fill="#c9a26a" opacity="0.4"/>
+
+  <!-- Corner ornaments -->
+  <path d="M60 60 L90 60" stroke="#c9a26a" stroke-width="0.8" opacity="0.5"/>
+  <path d="M60 60 L60 90" stroke="#c9a26a" stroke-width="0.8" opacity="0.5"/>
+  <path d="M1140 60 L1110 60" stroke="#c9a26a" stroke-width="0.8" opacity="0.5"/>
+  <path d="M1140 60 L1140 90" stroke="#c9a26a" stroke-width="0.8" opacity="0.5"/>
+  <path d="M60 570 L90 570" stroke="#c9a26a" stroke-width="0.8" opacity="0.5"/>
+  <path d="M60 570 L60 540" stroke="#c9a26a" stroke-width="0.8" opacity="0.5"/>
+  <path d="M1140 570 L1110 570" stroke="#c9a26a" stroke-width="0.8" opacity="0.5"/>
+  <path d="M1140 570 L1140 540" stroke="#c9a26a" stroke-width="0.8" opacity="0.5"/>
+</svg>

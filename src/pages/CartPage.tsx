@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
+import { useLoginModal } from '../context/LoginModalContext'
 import { Button, EmptyState } from '../components/ui'
 import { formatCurrency, getProductFinalPrice } from '../utils'
 import { getProductPrimaryImage } from '../utils/productImages'
@@ -80,11 +81,15 @@ function CartItem({ item }: { item: any }) {
 export function CartPage() {
   const { items, subtotal, clearCart } = useCart()
   const { isAuthenticated } = useAuth()
+  const { openLoginModal } = useLoginModal()
   const navigate = useNavigate()
   const [confirmingClear, setConfirmingClear] = useState(false)
 
   const handleCheckout = () => {
-    if (!isAuthenticated) { navigate('/login?redirect=/checkout'); return }
+    if (!isAuthenticated) {
+      openLoginModal({ onSuccess: () => navigate('/checkout') })
+      return
+    }
     navigate('/checkout')
   }
 
