@@ -1,12 +1,13 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ordersApi, paymentsApi } from '../api/index'
 import { useToast } from '../context/ToastContext'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { Button, Spinner, ErrorMessage } from '../components/ui'
+import { PaymentBrandBadges, PaymentIconsCheckout, detectCardBrand } from '../components/ui/PaymentMethodIcons'
 import { formatCurrency, generateIdempotencyKey } from '../utils'
-import type { Order, Payment, ApiError } from '../types'
+import type { Order, Payment, InstallmentOption, ApiError } from '../types'
 
 const PAYMENT_METHODS = [
   { id: 'pix', label: 'PIX', sub: 'Aprovação instantânea', icon: '⚡' },
@@ -116,6 +117,12 @@ export function PaymentPage() {
     cpf: '',
   })
 
+  // Installment state
+  const [installments, setInstallments] = useState(1)
+  const [installmentOptions, setInstallmentOptions] = useState<InstallmentOption[]>([])
+  const [loadingInstallments, setLoadingInstallments] = useState(false)
+  const lastInstallmentFetchRef = useRef<string>('')
+
   useEffect(() => {
     if (!orderId) return
     ordersApi.getById(orderId)
@@ -123,6 +130,70 @@ export function PaymentPage() {
       .catch(() => navigate('/account/orders'))
       .finally(() => setLoading(false))
   }, [orderId])
+
+  // Derive card brand and BIN from card number for installment lookup
+  const cardBrand = detectCardBrand(cardForm.cardNumber)
+  const cardBin = cardForm.cardNumber.replace(/\D/g, '').slice(0, 6)
+
+  const mpBrandMap: Record<string, string> = {
+    visa: 'visa',
+    mastercard: 'master',
+    amex: 'amex',
+    elo: 'elo',
+    hipercard: 'hipercard',
+  }
+
+  const fetchInstallmentOptions = useCallback(async (paymentMethodId: string, amount: number, bin: string) => {
+    const fetchKey = `${paymentMethodId}:${amount}:${bin}`
+    if (lastInstallmentFetchRef.current === fetchKey) return
+    lastInstallmentFetchRef.current = fetchKey
+
+    setLoadingInstallments(true)
+    try {
+      const res = await paymentsApi.getInstallmentOptions({ paymentMethodId, amount, bin })
+      setInstallmentOptions(res.installmentOptions)
+      // Reset to 1x whenever new options are fetched
+      setInstallments(1)
+    } catch {
+      setInstallmentOptions([])
+    } finally {
+      setLoadingInstallments(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (method !== 'credit_card' || !order) return
+    if (cardBin.length < 6) {
+      // Don't fetch yet; clear any stale options
+      if (installmentOptions.length > 0) {
+        setInstallmentOptions([])
+        lastInstallmentFetchRef.current = ''
+      }
+      return
+    }
+
+    const mpMethod = mpBrandMap[cardBrand || ''] || cardBrand || 'master'
+    fetchInstallmentOptions(mpMethod, order.total, cardBin)
+  }, [method, cardBin, cardBrand, order, fetchInstallmentOptions]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Also trigger a fresh fetch when user switches to credit_card before typing a full BIN
+  useEffect(() => {
+    if (method !== 'credit_card' || !order || cardBin.length >= 6) return
+    // If we have no BIN, fetch default options using a placeholder brand so user sees installment UI
+    const mpMethod = mpBrandMap[cardBrand || ''] || 'master'
+    const fetchKey = `${mpMethod}:${order.total}:`
+    if (lastInstallmentFetchRef.current === fetchKey) return
+    lastInstallmentFetchRef.current = fetchKey
+
+    setLoadingInstallments(true)
+    paymentsApi.getInstallmentOptions({ paymentMethodId: mpMethod, amount: order.total })
+      .then(res => {
+        setInstallmentOptions(res.installmentOptions)
+        setInstallments(1)
+      })
+      .catch(() => setInstallmentOptions([]))
+      .finally(() => setLoadingInstallments(false))
+  }, [method, order]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const shouldReuseKeyForRetry = (apiError: ApiError): boolean => {
     if (apiError.statusCode) return false
@@ -219,7 +290,7 @@ export function PaymentPage() {
         const [month, yearRaw] = cardForm.expiryDate.split('/')
         const year = yearRaw?.length === 2 ? `20${yearRaw}` : yearRaw
 
-        // Generate token via Mercado Pago SDK / API Call directly from frontend
+        // Generate token via Mercado Pago API directly from frontend
         // Note: For production use VITE_MP_PUBLIC_KEY in .env file
         const mpPublicKey = (import.meta as unknown as { env: { VITE_MP_PUBLIC_KEY?: string } }).env.VITE_MP_PUBLIC_KEY || 'TEST-00000000-0000-0000-0000-000000000000'
 
@@ -248,11 +319,16 @@ export function PaymentPage() {
         cardTokenStr = mpData.id
       }
 
+      const mpMethod = method === 'credit_card'
+        ? (mpBrandMap[cardBrand || ''] || 'master')
+        : method
+
       const res = await paymentsApi.create({
         orderId,
-        paymentMethodId: method === 'credit_card' ? 'master' : method,
+        paymentMethodId: mpMethod,
         idempotencyKey,
-        ...(cardTokenStr ? { cardToken: cardTokenStr } : {})
+        ...(cardTokenStr ? { cardToken: cardTokenStr } : {}),
+        ...(method === 'credit_card' ? { installments } : {}),
       })
       const createdPayment = res.payment ?? await recoverPaymentFromOrder(orderId)
       if (!createdPayment) {
@@ -293,10 +369,12 @@ export function PaymentPage() {
       const apiError = err as ApiError
 
       if (apiError.statusCode === 409) {
-        setError('Pagamento já está em processamento. Aguarde alguns segundos e tente novamente.')
-        toast('Já existe uma tentativa de pagamento em processamento.', 'info')
+        toast('Já existe um pagamento ativo para este pedido. Recuperando...', 'info')
 
-        await recoverPaymentFromOrder(orderId)
+        const recovered = await recoverPaymentFromOrder(orderId)
+        if (!recovered) {
+          setError('Já existe um pagamento ativo para este pedido.')
+        }
       } else if (apiError.statusCode === 401) {
         // 401 aqui pode ser erro do provedor (Mercado Pago) e não necessariamente
         // sessão expirada. O httpClient já cuida de deslogar quando o refresh falha.
@@ -434,7 +512,11 @@ export function PaymentPage() {
                       <span className="text-2xl">{m.icon}</span>
                       <div>
                         <p className="text-sm font-medium text-noir-950">{m.label}</p>
-                        <p className="text-xs text-nude-500">{m.sub}</p>
+                        {m.id === 'credit_card' ? (
+                          <PaymentBrandBadges />
+                        ) : (
+                          <p className="text-xs text-nude-500">{m.sub}</p>
+                        )}
                       </div>
                     </label>
                   ))}
@@ -442,66 +524,139 @@ export function PaymentPage() {
 
                 {/* Credit Card Form Fields */}
                 {method === 'credit_card' && (
-                  <div className="bg-nude-50 border border-nude-200 rounded-2xl p-5 mb-7 space-y-4 shadow-inner">
-                    <h3 className="font-display text-sm text-noir-950 mb-4 border-b border-nude-200 pb-2">Detalhes do Cartão</h3>
+                  <>
+                    <div className="bg-nude-50 border border-nude-200 rounded-2xl p-5 mb-4 space-y-4 shadow-inner">
+                      <h3 className="font-display text-sm text-noir-950 mb-4 border-b border-nude-200 pb-2">Detalhes do Cartão</h3>
 
-                    <div>
-                      <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">Número do Cartão</label>
-                      <input
-                        type="text"
-                        placeholder="0000 0000 0000 0000"
-                        className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white"
-                        value={cardForm.cardNumber}
-                        onChange={(e) => setCardForm({ ...cardForm, cardNumber: e.target.value })}
-                      />
+                      <div>
+                        <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">Número do Cartão</label>
+                        <input
+                          type="text"
+                          placeholder="0000 0000 0000 0000"
+                          className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white"
+                          value={cardForm.cardNumber}
+                          onChange={(e) => setCardForm({ ...cardForm, cardNumber: e.target.value })}
+                        />
+                        <div className="mt-2">
+                          <PaymentIconsCheckout detectedBrand={detectCardBrand(cardForm.cardNumber)} />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">Nome no Cartão</label>
+                          <input
+                            type="text"
+                            placeholder="NOME IGUAL AO CARTÃO"
+                            className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white uppercase"
+                            value={cardForm.cardholderName}
+                            onChange={(e) => setCardForm({ ...cardForm, cardholderName: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">CPF do Titular</label>
+                          <input
+                            type="text"
+                            placeholder="000.000.000-00"
+                            className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white"
+                            value={cardForm.cpf}
+                            onChange={(e) => setCardForm({ ...cardForm, cpf: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">Validade</label>
+                          <input
+                            type="text"
+                            placeholder="MM/AA"
+                            className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white"
+                            value={cardForm.expiryDate}
+                            onChange={(e) => setCardForm({ ...cardForm, expiryDate: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">CVV</label>
+                          <input
+                            type="text"
+                            placeholder="123"
+                            className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white"
+                            value={cardForm.securityCode}
+                            onChange={(e) => setCardForm({ ...cardForm, securityCode: e.target.value })}
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">Nome no Cartão</label>
-                        <input
-                          type="text"
-                          placeholder="NOME IGUAL AO CARTÃO"
-                          className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white uppercase"
-                          value={cardForm.cardholderName}
-                          onChange={(e) => setCardForm({ ...cardForm, cardholderName: e.target.value })}
-                        />
+                    {/* Installment selector */}
+                    <div className="bg-nude-50 border border-nude-200 rounded-2xl p-5 mb-7 shadow-inner">
+                      <div className="flex items-center justify-between mb-3 border-b border-nude-200 pb-2">
+                        <h3 className="font-display text-sm text-noir-950">Parcelas</h3>
+                        {loadingInstallments && (
+                          <span className="text-2xs text-nude-500 flex items-center gap-1">
+                            <Spinner size="sm" /> Calculando...
+                          </span>
+                        )}
                       </div>
-                      <div>
-                        <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">CPF do Titular</label>
-                        <input
-                          type="text"
-                          placeholder="000.000.000-00"
-                          className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white"
-                          value={cardForm.cpf}
-                          onChange={(e) => setCardForm({ ...cardForm, cpf: e.target.value })}
-                        />
-                      </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">Validade</label>
-                        <input
-                          type="text"
-                          placeholder="MM/AA"
-                          className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white"
-                          value={cardForm.expiryDate}
-                          onChange={(e) => setCardForm({ ...cardForm, expiryDate: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-2xs uppercase tracking-widest text-nude-500 mb-1.5 font-medium">CVV</label>
-                        <input
-                          type="text"
-                          placeholder="123"
-                          className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white"
-                          value={cardForm.securityCode}
-                          onChange={(e) => setCardForm({ ...cardForm, securityCode: e.target.value })}
-                        />
-                      </div>
+                      {installmentOptions.length > 0 ? (
+                        <div className="space-y-2">
+                          {installmentOptions.map((opt) => {
+                            const selected = installments === opt.installments
+                            return (
+                              <label
+                                key={opt.installments}
+                                className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all duration-150 ${
+                                  selected
+                                    ? 'border-gold-500/60 bg-gold-500/5'
+                                    : 'border-nude-200 hover:border-nude-300 bg-white'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    type="radio"
+                                    name="installments"
+                                    value={opt.installments}
+                                    checked={selected}
+                                    onChange={() => setInstallments(opt.installments)}
+                                    disabled={creating}
+                                    className="accent-gold-500"
+                                  />
+                                  <span className="text-sm text-noir-950 font-medium">
+                                    {opt.installments === 1 ? (
+                                      <>À vista — {formatCurrency(opt.installmentAmount)}</>
+                                    ) : (
+                                      <>{opt.installments}x de {formatCurrency(opt.installmentAmount)}</>
+                                    )}
+                                  </span>
+                                </div>
+                                <div className="text-right">
+                                  {opt.hasInterest ? (
+                                    <span className="text-2xs text-nude-500">
+                                      total {formatCurrency(opt.totalAmount)}
+                                    </span>
+                                  ) : (
+                                    <span className="text-2xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                                      sem juros
+                                    </span>
+                                  )}
+                                </div>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      ) : loadingInstallments ? (
+                        <div className="py-4 flex justify-center">
+                          <Spinner size="sm" />
+                        </div>
+                      ) : (
+                        <p className="text-xs text-nude-500 py-2">
+                          Insira o número do cartão para ver as opções de parcelamento.
+                        </p>
+                      )}
                     </div>
-                  </div>
+                  </>
                 )}
 
                 {error && <div className="mb-5"><ErrorMessage message={error} /></div>}

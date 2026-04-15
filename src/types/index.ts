@@ -252,6 +252,15 @@ export type PaymentStatus =
   | 'refunded'
   | 'chargeback'
 
+export interface InstallmentOption {
+  installments: number
+  installmentRate: number
+  installmentAmount: number
+  totalAmount: number
+  hasInterest: boolean
+  label: string
+}
+
 export interface Payment {
   id: string
   orderId: string
@@ -260,6 +269,8 @@ export interface Payment {
   amount: number
   currency: string
   status: PaymentStatus
+  installments: number
+  installmentAmount: number | null
   createdAt: string
   updatedAt: string
   qr_code?: string | null

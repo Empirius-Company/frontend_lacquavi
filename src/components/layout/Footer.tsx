@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { PaymentIconsBar } from '../ui/PaymentMethodIcons'
 
 export function Footer() {
   return (
@@ -110,6 +111,18 @@ export function Footer() {
             <p className="text-xs text-gray-500">Seg. a Sex. das 8h às 22h<br />Sáb. das 9h às 14h</p>
           </div>
 
+        </div>
+      </div>
+
+      {/* Payment methods strip */}
+      <div className="border-t border-gray-100">
+        <div className="container-page py-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <span className="text-xs text-gray-400 uppercase tracking-widest font-medium whitespace-nowrap flex-shrink-0">
+              Formas de pagamento
+            </span>
+            <PaymentIconsBar />
+          </div>
         </div>
       </div>
 

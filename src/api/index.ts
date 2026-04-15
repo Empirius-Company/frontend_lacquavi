@@ -3,6 +3,7 @@ import type {
   Order,
   OrderStatus,
   Payment,
+  InstallmentOption,
   Coupon,
   CouponValidation,
   HealthStatus,
@@ -53,6 +54,7 @@ interface CreatePaymentInput {
   orderId: string
   paymentMethodId: string
   cardToken?: string
+  installments?: number
   idempotencyKey: string
 }
 interface PaymentResponse {
@@ -69,12 +71,34 @@ interface RefundResponse {
   replayed?: boolean
   correlationId?: string
 }
+interface InstallmentOptionsResponse {
+  installmentOptions: InstallmentOption[]
+  correlationId?: string
+}
 
 export const paymentsApi = {
-  create: ({ orderId, paymentMethodId, cardToken, idempotencyKey }: CreatePaymentInput): Promise<PaymentResponse> =>
+  getInstallmentOptions: (params: {
+    paymentMethodId: string
+    amount: number
+    bin?: string
+  }): Promise<InstallmentOptionsResponse> => {
+    const qs = new URLSearchParams({
+      paymentMethodId: params.paymentMethodId,
+      amount: String(params.amount),
+      ...(params.bin ? { bin: params.bin } : {}),
+    })
+    return httpClient.get<InstallmentOptionsResponse>(`/api/payments/installments?${qs}`)
+  },
+
+  create: ({ orderId, paymentMethodId, cardToken, installments, idempotencyKey }: CreatePaymentInput): Promise<PaymentResponse> =>
     httpClient.post<PaymentResponse>(
       '/api/payments',
-      { orderId, paymentMethodId, ...(cardToken ? { cardToken } : {}) },
+      {
+        orderId,
+        paymentMethodId,
+        ...(cardToken ? { cardToken } : {}),
+        ...(installments ? { installments } : {}),
+      },
       { headers: { 'Idempotency-Key': idempotencyKey } }
     ),
 
