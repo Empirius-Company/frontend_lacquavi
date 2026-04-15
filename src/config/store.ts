@@ -54,7 +54,7 @@ export const STORES: Store[] = [
     name: "L'acqua di Fiori",
     locationName: 'Belo Horizonte',
     street: 'Minas Shopping',
-    complement: 'Piso 2, Loja 110',
+    complement: 'Piso 1, Loja 610',
     city: 'Belo Horizonte',
     state: 'MG',
     zip: '31160-551',

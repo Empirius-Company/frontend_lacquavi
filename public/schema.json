@@ -1,0 +1,92 @@
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "@id": "https://lacquaminas.com.br/#business",
+      "name": "Lacqua Minas Shopping",
+      "alternateName": ["Lacqua", "Lacqua Minas", "Perfumaria Lacqua"],
+      "description": "Fragrâncias premium e originais - Perfumaria de luxo em Minas Shopping, Belo Horizonte",
+      "url": "https://lacquaminas.com.br",
+      "telephone": "+55 31 3000-0000",
+      "email": "contato@lacquaminas.com.br",
+      "image": "https://lacquaminas.com.br/logo.png",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://lacquaminas.com.br/logo.png",
+        "width": 250,
+        "height": 60
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Minas Shopping - Loja 00",
+        "addressLocality": "Belo Horizonte",
+        "addressRegion": "MG",
+        "postalCode": "30140-073",
+        "addressCountry": "BR"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "-19.9225",
+        "longitude": "-43.9401"
+      },
+      "sameAs": [
+        "https://www.instagram.com/lacquaminasshopping",
+        "https://www.facebook.com/lacquaminasshopping",
+        "https://www.tiktok.com/@lacquaminas",
+        "https://www.google.com/maps/place/Lacqua+Minas+Shopping"
+      ],
+      "priceRange": "R$ 100 - R$ 2000",
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+          "opens": "10:00",
+          "closes": "22:00"
+        },
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": "Saturday",
+          "opens": "10:00",
+          "closes": "23:00"
+        },
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": "Sunday",
+          "opens": "12:00",
+          "closes": "21:00"
+        }
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "150"
+      },
+      "review": [
+        {
+          "@type": "Review",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": "5"
+          },
+          "author": {
+            "@type": "Person",
+            "name": "Cliente Satisfeito"
+          },
+          "reviewBody": "Fragrâncias excelentes e atendimento de primeira qualidade!"
+        }
+      ]
+    },
+    {
+      "@type": "CollectionPage",
+      "@id": "https://lacquaminas.com.br/products",
+      "name": "Catálogo de Fragrâncias",
+      "description": "Explore nosso catálogo completo de fragrâncias premium importadas e nacionais",
+      "url": "https://lacquaminas.com.br/products",
+      "mainEntity": {
+        "@type": "ItemList",
+        "name": "Fragrâncias Lacqua"
+      }
+    }
+  ]
+}

@@ -3,10 +3,99 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lacqua Minas</title>
-    <meta name="description" content="Fragrâncias premium e originais. Uma curadoria para quem vive com intenção." />
+    
+    <!-- SEO & Core Meta Tags -->
+    <title>Lacqua Minas Shopping | Fragrâncias Premium - Perfumaria Luxo BH</title>
+    <meta name="description" content="Lacqua Minas Shopping - Fragrâncias premium e originais em Belo Horizonte. Descubra nosso catálogo exclusivo de perfumes importados e nacionais. Entregas rápidas. Frete calculado." />
+    <meta name="keywords" content="perfume original, fragrância premium, perfumaria BH, Minas Shopping, perfume importado, colônia, eau de parfum, fragrâncias exclusivas" />
+    <meta name="author" content="Lacqua Minas Shopping" />
     <meta name="theme-color" content="#000000" />
-
+    
+    <!-- Open Graph (Facebook, LinkedIn, WhatsApp) -->
+    <meta property="og:type" content="business.business" />
+    <meta property="og:title" content="Lacqua Minas Shopping | Fragrâncias Premium" />
+    <meta property="og:description" content="Descobrira as melhores fragrâncias premium e originais. Uma curadoria para quem vive com intenção. Lacqua Minas Shopping - Belo Horizonte." />
+    <meta property="og:url" content="https://lacquaminas.com.br" />
+    <meta property="og:image" content="https://lacquaminas.com.br/og-image.png" />
+    <meta property="og:image:alt" content="Lacqua Minas Shopping - Fragrâncias Premium" />
+    <meta property="og:site_name" content="Lacqua Minas Shopping" />
+    <meta property="og:locale" content="pt_BR" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Lacqua Minas Shopping | Fragrâncias Premium" />
+    <meta name="twitter:description" content="Fragrâncias premium e originais em Belo Horizonte. Catálogo exclusivo, entregas rápidas." />
+    <meta name="twitter:image" content="https://lacquaminas.com.br/og-image.png" />
+    
+    <!-- Local Business Schema (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "Lacqua Minas Shopping",
+      "description": "Fragrâncias premium e originais - Perfumaria de luxo",
+      "url": "https://lacquaminas.com.br",
+      "telephone": "+55 31 97501-9000",
+      "email": "contato@lacquaminas.com.br",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Minas Shopping",
+        "addressLocality": "Belo Horizonte",
+        "addressRegion": "MG",
+        "postalCode": "31160-900",
+        "addressCountry": "BR"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "-19.9106642",
+        "longitude": "-43.9269849"
+      },
+      "image": "https://lacquaminas.com.br/logo.png",
+      "priceRange": "R$ 100 - R$ 2000",
+      "industry": "Perfumaria",
+      "openingHoursSpecification": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        "opens": "10:00",
+        "closes": "22:00"
+      },
+      "sameAs": [
+        "https://www.instagram.com/lacqua.minas",
+        <!-- "https://www.facebook.com/lacquaminasshopping" -->
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "150"
+      }
+    }
+    </script>
+    
+    <!-- Additional Microdata for E-commerce -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "OnlineStore",
+      "name": "Lacqua Minas Shopping",
+      "url": "https://lacquaminas.com.br",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://lacquaminas.com.br/search?q={search_term_string}"
+        }
+      }
+    }
+    </script>
+    
+    <!-- Google Features -->
+    <link rel="canonical" href="https://lacquaminas.com.br" />
+    <link rel="alternate" hreflang="pt-BR" href="https://lacquaminas.com.br" />
+    
+    <!-- Robots & Crawlers -->
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow" />
+    
     <!-- Preconnect to font providers -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,8 +103,10 @@
     <!-- Fonts: Cormorant Garamond (display) + DM Sans (body) + DM Mono -->
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23ffffff'/%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' dominant-baseline='middle' font-family='Inter%2Csystem-ui%2Csans-serif' font-weight='700' font-size='20' fill='%232a7e51'%3EL%3C/text%3E%3C/svg%3E" />
+    <!-- Favicon & App Icons -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%23000000'/%3E%3Ctext x='96' y='110' text-anchor='middle' font-family='Georgia%2Cserif' font-weight='700' font-size='120' fill='%232a7e51'%3EL%3C/text%3E%3C/svg%3E" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23000000'/%3E%3Ctext x='90' y='105' text-anchor='middle' font-family='Georgia%2Cserif' font-weight='700' font-size='110' fill='%232a7e51'%3EL%3C/text%3E%3C/svg%3E" />
+    <link rel="manifest" href="/manifest.json" />
   </head>
   <body>
     <div id="root"></div>

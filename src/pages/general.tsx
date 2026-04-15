@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from 'react'
-import { Link, useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom'
+import { Link, useParams, useSearchParams, useNavigate, useLocation, type Location } from 'react-router-dom'
 import { ordersApi, paymentsApi } from '../api/index'
 import { authApi } from '../api/authApi'
 import { useAuth } from '../context/AuthContext'
@@ -99,7 +99,7 @@ export function LoginPage() {
   const { login } = useAuth()
   const navigate  = useNavigate()
   const location  = useLocation()
-  const from = new URLSearchParams(location.search).get('redirect') ?? '/'
+  const from = (location.state as { from?: Location })?.from?.pathname ?? '/'
 
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')

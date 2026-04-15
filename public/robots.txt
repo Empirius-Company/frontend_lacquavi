@@ -1,0 +1,34 @@
+# Robots.txt - Lacqua Minas Shopping
+# https://www.robotstxt.org/robotstxt.html
+
+# Allow all bots
+User-agent: *
+Allow: /
+Allow: /api/
+Allow: /products/
+Allow: /categories/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /.env*
+Disallow: /private/
+Disallow: /temp/
+
+# Google Bot - more aggressive crawling
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Bing Bot
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Prevent scraping bots
+User-agent: MJ12bot
+User-agent: AhrefsBot
+User-agent: SemrushBot
+User-agent: DotBot
+Disallow: /
+
+# Sitemap Location
+Sitemap: https://lacquaminas.com.br/sitemap.xml

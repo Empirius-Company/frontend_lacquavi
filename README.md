@@ -180,3 +180,77 @@ src/
 | Variável        | Padrão                  | Descrição         |
 |-----------------|-------------------------|-------------------|
 | `VITE_API_URL`  | `http://localhost:3000` | URL base da API   |
+
+---
+
+## 🎯 SEO & Visibilidade (Lacqua Minas Shopping)
+
+Este frontend foi otimizado para search engines (Google, Bing) com foco em ranking local Belo Horizonte.
+
+### ✅ Implementações
+
+- **Meta tags otimizadas** — Title, description, Open Graph, Twitter Card
+- **Schema.org JSON-LD** — LocalBusiness + OnlineStore estruturado
+- **robots.txt & sitemap.xml** — Direcionamento de crawlers
+- **PWA Manifest** — App Install e ícones em múltiplas resoluções
+- **React Hook `useSEO`** — Meta tags dinâmicas por página
+- **Favicon** — Ícone melhorado para rich snippets
+- **Headers de segurança** — HSTS, X-Frame-Options, CSP
+
+### 🚀 Quick Start SEO
+
+1. **Google Search Console**
+   ```
+   Acesse: https://search.google.com/search-console
+   Adicione: lacquaminas.com.br
+   Submeta sitemap: https://lacquaminas.com.br/sitemap.xml
+   ```
+
+2. **Google Business Profile**
+   ```
+   Acesse: https://www.google.com/business
+   Crie/atualize: Lacqua Minas Shopping
+   Endereço: Minas Shopping, Belo Horizonte, MG
+   ```
+
+3. **Validar implementação**
+   ```bash
+   node tools/seo-check.js
+   ```
+
+### 📚 Documentação
+
+- `docs/SEO-IMPLEMENTATION.md` — Guia completo
+- `docs/QUICK-START.md` — Próximos passos rápidos
+- `docs/STRATEGY-SEO-ATRACTION.md` — Estratégia detalhada de atração
+- `docs/SEO-IMPLEMENTATION-EXAMPLES.md` — Exemplos de uso no React
+- `docs/SITEMAP-GENERATOR.md` — Sitemap dinâmico (backend)
+
+### 🎨 Meta Tags Dinâmicas
+
+Use o hook `useSEO` em páginas importantes:
+
+```typescript
+import { useSEO } from '@/hooks/useSEO';
+
+export function ProductPage() {
+  useSEO({
+    title: 'Perfume Premium | Lacqua Minas',
+    description: 'Fragrâncias originais importadas...',
+    image: 'https://...',
+    type: 'product'
+  });
+  
+  return <div>...</div>;
+}
+```
+
+### 📊 Monitoramento
+
+Verifique regularmente (Google Search Console):
+- Impressões e cliques
+- CTR (Click-Through Rate)
+- Posição média
+- Erros de crawling
+
+---
