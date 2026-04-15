@@ -58,9 +58,9 @@ export function useSEO({
     updateOrCreateMetaTag('twitter:creator', twitterHandle);
 
     // Canonical
-    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    let canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
     if (!canonicalLink) {
-      canonicalLink = document.createElement('link');
+      canonicalLink = document.createElement('link') as HTMLLinkElement;
       canonicalLink.rel = 'canonical';
       document.head.appendChild(canonicalLink);
     }
