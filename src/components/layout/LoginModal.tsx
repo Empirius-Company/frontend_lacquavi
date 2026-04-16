@@ -201,6 +201,14 @@ export function LoginModal() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, dismissLoginModal])
 
+  // Close on browser back/forward navigation
+  useEffect(() => {
+    if (!isOpen) return
+    const handlePopState = () => dismissLoginModal()
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [isOpen, dismissLoginModal])
+
   // Lock body scroll while open
   useEffect(() => {
     if (isOpen) {

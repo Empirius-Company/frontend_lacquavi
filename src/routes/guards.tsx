@@ -13,7 +13,8 @@ export function ProtectedRoute({ children }: GuardProps) {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      openLoginModal({ onDismiss: () => navigate(-1) })
+      navigate(-1)
+      openLoginModal({})
     }
   }, [isAuthenticated, isLoading, openLoginModal, navigate])
 
@@ -25,7 +26,9 @@ export function ProtectedRoute({ children }: GuardProps) {
     )
   }
 
-  if (!isAuthenticated) return null
+  if (!isAuthenticated) return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+  )
 
   return <>{children}</>
 }
@@ -37,7 +40,8 @@ export function AdminRoute({ children }: GuardProps) {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      openLoginModal({ onDismiss: () => navigate(-1) })
+      navigate(-1)
+      openLoginModal({})
     }
   }, [isAuthenticated, isLoading, openLoginModal, navigate])
 
@@ -49,7 +53,9 @@ export function AdminRoute({ children }: GuardProps) {
     )
   }
 
-  if (!isAuthenticated) return null
+  if (!isAuthenticated) return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+  )
 
   if (!isAdmin) {
     return <Navigate to="/" replace />

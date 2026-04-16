@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { ordersApi, couponsApi, shippingApi } from '../api/index'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
-import { Button, ErrorMessage } from '../components/ui'
+import { Button } from '../components/ui'
 import { formatCurrency, generateIdempotencyKey, getProductFinalPrice } from '../utils'
 import { getProductPrimaryImage } from '../utils/productImages'
 import type { CouponValidation, ApiError, Order, ShippingDestination, ShippingQuote } from '../types'
@@ -162,6 +162,7 @@ export function CheckoutPage() {
   const [shippingDiscountCents, setShippingDiscountCents] = useState(0)
 
   const orderIdempotencyKeyRef = useRef(generateIdempotencyKey())
+  const shippingRef = useRef<HTMLDivElement>(null)
 
   const cartSignature = useMemo(() => {
     const compact = items
@@ -414,11 +415,16 @@ export function CheckoutPage() {
     }
   }
 
+  const scrollToShipping = useCallback(() => {
+    shippingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [])
+
   const handleSubmit = async () => {
     if (items.length === 0) return
     const draftOrder = orderDraft ?? await ensureOrderDraft()
     if (shippingRequired && (!shippingConfirmed || !selectedQuoteId)) {
-      setError('Calcule e confirme o frete antes de seguir para o pagamento.')
+      setError('Selecione uma opção de frete para continuar.')
+      scrollToShipping()
       return
     }
     setSubmitting(true)
@@ -439,21 +445,26 @@ export function CheckoutPage() {
     }
   }
 
+  const hasShippingError = Boolean(error || shippingError)
+  const isPickupMode = shippingQuotes.length > 0 && shippingQuotes.every(q => q.provider === 'STORE_PICKUP')
+  const isPickupConfirmed = shippingConfirmed && shippingQuotes.some(q => q.quoteId === selectedQuoteId && q.provider === 'STORE_PICKUP')
+
   return (
-    <div className="min-h-screen bg-white pt-6 pb-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 mt-2">
+    <div className="min-h-screen bg-white pt-6 pb-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 mt-2">
         <StepBar current={2} />
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-          {/* Left — items + coupon */}
-          <div className="lg:col-span-7 space-y-5">
+          {/* Left — itens do pedido + frete */}
+          <div className="lg:col-span-7 space-y-4">
 
-            {/* Items */}
+            {/* Itens */}
             <div className="bg-pearl rounded-3xl border border-nude-100 overflow-hidden shadow-card-light">
-              <div className="px-6 py-4 border-b border-nude-50">
+              <div className="px-6 py-4 border-b border-nude-50 flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-[#2a7e51] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">1</span>
                 <h2 className="font-display text-lg text-noir-950">Seu Pedido</h2>
               </div>
               <div className="divide-y divide-nude-50">
@@ -488,78 +499,56 @@ export function CheckoutPage() {
               </div>
             </div>
 
-            {/* Coupon */}
-            <div className="bg-pearl rounded-2xl border border-nude-100 p-5 shadow-sm">
-              {!showCouponInput && !coupon ? (
-                <button
-                  onClick={() => setShowCouponInput(true)}
-                  className="text-sm font-medium text-[#D4AF37] hover:text-[#C5A028] transition-colors flex items-center gap-2 w-full text-left"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-                  Tem um cupom de desconto?
-                </button>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-display text-base text-noir-950">Cupom de Desconto</h3>
-                    {!coupon && (
-                      <button onClick={() => setShowCouponInput(false)} className="text-xs text-nude-500 hover:text-noir-950">Cancelar</button>
-                    )}
-                  </div>
-                  {coupon ? (
-                    <div className="flex items-center justify-between p-4 bg-green-50 rounded-2xl border border-green-200">
-                      <div>
-                        <p className="text-sm font-medium text-green-800 font-mono">{coupon.coupon.code}</p>
-                        <p className="text-xs text-green-700 mt-0.5">Desconto: {formatCurrency(coupon.discount)}</p>
-                      </div>
-                      <button
-                        onClick={() => { setCoupon(null); setCouponCode(''); toast('Cupom removido.', 'info') }}
-                        className="text-xs text-green-700 hover:text-red-600 transition-colors"
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        id="coupon-code-input"
-                        value={couponCode}
-                        onChange={e => {
-                          setCouponCode(e.target.value.toUpperCase())
-                          // Limpa erro com delay para o usuário ter tempo de ler
-                          if (couponErrorTimerRef.current) clearTimeout(couponErrorTimerRef.current)
-                          couponErrorTimerRef.current = setTimeout(() => setCouponError(''), 2000)
-                        }}
-                        onKeyDown={e => e.key === 'Enter' && validateCoupon()}
-                        placeholder="CÓDIGO DO CUPOM"
-                        className="input-luxury font-mono uppercase text-sm flex-1 tracking-wider"
-                        aria-describedby={couponError ? 'coupon-error' : undefined}
-                      />
-                      <Button variant="outline" onClick={validateCoupon} loading={validating} className="flex-shrink-0">
-                        Aplicar
-                      </Button>
-                    </div>
-                  )}
-                  {couponError && <p id="coupon-error" role="alert" className="text-xs text-red-500 mt-2">{couponError}</p>}
-                </>
-              )}
-            </div>
-
-            {/* Shipping */}
-            {shippingRequired && (() => {
-              const isPickupMode = shippingQuotes.length > 0 && shippingQuotes.every(q => q.provider === 'STORE_PICKUP')
-              return (
-              <div className="bg-pearl rounded-2xl border border-nude-100 p-5 shadow-sm space-y-4">
+            {/* Entrega */}
+            {shippingRequired && (
+              <div
+                ref={shippingRef}
+                className={`bg-pearl rounded-2xl border p-5 shadow-sm space-y-4 transition-colors ${
+                  hasShippingError
+                    ? 'border-red-300 shadow-[0_0_0_3px_rgba(239,68,68,0.1)]'
+                    : shippingConfirmed
+                    ? 'border-green-200'
+                    : 'border-nude-100'
+                }`}
+              >
+                {/* Cabeçalho com status */}
                 <div className="flex items-center justify-between">
-                  <h3 className="font-display text-base text-noir-950">Entrega</h3>
-                  {!isPickupMode && <span className="text-xs text-nude-500">Frete via SEDEX</span>}
+                  <div className="flex items-center gap-3">
+                    <span className={`w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center flex-shrink-0 ${
+                      shippingConfirmed ? 'bg-[#2a7e51]' : hasShippingError ? 'bg-red-500' : 'bg-nude-300'
+                    }`}>
+                      {shippingConfirmed ? '✓' : '2'}
+                    </span>
+                    <h3 className="font-display text-base text-noir-950">Entrega</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {shippingConfirmed && (
+                      <span className="text-xs text-green-700 font-medium bg-green-50 border border-green-200 rounded-full px-2 py-0.5">Confirmado</span>
+                    )}
+                    {!isPickupMode && <span className="text-xs text-nude-500">Frete via SEDEX</span>}
+                  </div>
                 </div>
 
-                {/* Address form — shown only when not in pickup mode or before quotes are loaded */}
+                {/* Erro de validação (frete não selecionado ao tentar avançar) */}
+                {error && (
+                  <div role="alert" className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+                    <svg className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <p className="text-sm text-red-700 font-medium">{error}</p>
+                  </div>
+                )}
+
+                {/* Erro do processo de frete */}
+                {shippingError && (
+                  <div role="alert" className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+                    <svg className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <p className="text-sm text-amber-800">{shippingError}</p>
+                  </div>
+                )}
+
+                {/* Formulário de endereço — ocultado no modo retirada */}
                 {!isPickupMode && (
                   <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       <div className="flex flex-col gap-1">
                         <label htmlFor="dest-zip" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">CEP</label>
                         <input
@@ -579,6 +568,17 @@ export function CheckoutPage() {
                         />
                       </div>
                       <div className="flex flex-col gap-1">
+                        <label htmlFor="dest-number" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">Número</label>
+                        <input
+                          id="dest-number"
+                          type="text"
+                          value={destination.number}
+                          onChange={e => handleDestinationChange('number', e.target.value)}
+                          placeholder="123"
+                          className="input-luxury text-sm"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
                         <label htmlFor="dest-state" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">UF</label>
                         <input
                           id="dest-state"
@@ -590,7 +590,7 @@ export function CheckoutPage() {
                           className="input-luxury text-sm"
                         />
                       </div>
-                      <div className="flex flex-col gap-1 sm:col-span-2">
+                      <div className="flex flex-col gap-1 col-span-2 sm:col-span-3">
                         <label htmlFor="dest-street" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">Rua / Logradouro</label>
                         <input
                           id="dest-street"
@@ -598,17 +598,6 @@ export function CheckoutPage() {
                           value={destination.street}
                           onChange={e => handleDestinationChange('street', e.target.value)}
                           placeholder="Rua das Flores"
-                          className="input-luxury text-sm"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label htmlFor="dest-number" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">Número</label>
-                        <input
-                          id="dest-number"
-                          type="text"
-                          value={destination.number}
-                          onChange={e => handleDestinationChange('number', e.target.value)}
-                          placeholder="123"
                           className="input-luxury text-sm"
                         />
                       </div>
@@ -653,21 +642,18 @@ export function CheckoutPage() {
                       <p className="text-xs text-nude-500">Buscando endereço pelo CEP...</p>
                     )}
 
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={handleQuoteShipping} loading={shippingLoading} fullWidth>
-                        Calcular frete
-                      </Button>
-                    </div>
+                    <Button variant="outline" onClick={handleQuoteShipping} loading={shippingLoading} fullWidth>
+                      Calcular frete
+                    </Button>
                   </>
                 )}
 
-                {/* Pickup mode — no delivery address needed */}
+                {/* Modo retirada */}
                 {isPickupMode && (
                   <div className="space-y-3">
                     <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
                       SEDEX não disponível para este CEP. Selecione um ponto de retirada:
                     </div>
-
                     <div className="space-y-2">
                       {shippingQuotes.map(quote => {
                         const checked = selectedQuoteId === quote.quoteId
@@ -676,9 +662,7 @@ export function CheckoutPage() {
                           <label
                             key={quote.quoteId}
                             className={`flex items-center justify-between rounded-xl border px-3 py-3 cursor-pointer transition-colors ${
-                              checked
-                                ? 'border-[#2a7e51] bg-[#2a7e51]/5'
-                                : 'border-nude-200 hover:border-nude-300'
+                              checked ? 'border-[#2a7e51] bg-[#2a7e51]/5' : 'border-nude-200 hover:border-nude-300'
                             }`}
                           >
                             <div className="flex items-start gap-2">
@@ -692,6 +676,7 @@ export function CheckoutPage() {
                                   setShippingRequired(true)
                                   setShippingAmountCents(0)
                                   setShippingDiscountCents(0)
+                                  setError('')
                                   persistShippingSession({ selectedQuoteId: quote.quoteId })
                                 }}
                                 className="mt-0.5"
@@ -706,7 +691,6 @@ export function CheckoutPage() {
                         )
                       })}
                     </div>
-
                     <button
                       type="button"
                       onClick={() => {
@@ -722,7 +706,7 @@ export function CheckoutPage() {
                   </div>
                 )}
 
-                {/* SEDEX quotes list — clicar numa opção já confirma o frete */}
+                {/* Opções de SEDEX */}
                 {!isPickupMode && shippingQuotes.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs text-nude-500 uppercase tracking-wide">Selecione o serviço de entrega</p>
@@ -732,9 +716,7 @@ export function CheckoutPage() {
                         <label
                           key={quote.quoteId}
                           className={`flex items-center justify-between rounded-xl border px-3 py-2 cursor-pointer transition-colors ${
-                            checked
-                              ? 'border-[#2a7e51] bg-[#2a7e51]/5'
-                              : 'border-nude-200 hover:border-nude-300'
+                            checked ? 'border-[#2a7e51] bg-[#2a7e51]/5' : 'border-nude-200 hover:border-nude-300'
                           }`}
                         >
                           <div className="flex items-start gap-2">
@@ -748,6 +730,7 @@ export function CheckoutPage() {
                                 setShippingRequired(true)
                                 setShippingAmountCents(quote.priceCents)
                                 setShippingDiscountCents(orderDraft?.shippingDiscountCents ?? 0)
+                                setError('')
                                 persistShippingSession({ selectedQuoteId: quote.quoteId })
                               }}
                               className="mt-1"
@@ -765,29 +748,85 @@ export function CheckoutPage() {
                 )}
 
                 {shippingConfirmed && (
-                  <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+                  <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 flex items-center gap-2">
+                    <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
                     {isPickupMode
                       ? `Retirada confirmada em ${shippingQuotes.find(q => q.quoteId === selectedQuoteId)?.serviceCode === 'lagoa_santa' ? 'Lagoa Santa' : 'Minas Shopping'}.`
                       : 'Frete confirmado para este pedido.'}
                   </div>
                 )}
-
-                {shippingError && <p className="text-xs text-red-500">{shippingError}</p>}
-              </div>
-              )
-            })()}
-
-            {!shippingRequired && (
-              <div className="bg-pearl rounded-2xl border border-nude-100 p-5 shadow-sm">
-                <p className="text-sm text-green-700">Este pedido não possui itens físicos. Frete não aplicável.</p>
               </div>
             )}
 
-            {error && <ErrorMessage message={error} />}
+            {!shippingRequired && (
+              <div className="bg-pearl rounded-2xl border border-green-200 p-5 shadow-sm flex items-center gap-3">
+                <svg className="w-5 h-5 text-green-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+                <p className="text-sm text-green-700">Este pedido não possui itens físicos. Frete não aplicável.</p>
+              </div>
+            )}
           </div>
 
-          {/* Right — summary */}
-          <div className="lg:col-span-5 lg:sticky lg:top-28 space-y-4">
+          {/* Right — cupom + resumo + CTA */}
+          <div className="lg:col-span-5 lg:sticky lg:top-6 space-y-4">
+
+            {/* Cupom */}
+            <div className="bg-pearl rounded-2xl border border-nude-100 p-5 shadow-sm">
+              {!showCouponInput && !coupon ? (
+                <button
+                  onClick={() => setShowCouponInput(true)}
+                  className="text-sm font-medium text-[#D4AF37] hover:text-[#C5A028] transition-colors flex items-center gap-2 w-full text-left"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                  Tem um cupom de desconto?
+                </button>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-display text-base text-noir-950">Cupom de Desconto</h3>
+                    {!coupon && (
+                      <button onClick={() => setShowCouponInput(false)} className="text-xs text-nude-500 hover:text-noir-950">Cancelar</button>
+                    )}
+                  </div>
+                  {coupon ? (
+                    <div className="flex items-center justify-between p-4 bg-green-50 rounded-2xl border border-green-200">
+                      <div>
+                        <p className="text-sm font-medium text-green-800 font-mono">{coupon.coupon.code}</p>
+                        <p className="text-xs text-green-700 mt-0.5">Desconto: {formatCurrency(coupon.discount)}</p>
+                      </div>
+                      <button
+                        onClick={() => { setCoupon(null); setCouponCode(''); toast('Cupom removido.', 'info') }}
+                        className="text-xs text-green-700 hover:text-red-600 transition-colors"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        id="coupon-code-input"
+                        value={couponCode}
+                        onChange={e => {
+                          setCouponCode(e.target.value.toUpperCase())
+                          if (couponErrorTimerRef.current) clearTimeout(couponErrorTimerRef.current)
+                          couponErrorTimerRef.current = setTimeout(() => setCouponError(''), 2000)
+                        }}
+                        onKeyDown={e => e.key === 'Enter' && validateCoupon()}
+                        placeholder="CÓDIGO DO CUPOM"
+                        className="input-luxury font-mono uppercase text-sm flex-1 tracking-wider"
+                        aria-describedby={couponError ? 'coupon-error' : undefined}
+                      />
+                      <Button variant="outline" onClick={validateCoupon} loading={validating} className="flex-shrink-0">
+                        Aplicar
+                      </Button>
+                    </div>
+                  )}
+                  {couponError && <p id="coupon-error" role="alert" className="text-xs text-red-500 mt-2">{couponError}</p>}
+                </>
+              )}
+            </div>
+
+            {/* Resumo */}
             <div className="bg-pearl rounded-3xl border border-nude-100 overflow-hidden shadow-card-light">
               <div className="px-6 py-5 border-b border-nude-50 bg-[#FAF7F2]">
                 <h2 className="font-display text-xl tracking-wide text-noir-950">Resumo do Pedido</h2>
@@ -797,26 +836,21 @@ export function CheckoutPage() {
                 {discount > 0 && (
                   <Row label="Desconto" value={`−${formatCurrency(discount)}`} valueClass="text-green-600" />
                 )}
-                {(() => {
-                  const isPickupConfirmed = shippingConfirmed && shippingQuotes.some(q => q.quoteId === selectedQuoteId && q.provider === 'STORE_PICKUP')
-                  return (
-                    <Row
-                      label="Frete"
-                      value={
-                        !shippingRequired ? 'Não aplicável'
-                        : isPickupConfirmed ? 'Grátis (retirada)'
-                        : shippingConfirmed ? formatCurrency(shippingAmount)
-                        : 'A calcular'
-                      }
-                      valueClass={
-                        !shippingRequired ? 'text-green-700 text-xs'
-                        : isPickupConfirmed ? 'text-green-600 text-sm'
-                        : shippingConfirmed ? 'text-noir-950'
-                        : 'text-nude-500 text-xs'
-                      }
-                    />
-                  )
-                })()}
+                <Row
+                  label="Frete"
+                  value={
+                    !shippingRequired ? 'Não aplicável'
+                    : isPickupConfirmed ? 'Grátis (retirada)'
+                    : shippingConfirmed ? formatCurrency(shippingAmount)
+                    : 'A calcular'
+                  }
+                  valueClass={
+                    !shippingRequired ? 'text-green-700 text-xs'
+                    : isPickupConfirmed ? 'text-green-600 text-sm'
+                    : shippingConfirmed ? 'text-noir-950'
+                    : 'text-nude-500 text-xs'
+                  }
+                />
                 <div className="h-px bg-nude-100 my-1" />
                 <div className="flex justify-between items-end">
                   <span className="font-medium text-noir-950">Total</span>
@@ -826,7 +860,19 @@ export function CheckoutPage() {
                   </div>
                 </div>
               </div>
-              <div className="px-6 pb-6 bg-[#FAF7F2]">
+              <div className="px-6 pb-6 bg-[#FAF7F2] space-y-3">
+                {/* Aviso inline junto ao botão quando frete não selecionado */}
+                {shippingRequired && !shippingConfirmed && (
+                  <button
+                    type="button"
+                    onClick={scrollToShipping}
+                    className="w-full flex items-center justify-center gap-2 text-xs text-amber-700 font-medium bg-amber-50 border border-amber-200 rounded-lg py-2 hover:bg-amber-100 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    Selecione o frete para continuar
+                  </button>
+                )}
+
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
@@ -843,21 +889,20 @@ export function CheckoutPage() {
                   ) : 'Ir para o Pagamento →'}
                 </button>
                 {submitting && (
-                  <p className="text-center text-xs text-nude-500 mt-2">
+                  <p className="text-center text-xs text-nude-500">
                     Confirmando frete e finalizando — só um instante
                   </p>
                 )}
 
-                <div className="flex items-center justify-center gap-2 text-xs text-green-700 mt-4 font-medium bg-green-50 py-2 rounded-lg border border-green-100">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                <div className="flex items-center justify-center gap-2 text-xs text-green-700 font-medium bg-green-50 py-2 rounded-lg border border-green-100">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                   <span>Ambiente Seguro e Criptografado</span>
                 </div>
-                <Link to="/cart" className="block text-center mt-3 text-xs text-nude-500 hover:text-noir-950 transition-colors">
+                <Link to="/cart" className="block text-center text-xs text-nude-500 hover:text-noir-950 transition-colors">
                   ← Voltar ao carrinho
                 </Link>
               </div>
             </div>
-
           </div>
         </div>
       </div>
