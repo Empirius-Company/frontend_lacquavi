@@ -7,7 +7,7 @@ import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
 import { Button, ProductDetailSkeleton, ReviewSkeleton } from '../components/ui'
 import { useSEO, ProductSchema, BreadcrumbSchema } from '../components/seo'
-import { formatCurrency, getProductPriceSummary } from '../utils'
+import { formatCurrency, getInstallmentDisplay, getProductPriceSummary } from '../utils'
 import { getOrderedGallery, getProductPrimaryImage } from '../utils/productImages'
 import type { ApiError, Product, ProductImage, ProductReview, ProductReviewStats, ShippingQuote } from '../types'
 
@@ -199,6 +199,7 @@ const loadReviews = useCallback(async () => {
 
   const isOutOfStock = product.stock === 0
   const pricing = getProductPriceSummary(product)
+  const installment = pricing.finalPrice > 0 ? getInstallmentDisplay(pricing.finalPrice) : null
 
   const handleAdd = () => {
     if (isOutOfStock) return
@@ -417,6 +418,15 @@ const loadReviews = useCallback(async () => {
               <div className="flex items-end gap-2">
                 <span className="text-3xl font-black text-black leading-none">{formatCurrency(pricing.finalPrice)}</span>
               </div>
+              {installment && (
+                <p className="text-sm text-gray-600 mt-1">
+                  ou{' '}
+                  <span className="font-semibold text-gray-800">
+                    {installment.count}x de {formatCurrency(installment.amountPerInstallment)}
+                  </span>{' '}
+                  sem juros no cartão
+                </p>
+              )}
               <p className="text-xs text-gray-500 mt-2">Vendido e entregue por <span className="text-[#2a7e51] font-bold">Lacquavi ›</span></p>
             </div>
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getProductPrimaryImage } from '../../utils/productImages'
-import { getProductFinalPrice } from '../../utils'
+import { formatCurrency, getInstallmentDisplay, getProductFinalPrice } from '../../utils'
 import { Skeleton } from './index'
 import type { Product, ProductReviewStats } from '../../types'
 
@@ -63,7 +63,7 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
     const averageRating = activeReviewStats?.averageRating ?? 0
     const formattedPrice = activeProductFinalPrice.toFixed(2).replace('.', ',')
     const [priceInteger, priceDecimal] = formattedPrice.split(',')
-    const installmentValue = (activeProductFinalPrice / 3).toFixed(2).replace('.', ',')
+    const installment = getInstallmentDisplay(activeProductFinalPrice)
     const displayedRating = averageRating.toFixed(1).replace('.', ',')
 
     return (
@@ -124,7 +124,11 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
                                         <span className="ml-2 text-[10px] font-medium uppercase tracking-wide text-neutral-500">{activeProduct.volume}</span>
                                     )}
                                 </div>
-                                <p className="mt-1 text-[11px] text-neutral-500">ou 3x de R$ {installmentValue}</p>
+                                {installment && (
+                                  <p className="mt-1 text-[11px] text-neutral-600">
+                                    ou {installment.count}x de {formatCurrency(installment.amountPerInstallment)} sem juros
+                                  </p>
+                                )}
                             </>
                         )}
 

@@ -23,17 +23,45 @@ export function MainLayout({ children }: { children?: ReactNode }) {
 /* ════════════════════════════════════════════════════════
    AdminLayout — admin panel
    ════════════════════════════════════════════════════ */
-const ADMIN_LINKS = [
-  { to: '/admin',             label: 'Dashboard',   icon: '◈', exact: true },
-  { to: '/admin/products',    label: 'Produtos',     icon: '◇' },
-  { to: '/admin/banners',     label: 'Banners',      icon: '◬' },
-  { to: '/admin/home-tiles',  label: 'Tiles Início', icon: '⊡' },
-  { to: '/admin/categories',  label: 'Categorias',   icon: '⊞' },
-  { to: '/admin/subcategories',  label: 'Subcategorias', icon: '⊟' },
-  { to: '/admin/orders',      label: 'Pedidos',      icon: '◎' },
-  { to: '/admin/payments',    label: 'Pagamentos',   icon: '◑' },
-  { to: '/admin/coupons',     label: 'Cupons',       icon: '⊛' },
-  { to: '/status',            label: 'Status API',   icon: '◐' },
+type AdminNavLink = { to: string; label: string; icon: string; exact?: boolean }
+type AdminNavGroup = { label?: string; links: AdminNavLink[] }
+
+const ADMIN_NAV: AdminNavGroup[] = [
+  {
+    links: [
+      { to: '/admin', label: 'Dashboard', icon: '◈', exact: true },
+    ],
+  },
+  {
+    label: 'Loja',
+    links: [
+      { to: '/admin/products',      label: 'Produtos',      icon: '◇' },
+      { to: '/admin/categories',    label: 'Categorias',    icon: '⊞' },
+      { to: '/admin/subcategories', label: 'Subcategorias', icon: '⊟' },
+      { to: '/admin/banners',       label: 'Banners',       icon: '◬' },
+      { to: '/admin/home-tiles',    label: 'Tiles Início',  icon: '⊡' },
+      { to: '/admin/coupons',       label: 'Cupons',        icon: '⊛' },
+    ],
+  },
+  {
+    label: 'Operações',
+    links: [
+      { to: '/admin/orders',   label: 'Pedidos',    icon: '◎' },
+      { to: '/admin/payments', label: 'Pagamentos', icon: '◑' },
+    ],
+  },
+  {
+    label: 'Logística',
+    links: [
+      { to: '/admin/shipping', label: 'Frete & Etiquetas', icon: '◫' },
+    ],
+  },
+  {
+    label: 'Sistema',
+    links: [
+      { to: '/status', label: 'Status API', icon: '◐' },
+    ],
+  },
 ]
 
 export function AdminLayout({ children }: { children?: ReactNode }) {
@@ -50,24 +78,35 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
-          {ADMIN_LINKS.map(link => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              end={link.exact}
-              className={({ isActive }) => `
-                flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm
-                transition-all duration-200
-                ${isActive
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm'
-                  : 'text-brand.text hover:bg-emerald-50/70 hover:text-emerald-700'
-                }
-              `}
-            >
-              <span className="text-base opacity-80">{link.icon}</span>
-              {link.label}
-            </NavLink>
+        <nav className="flex-1 px-3 py-5 overflow-y-auto space-y-4">
+          {ADMIN_NAV.map((group, gi) => (
+            <div key={gi}>
+              {group.label && (
+                <p className="px-3.5 mb-1 text-2xs font-semibold uppercase tracking-widest text-obsidian-400">
+                  {group.label}
+                </p>
+              )}
+              <div className="space-y-0.5">
+                {group.links.map(link => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    end={link.exact}
+                    className={({ isActive }) => `
+                      flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm
+                      transition-all duration-200
+                      ${isActive
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm'
+                        : 'text-brand.text hover:bg-emerald-50/70 hover:text-emerald-700'
+                      }
+                    `}
+                  >
+                    <span className="text-base opacity-80">{link.icon}</span>
+                    {link.label}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 

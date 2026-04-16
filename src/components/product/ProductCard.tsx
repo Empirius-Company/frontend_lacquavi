@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { formatCurrency, getProductPriceSummary } from '../../utils'
+import { formatCurrency, getInstallmentDisplay, getProductPriceSummary } from '../../utils'
 import { getProductPrimaryImage } from '../../utils/productImages'
 import { QuickAddModal } from './QuickAddModal'
 import type { Product, ProductReviewStats } from '../../types'
@@ -56,6 +56,7 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
   const averageRating = reviewStats?.averageRating ?? 0
 
   const pricing = getProductPriceSummary(product)
+  const installment = pricing.finalPrice > 0 ? getInstallmentDisplay(pricing.finalPrice) : null
 
   const [showModal, setShowModal] = useState(false)
 
@@ -122,6 +123,11 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
                   <span className="text-[15px] font-black text-black leading-none">
                     {formatCurrency(pricing.finalPrice)}
                   </span>
+                  {installment && (
+                    <span className="text-[9px] text-gray-600 leading-none mt-0.5">
+                      ou {installment.count}x de {formatCurrency(installment.amountPerInstallment)} sem juros
+                    </span>
+                  )}
                 </>
               ) : (
                 <span className="text-[12px] text-[#2a7e51] font-bold leading-[1.2]">Sob Consulta</span>

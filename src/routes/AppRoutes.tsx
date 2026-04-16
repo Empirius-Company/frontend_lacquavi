@@ -51,6 +51,7 @@ import {
   AdminPaymentDetailPage,
   AdminCouponsPage,
   AdminCouponFormPage,
+  AdminShippingPage,
   StatusPage,
 } from '../pages/admin'
 
@@ -100,6 +101,7 @@ export function AppRoutes() {
         <Route path="/admin/coupons"              element={<AdminCouponsPage />} />
         <Route path="/admin/coupons/new"          element={<AdminCouponFormPage />} />
         <Route path="/admin/coupons/:id/edit"     element={<AdminCouponFormPage />} />
+        <Route path="/admin/shipping"             element={<AdminShippingPage />} />
         <Route path="/status"                     element={<StatusPage />} />
       </Route>
 

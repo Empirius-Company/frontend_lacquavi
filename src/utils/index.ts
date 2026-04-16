@@ -48,6 +48,22 @@ export const getProductPriceSummary = (product: Pick<Product, 'price' | 'discoun
   }
 }
 
+// ─── Installment Display ──────────────────────────────────────────────────────
+export const MAX_INSTALLMENTS = 3
+
+export const getInstallmentDisplay = (
+  price: number,
+  maxInstallments: number = MAX_INSTALLMENTS
+): { count: number; amountPerInstallment: number } | null => {
+  if (price <= 0) return null
+  const count = Math.min(maxInstallments, Math.floor(price))
+  if (count < 2) return null
+  return {
+    count,
+    amountPerInstallment: price / count,
+  }
+}
+
 // ─── Date Formatting ──────────────────────────────────────────────────────────
 export const formatDate = (dateStr: string): string =>
   new Intl.DateTimeFormat('pt-BR', {

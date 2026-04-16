@@ -111,12 +111,19 @@ export function AdminDashboardPage() {
 
   const totalRevenue = payments.filter(p => p.status === 'paid').reduce((s, p) => s + p.amount, 0)
   const pendingOrders = orders.filter(o => getOrderDisplayStatus(o) === 'pending').length
+  const awaitingLabel = orders.filter(o =>
+    o.paymentStatus === 'paid' &&
+    o.status === 'processing' &&
+    o.shippingProvider !== 'STORE_PICKUP' &&
+    o.shippingProvider != null
+  ).length
 
   const stats = [
-    { label: 'Pedidos',         value: loading ? '—' : orders.length.toString(),          icon: '◎', color: 'bg-blue-50 text-blue-600' },
-    { label: 'Receita Total',   value: loading ? '—' : formatCurrency(totalRevenue),       icon: '◉', color: 'bg-green-50 text-green-600' },
-    { label: 'Pendentes',       value: loading ? '—' : pendingOrders.toString(),            icon: '◌', color: 'bg-amber-50 text-amber-600' },
-    { label: 'Produtos',        value: loading ? '—' : products.length.toString(),          icon: '✦', color: 'bg-purple-50 text-purple-600' },
+    { label: 'Pedidos',            value: loading ? '—' : orders.length.toString(),      icon: '◎', color: 'bg-blue-50 text-blue-600' },
+    { label: 'Receita Total',      value: loading ? '—' : formatCurrency(totalRevenue),  icon: '◉', color: 'bg-green-50 text-green-600' },
+    { label: 'Pendentes',          value: loading ? '—' : pendingOrders.toString(),       icon: '◌', color: 'bg-amber-50 text-amber-600' },
+    { label: 'Aguard. Etiqueta',   value: loading ? '—' : awaitingLabel.toString(),       icon: '◫', color: 'bg-orange-50 text-orange-600' },
+    { label: 'Produtos',           value: loading ? '—' : products.length.toString(),    icon: '✦', color: 'bg-purple-50 text-purple-600' },
   ]
 
   return (
@@ -127,7 +134,7 @@ export function AdminDashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">
         {stats.map(s => (
           <div key={s.label} className="bg-white rounded-2xl border border-obsidian-100 p-5 shadow-card">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-3 ${s.color}`}>{s.icon}</div>
@@ -174,6 +181,7 @@ export function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading]   = useState(true)
   const [statusTab, setStatusTab] = useState<'active' | 'inactive'>('active')
+  const [confirmActionId, setConfirmActionId] = useState<string | null>(null)
 
   const load = () => {
     setLoading(true)
@@ -182,25 +190,27 @@ export function AdminProductsPage() {
 
   useEffect(load, [])
 
-  const handleDeactivate = async (id: string, name: string) => {
-    if (!confirm(`Desativar "${name}"?`)) return
+  const handleDeactivate = async (id: string) => {
     try {
       await productsApi.remove(id)
       setProducts(previous => previous.map(product => product.id === id ? { ...product, isActive: false } : product))
-      toast('Produto desativado com sucesso', 'success')
+      toast('Produto desativado', 'success')
     } catch (err) {
       toast((err as ApiError).message, 'error')
+    } finally {
+      setConfirmActionId(null)
     }
   }
 
-  const handleReactivate = async (id: string, name: string) => {
-    if (!confirm(`Reativar "${name}"?`)) return
+  const handleReactivate = async (id: string) => {
     try {
       await productsApi.update(id, { isActive: true })
       setProducts(previous => previous.map(product => product.id === id ? { ...product, isActive: true } : product))
-      toast('Produto reativado com sucesso', 'success')
+      toast('Produto reativado', 'success')
     } catch (err) {
       toast((err as ApiError).message, 'error')
+    } finally {
+      setConfirmActionId(null)
     }
   }
 
@@ -282,12 +292,25 @@ export function AdminProductsPage() {
                       <Button variant="outline" size="sm" onClick={() => navigate(`/admin/products/${product.id}/edit`)}>
                         Editar
                       </Button>
-                      {isActive ? (
-                        <Button variant="danger" size="sm" onClick={() => handleDeactivate(product.id, product.name)}>
+                      {confirmActionId === product.id ? (
+                        <>
+                          <Button
+                            size="sm"
+                            className={isActive ? 'bg-red-600 hover:bg-red-700 text-white border-0' : ''}
+                            onClick={() => isActive ? handleDeactivate(product.id) : handleReactivate(product.id)}
+                          >
+                            Confirmar
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => setConfirmActionId(null)}>
+                            Cancelar
+                          </Button>
+                        </>
+                      ) : isActive ? (
+                        <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => setConfirmActionId(product.id)}>
                           Desativar
                         </Button>
                       ) : (
-                        <Button size="sm" onClick={() => handleReactivate(product.id, product.name)}>
+                        <Button variant="outline" size="sm" className="text-emerald-700 border-emerald-200 hover:bg-emerald-50" onClick={() => setConfirmActionId(product.id)}>
                           Reativar
                         </Button>
                       )}
@@ -692,6 +715,7 @@ export function AdminCategoriesPage() {
   const [name, setName]             = useState('')
   const [saving, setSaving]         = useState(false)
   const [reordering, setReordering] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const load = () => {
     setLoading(true)
@@ -726,14 +750,15 @@ export function AdminCategoriesPage() {
     }
   }
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Deletar "${name}"?`)) return
+  const handleDelete = async (id: string) => {
     try {
       await categoriesApi.remove(id)
-      toast('Categoria deletada', 'success')
+      toast('Categoria excluída', 'success')
       load()
     } catch (err) {
       toast((err as ApiError).message, 'error')
+    } finally {
+      setConfirmDeleteId(null)
     }
   }
 
@@ -810,7 +835,14 @@ export function AdminCategoriesPage() {
                   <td className="px-5 py-4">
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => openModal(cat)}>Editar</Button>
-                      <Button variant="danger" size="sm" onClick={() => handleDelete(cat.id, cat.name)}>Excluir</Button>
+                      {confirmDeleteId === cat.id ? (
+                        <>
+                          <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-0" onClick={() => handleDelete(cat.id)}>Confirmar</Button>
+                          <Button variant="outline" size="sm" onClick={() => setConfirmDeleteId(null)}>Cancelar</Button>
+                        </>
+                      ) : (
+                        <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => setConfirmDeleteId(cat.id)}>Excluir</Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -842,6 +874,7 @@ export function AdminSubcategoriesPage() {
   const [modal, setModal] = useState(false)
   const [editing, setEditing] = useState<Subcategory | null>(null)
   const [saving, setSaving] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [form, setForm] = useState({
     name: '',
     categoryId: '',
@@ -894,14 +927,15 @@ export function AdminSubcategoriesPage() {
     }
   }
 
-  const handleDelete = async (subcategory: Subcategory) => {
-    if (!confirm(`Deletar subcategoria "${subcategory.name}"?`)) return
+  const handleDelete = async (id: string) => {
     try {
-      await subcategoriesApi.remove(subcategory.id)
+      await subcategoriesApi.remove(id)
       toast('Subcategoria removida!', 'success')
       load()
     } catch (err) {
       toast((err as ApiError).message, 'error')
+    } finally {
+      setConfirmDeleteId(null)
     }
   }
 
@@ -940,7 +974,14 @@ export function AdminSubcategoriesPage() {
                   <td className="px-5 py-4">
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => openModal(subcategory)}>Editar</Button>
-                      <Button variant="danger" size="sm" onClick={() => handleDelete(subcategory)}>Excluir</Button>
+                      {confirmDeleteId === subcategory.id ? (
+                        <>
+                          <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-0" onClick={() => handleDelete(subcategory.id)}>Confirmar</Button>
+                          <Button variant="outline" size="sm" onClick={() => setConfirmDeleteId(null)}>Cancelar</Button>
+                        </>
+                      ) : (
+                        <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => setConfirmDeleteId(subcategory.id)}>Excluir</Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -972,6 +1013,7 @@ export function AdminSubcategoriesPage() {
 
 // ─── Admin Orders ─────────────────────────────────────────────────────────────
 export function AdminOrdersPage() {
+  const navigate = useNavigate()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -980,6 +1022,7 @@ export function AdminOrdersPage() {
   const [dateRange, setDateRange] = useState<DateRangeFilter>('30d')
   const [minTotal, setMinTotal] = useState('')
   const [maxTotal, setMaxTotal] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   useEffect(() => {
     ordersApi.list().then(r => setOrders(r.orders)).finally(() => setLoading(false))
@@ -1027,135 +1070,158 @@ export function AdminOrdersPage() {
     }
   }, [filteredOrders])
 
+  const activeFiltersCount = [
+    search !== '',
+    statusFilter !== 'all',
+    paymentFilter !== 'all',
+    dateRange !== '30d',
+    minTotal !== '',
+    maxTotal !== '',
+  ].filter(Boolean).length
+
+  const clearFilters = () => {
+    setSearch('')
+    setStatusFilter('all')
+    setPaymentFilter('all')
+    setDateRange('30d')
+    setMinTotal('')
+    setMaxTotal('')
+  }
+
   return (
-    <div className="space-y-4 animate-fade-in">
-      <div className="bg-gradient-to-r from-emerald-50/90 via-white to-emerald-100/50 border border-emerald-100 rounded-2xl p-5 shadow-card">
-        <p className="text-xs uppercase tracking-widest text-emerald-500/80 mb-1">Admin</p>
-        <h1 className="font-display text-3xl text-ink">Pedidos</h1>
-        <p className="text-sm text-obsidian-500 mt-1">Visão consolidada de operação, pagamento e performance.</p>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-gradient-to-br from-emerald-50 to-white rounded-2xl border border-emerald-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <p className="text-xs text-obsidian-400 uppercase tracking-wider">Pedidos no filtro</p>
-          <p className="text-2xl font-display text-ink mt-1">{kpis.total}</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <p className="text-xs text-obsidian-400 uppercase tracking-wider">Taxa pagamento</p>
-          <p className="text-2xl font-display text-emerald-600 mt-1">{kpis.paidRate}%</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <p className="text-xs text-obsidian-400 uppercase tracking-wider">Receita no filtro</p>
-          <p className="text-2xl font-display text-ink mt-1">{formatCurrency(kpis.revenue)}</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <p className="text-xs text-obsidian-400 uppercase tracking-wider">Ticket médio</p>
-          <p className="text-2xl font-display text-ink mt-1">{formatCurrency(kpis.avgTicket)}</p>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-obsidian-400 mb-0.5">Operações</p>
+          <h1 className="font-display text-3xl text-ink">Pedidos</h1>
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-emerald-50/70 via-white to-emerald-50/40 rounded-2xl border border-emerald-100 shadow-card p-5">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs uppercase tracking-widest text-emerald-500/90">Filtros</p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="!px-4 !py-2 border-emerald-200 text-emerald-600 hover:!bg-emerald-50"
-            onClick={() => {
-              setSearch('')
-              setStatusFilter('all')
-              setPaymentFilter('all')
-              setDateRange('30d')
-              setMinTotal('')
-              setMaxTotal('')
-            }}
-          >
-            Limpar
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3 items-end">
-          <Input label="Busca" className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200" placeholder="#A1B2C3D4 ou CUPOM" value={search} onChange={e => setSearch(e.target.value)} />
-          <Select
-            label="Status"
-            className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200"
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value as 'all' | OrderStatus)}
-            options={[{ value: 'all', label: 'Todos' }, ...Object.entries(orderStatusLabel).map(([value, label]) => ({ value, label }))]}
-          />
-          <Select
-            label="Pagamento"
-            className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200"
-            value={paymentFilter}
-            onChange={e => setPaymentFilter(e.target.value as 'all' | 'none' | NonNullable<Order['paymentStatus']>)}
-            options={[
-              { value: 'all', label: 'Todos' },
-              { value: 'none', label: 'Sem pagamento' },
-              ...Object.entries(paymentStatusLabel).map(([value, label]) => ({ value, label })),
-            ]}
-          />
-          <Select
-            label="Período"
-            className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200"
-            value={dateRange}
-            onChange={e => setDateRange(e.target.value as DateRangeFilter)}
-            options={[
-              { value: 'all', label: 'Todo período' },
-              { value: 'today', label: 'Hoje' },
-              { value: '7d', label: 'Últimos 7 dias' },
-              { value: '30d', label: 'Últimos 30 dias' },
-            ]}
-          />
-          <Input label="Mín (R$)" className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200" type="number" min="0" value={minTotal} onChange={e => setMinTotal(e.target.value)} />
-          <Input label="Máx (R$)" className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200" type="number" min="0" value={maxTotal} onChange={e => setMaxTotal(e.target.value)} />
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Pedidos',       value: kpis.total.toString(),             color: 'text-ink' },
+          { label: 'Taxa de pgto',  value: `${kpis.paidRate}%`,               color: 'text-emerald-600' },
+          { label: 'Receita',       value: formatCurrency(kpis.revenue),      color: 'text-ink' },
+          { label: 'Ticket médio',  value: formatCurrency(kpis.avgTicket),    color: 'text-ink' },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card">
+            <p className="text-xs text-obsidian-400 uppercase tracking-wider">{s.label}</p>
+            <p className={`text-2xl font-display mt-1 ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(o => !o)}
+          className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-obsidian-50/50 transition-colors"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="text-sm font-medium text-obsidian-700">Filtros</span>
+            {activeFiltersCount > 0 && (
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-600 text-white text-xs font-bold">
+                {activeFiltersCount}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            {activeFiltersCount > 0 && (
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={e => { e.stopPropagation(); clearFilters() }}
+                onKeyDown={e => e.key === 'Enter' && clearFilters()}
+                className="text-xs text-obsidian-400 hover:text-ink cursor-pointer"
+              >
+                Limpar
+              </span>
+            )}
+            <svg
+              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              className={`text-obsidian-400 transition-transform duration-200 ${filtersOpen ? 'rotate-180' : ''}`}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+        </button>
+        {filtersOpen && (
+          <div className="border-t border-obsidian-100 p-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3 items-end">
+              <Input label="Busca" placeholder="#ID, nome ou e-mail" value={search} onChange={e => setSearch(e.target.value)} />
+              <Select
+                label="Status"
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value as 'all' | OrderStatus)}
+                options={[{ value: 'all', label: 'Todos' }, ...Object.entries(orderStatusLabel).map(([value, label]) => ({ value, label }))]}
+              />
+              <Select
+                label="Pagamento"
+                value={paymentFilter}
+                onChange={e => setPaymentFilter(e.target.value as 'all' | 'none' | NonNullable<Order['paymentStatus']>)}
+                options={[
+                  { value: 'all', label: 'Todos' },
+                  { value: 'none', label: 'Sem pagamento' },
+                  ...Object.entries(paymentStatusLabel).map(([value, label]) => ({ value, label })),
+                ]}
+              />
+              <Select
+                label="Período"
+                value={dateRange}
+                onChange={e => setDateRange(e.target.value as DateRangeFilter)}
+                options={[
+                  { value: 'all', label: 'Todo período' },
+                  { value: 'today', label: 'Hoje' },
+                  { value: '7d', label: 'Últimos 7 dias' },
+                  { value: '30d', label: 'Últimos 30 dias' },
+                ]}
+              />
+              <Input label="Mín (R$)" type="number" min="0" value={minTotal} onChange={e => setMinTotal(e.target.value)} />
+              <Input label="Máx (R$)" type="number" min="0" value={maxTotal} onChange={e => setMaxTotal(e.target.value)} />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card overflow-hidden">
         {loading ? (
           <div className="p-6 space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-14 rounded-xl" />)}</div>
         ) : filteredOrders.length === 0 ? (
-          <EmptyState title="Nenhum pedido" />
+          <EmptyState title="Nenhum pedido encontrado" />
         ) : (
           <div className="overflow-x-auto">
-          <table className="w-full min-w-[1080px]">
+          <table className="w-full min-w-[900px]">
             <thead>
-              <tr className="border-b border-emerald-100 text-left bg-emerald-50/60">
-                {['Pedido','Cliente','Data','Entrega','Total','Status','Pagamento','Ações'].map(h => (
+              <tr className="border-b border-obsidian-100 text-left bg-obsidian-50/40">
+                {['Pedido','Cliente','Data','Total','Status','Pagamento'].map(h => (
                   <th key={h} className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filteredOrders.map(order => (
-                <tr key={order.id} className="border-b border-obsidian-50 last:border-0 hover:bg-emerald-50/60 transition-colors duration-200">
+                <tr
+                  key={order.id}
+                  onClick={() => navigate(`/admin/orders/${order.id}`)}
+                  className="border-b border-obsidian-50 last:border-0 hover:bg-obsidian-50/60 transition-colors duration-150 cursor-pointer"
+                >
                   <td className="px-5 py-4 font-mono text-sm text-ink">#{order.id.slice(-8).toUpperCase()}</td>
                   <td className="px-5 py-4 text-sm text-ink">
                     <p className="font-medium">{order.user?.name || 'Cliente não identificado'}</p>
-                    <p className="text-xs text-obsidian-500">{order.user?.email || `ID: ${order.userId.slice(-8).toUpperCase()}`}</p>
+                    <p className="text-xs text-obsidian-400">{order.user?.email || `ID: ${order.userId.slice(-8).toUpperCase()}`}</p>
                   </td>
-                  <td className="px-5 py-4 text-xs text-obsidian-500">{formatDateTime(order.createdAt)}</td>
-                  <td className="px-5 py-4 text-xs text-obsidian-600">
-                    <p>{formatZipCode(order.shippingDestinationZip)}</p>
-                    <p className="text-obsidian-500">{order.shippingServiceName || 'Sem serviço selecionado'}</p>
-                  </td>
-                  <td className="px-5 py-4 text-sm font-medium">{formatCurrency(order.total)}</td>
+                  <td className="px-5 py-4 text-xs text-obsidian-500 whitespace-nowrap">{formatDateTime(order.createdAt)}</td>
+                  <td className="px-5 py-4 text-sm font-medium text-ink">{formatCurrency(order.total)}</td>
                   <td className="px-5 py-4">
                     <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${getOrderDisplayStatusColor(order)}`}>
                       {getOrderDisplayStatusLabel(order)}
                     </span>
                   </td>
                   <td className="px-5 py-4">
-                    {order.paymentStatus && (
-                      <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${paymentStatusColor[order.paymentStatus] ?? ''}`}>
-                        {paymentStatusLabel[order.paymentStatus]}
-                      </span>
-                    )}
-                    {!order.paymentStatus && <span className="text-xs text-obsidian-400">—</span>}
-                  </td>
-                  <td className="px-5 py-4">
-                    <Link to={`/admin/orders/${order.id}`}>
-                      <Button variant="outline" size="sm">Ver</Button>
-                    </Link>
+                    {order.paymentStatus
+                      ? <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${paymentStatusColor[order.paymentStatus] ?? ''}`}>{paymentStatusLabel[order.paymentStatus]}</span>
+                      : <span className="text-xs text-obsidian-400">—</span>
+                    }
                   </td>
                 </tr>
               ))}
@@ -1307,9 +1373,9 @@ export function AdminOrderDetailPage() {
           <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card p-6 space-y-3">
             <h2 className="font-display text-lg text-ink">Entrega e Rastreio</h2>
             {shipmentLoading ? (
-              <p className="text-sm text-obsidian-500">Carregando shipment...</p>
+              <p className="text-sm text-obsidian-500">Carregando dados de entrega...</p>
             ) : !shipment ? (
-              <p className="text-sm text-obsidian-500">Pedido ainda sem shipment.</p>
+              <p className="text-sm text-obsidian-500">Nenhum envio registrado para este pedido.</p>
             ) : (
               <>
                 <div className="flex justify-between text-sm">
@@ -1349,14 +1415,14 @@ export function AdminOrderDetailPage() {
                 )}
                 {shipment.status === 'failed' && (
                   <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-1.5">
-                    <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">Falha no shipment</p>
-                    <p className="text-sm text-red-700">{shipment.lastError || 'Falha na geração da etiqueta'}</p>
-                    <p className="text-xs text-red-700">retryCount: {shipment.retryCount ?? 0}</p>
+                    <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">Falha na geração da etiqueta</p>
+                    <p className="text-sm text-red-700">{shipment.lastError || 'Erro desconhecido'}</p>
+                    <p className="text-xs text-red-600">Tentativas: {shipment.retryCount ?? 0}</p>
                     {shipment.nextRetryAt && (
-                      <p className="text-xs text-red-700">nextRetryAt: {formatDateTime(shipment.nextRetryAt)}</p>
+                      <p className="text-xs text-red-600">Próxima tentativa: {formatDateTime(shipment.nextRetryAt)}</p>
                     )}
                     {shipment.dlqAt && (
-                      <p className="text-xs font-medium text-red-800">dlqAt: {formatDateTime(shipment.dlqAt)} · exige intervenção manual</p>
+                      <p className="text-xs font-semibold text-red-800">Falha definitiva em {formatDateTime(shipment.dlqAt)} — requer intervenção manual</p>
                     )}
                   </div>
                 )}
@@ -1477,6 +1543,7 @@ export function AdminOrderDetailPage() {
 
 // ─── Admin Payments ───────────────────────────────────────────────────────────
 export function AdminPaymentsPage() {
+  const navigate = useNavigate()
   const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading]   = useState(true)
   const [search, setSearch] = useState('')
@@ -1485,6 +1552,7 @@ export function AdminPaymentsPage() {
   const [dateRange, setDateRange] = useState<DateRangeFilter>('30d')
   const [minAmount, setMinAmount] = useState('')
   const [maxAmount, setMaxAmount] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   useEffect(() => {
     paymentsApi.list().then(r => setPayments(r.payments)).finally(() => setLoading(false))
@@ -1534,111 +1602,141 @@ export function AdminPaymentsPage() {
     }
   }, [filteredPayments])
 
+  const activeFiltersCount = [
+    search !== '',
+    statusFilter !== 'all',
+    providerFilter !== 'all',
+    dateRange !== '30d',
+    minAmount !== '',
+    maxAmount !== '',
+  ].filter(Boolean).length
+
+  const clearFilters = () => {
+    setSearch('')
+    setStatusFilter('all')
+    setProviderFilter('all')
+    setDateRange('30d')
+    setMinAmount('')
+    setMaxAmount('')
+  }
+
   return (
-    <div className="space-y-4 animate-fade-in">
-      <div className="bg-gradient-to-r from-emerald-50/90 via-white to-emerald-100/50 border border-emerald-100 rounded-2xl p-5 shadow-card">
-        <p className="text-xs uppercase tracking-widest text-emerald-500/80 mb-1">Admin</p>
-        <h1 className="font-display text-3xl text-ink">Pagamentos</h1>
-        <p className="text-sm text-obsidian-500 mt-1">Acompanhe transações, performance e risco financeiro em um só lugar.</p>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-gradient-to-br from-emerald-50 to-white rounded-2xl border border-emerald-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <p className="text-xs text-obsidian-400 uppercase tracking-wider">Transações no filtro</p>
-          <p className="text-2xl font-display text-ink mt-1">{paymentKpis.total}</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <p className="text-xs text-obsidian-400 uppercase tracking-wider">Taxa de sucesso</p>
-          <p className="text-2xl font-display text-emerald-600 mt-1">{paymentKpis.paidRate}%</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <p className="text-xs text-obsidian-400 uppercase tracking-wider">Valor total</p>
-          <p className="text-2xl font-display text-ink mt-1">{formatCurrency(paymentKpis.totalAmount)}</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <p className="text-xs text-obsidian-400 uppercase tracking-wider">Falhas / Estornos</p>
-          <p className="text-2xl font-display text-ink mt-1">{paymentKpis.failedCount} / {paymentKpis.refundedCount}</p>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-obsidian-400 mb-0.5">Operações</p>
+          <h1 className="font-display text-3xl text-ink">Pagamentos</h1>
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-emerald-50/70 via-white to-emerald-50/40 rounded-2xl border border-emerald-100 shadow-card p-5">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs uppercase tracking-widest text-emerald-500/90">Filtros</p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="!px-4 !py-2 border-emerald-200 text-emerald-600 hover:!bg-emerald-50"
-            onClick={() => {
-              setSearch('')
-              setStatusFilter('all')
-              setProviderFilter('all')
-              setDateRange('30d')
-              setMinAmount('')
-              setMaxAmount('')
-            }}
-          >
-            Limpar
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3 items-end">
-          <Input label="Busca" className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200" placeholder="#ABC12345" value={search} onChange={e => setSearch(e.target.value)} />
-          <Select
-            label="Status"
-            className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200"
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value as 'all' | Payment['status'])}
-            options={[{ value: 'all', label: 'Todos' }, ...Object.entries(paymentStatusLabel).map(([value, label]) => ({ value, label }))]}
-          />
-          <Select label="Provider" className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200" value={providerFilter} onChange={e => setProviderFilter(e.target.value)} options={providerOptions} />
-          <Select
-            label="Período"
-            className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200"
-            value={dateRange}
-            onChange={e => setDateRange(e.target.value as DateRangeFilter)}
-            options={[
-              { value: 'all', label: 'Todo período' },
-              { value: 'today', label: 'Hoje' },
-              { value: '7d', label: 'Últimos 7 dias' },
-              { value: '30d', label: 'Últimos 30 dias' },
-            ]}
-          />
-          <Input label="Mín (R$)" className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200" type="number" min="0" value={minAmount} onChange={e => setMinAmount(e.target.value)} />
-          <Input label="Máx (R$)" className="border-emerald-200 focus:!border-emerald-500 focus:!ring-emerald-200" type="number" min="0" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} />
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Transações',    value: paymentKpis.total.toString(),              color: 'text-ink' },
+          { label: 'Taxa de sucesso', value: `${paymentKpis.paidRate}%`,              color: 'text-emerald-600' },
+          { label: 'Valor total',   value: formatCurrency(paymentKpis.totalAmount),   color: 'text-ink' },
+          { label: 'Falhas / Estornos', value: `${paymentKpis.failedCount} / ${paymentKpis.refundedCount}`, color: paymentKpis.failedCount > 0 ? 'text-red-600' : 'text-ink' },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card">
+            <p className="text-xs text-obsidian-400 uppercase tracking-wider">{s.label}</p>
+            <p className={`text-2xl font-display mt-1 ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(o => !o)}
+          className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-obsidian-50/50 transition-colors"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="text-sm font-medium text-obsidian-700">Filtros</span>
+            {activeFiltersCount > 0 && (
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-600 text-white text-xs font-bold">
+                {activeFiltersCount}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            {activeFiltersCount > 0 && (
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={e => { e.stopPropagation(); clearFilters() }}
+                onKeyDown={e => e.key === 'Enter' && clearFilters()}
+                className="text-xs text-obsidian-400 hover:text-ink cursor-pointer"
+              >
+                Limpar
+              </span>
+            )}
+            <svg
+              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              className={`text-obsidian-400 transition-transform duration-200 ${filtersOpen ? 'rotate-180' : ''}`}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+        </button>
+        {filtersOpen && (
+          <div className="border-t border-obsidian-100 p-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3 items-end">
+              <Input label="Busca" placeholder="#ID do pagamento ou pedido" value={search} onChange={e => setSearch(e.target.value)} />
+              <Select
+                label="Status"
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value as 'all' | Payment['status'])}
+                options={[{ value: 'all', label: 'Todos' }, ...Object.entries(paymentStatusLabel).map(([value, label]) => ({ value, label }))]}
+              />
+              <Select label="Provedor" value={providerFilter} onChange={e => setProviderFilter(e.target.value)} options={providerOptions} />
+              <Select
+                label="Período"
+                value={dateRange}
+                onChange={e => setDateRange(e.target.value as DateRangeFilter)}
+                options={[
+                  { value: 'all', label: 'Todo período' },
+                  { value: 'today', label: 'Hoje' },
+                  { value: '7d', label: 'Últimos 7 dias' },
+                  { value: '30d', label: 'Últimos 30 dias' },
+                ]}
+              />
+              <Input label="Mín (R$)" type="number" min="0" value={minAmount} onChange={e => setMinAmount(e.target.value)} />
+              <Input label="Máx (R$)" type="number" min="0" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card overflow-hidden">
         {loading ? (
           <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-14 rounded-xl" />)}</div>
         ) : filteredPayments.length === 0 ? (
-          <EmptyState title="Nenhum pagamento" />
+          <EmptyState title="Nenhum pagamento encontrado" />
         ) : (
           <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px]">
+          <table className="w-full min-w-[700px]">
             <thead>
-              <tr className="border-b border-emerald-100 text-left bg-emerald-50/60">
-                {['Pagamento','Pedido','Valor','Status','Data','Ações'].map(h => (
+              <tr className="border-b border-obsidian-100 text-left bg-obsidian-50/40">
+                {['Pagamento','Pedido','Valor','Status','Data'].map(h => (
                   <th key={h} className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filteredPayments.map(p => (
-                <tr key={p.id} className="border-b border-obsidian-50 last:border-0 hover:bg-emerald-50/60 transition-colors duration-200">
-                  <td className="px-5 py-4 font-mono text-xs text-obsidian-500">#{p.id.slice(-8)}</td>
-                  <td className="px-5 py-4 font-mono text-xs text-obsidian-500">#{p.orderId.slice(-8)}</td>
-                  <td className="px-5 py-4 text-sm font-medium">{formatCurrency(p.amount)}</td>
+                <tr
+                  key={p.id}
+                  onClick={() => navigate(`/admin/payments/${p.id}`)}
+                  className="border-b border-obsidian-50 last:border-0 hover:bg-obsidian-50/60 transition-colors duration-150 cursor-pointer"
+                >
+                  <td className="px-5 py-4 font-mono text-xs text-obsidian-600">#{p.id.slice(-8).toUpperCase()}</td>
+                  <td className="px-5 py-4 font-mono text-xs text-obsidian-400">#{p.orderId.slice(-8).toUpperCase()}</td>
+                  <td className="px-5 py-4 text-sm font-medium text-ink">{formatCurrency(p.amount)}</td>
                   <td className="px-5 py-4">
                     <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${paymentStatusColor[p.status] ?? ''}`}>
                       {paymentStatusLabel[p.status]}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-xs text-obsidian-500">{formatDateTime(p.createdAt)}</td>
-                  <td className="px-5 py-4">
-                    <Link to={`/admin/payments/${p.id}`}>
-                      <Button variant="outline" size="sm">Ver</Button>
-                    </Link>
-                  </td>
+                  <td className="px-5 py-4 text-xs text-obsidian-500 whitespace-nowrap">{formatDateTime(p.createdAt)}</td>
                 </tr>
               ))}
             </tbody>
@@ -1750,6 +1848,7 @@ export function AdminPaymentDetailPage() {
 // ─── Admin Coupons ─────────────────────────────────────────────────────────────
 export function AdminCouponsPage() {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -1767,8 +1866,9 @@ export function AdminCouponsPage() {
     try {
       await couponsApi.delete(id)
       setCoupons(prev => prev.filter(c => c.id !== id))
-    } catch (err: any) {
-      alert(err?.response?.data?.error ?? 'Erro ao excluir cupom')
+      toast('Cupom excluído', 'success')
+    } catch (err) {
+      toast((err as ApiError).message ?? 'Erro ao excluir cupom', 'error')
     } finally {
       setDeletingId(null)
       setConfirmDeleteId(null)
@@ -1807,22 +1907,17 @@ export function AdminCouponsPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <p className="text-xs text-obsidian-400 uppercase tracking-wider">Cupons no filtro</p>
-          <p className="text-2xl font-display text-ink mt-1">{couponKpis.total}</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <p className="text-xs text-obsidian-400 uppercase tracking-wider">Ativos</p>
-          <p className="text-2xl font-display text-ink mt-1">{couponKpis.activeCount}</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <p className="text-xs text-obsidian-400 uppercase tracking-wider">Expirados</p>
-          <p className="text-2xl font-display text-ink mt-1">{couponKpis.expiredCount}</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-          <p className="text-xs text-obsidian-400 uppercase tracking-wider">Uso médio</p>
-          <p className="text-2xl font-display text-ink mt-1">{couponKpis.avgUsage}</p>
-        </div>
+        {[
+          { label: 'Total de cupons', value: couponKpis.total.toString(),          color: 'text-ink' },
+          { label: 'Ativos',          value: couponKpis.activeCount.toString(),     color: 'text-emerald-600' },
+          { label: 'Expirados',       value: couponKpis.expiredCount.toString(),    color: couponKpis.expiredCount > 0 ? 'text-amber-600' : 'text-ink' },
+          { label: 'Uso médio',       value: couponKpis.avgUsage.toString(),        color: 'text-ink' },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-2xl border border-obsidian-100 p-4 shadow-card">
+            <p className="text-xs text-obsidian-400 uppercase tracking-wider">{s.label}</p>
+            <p className={`text-2xl font-display mt-1 ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
       </div>
 
       <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card overflow-x-auto">
@@ -2081,14 +2176,17 @@ export function AdminBannersPage() {
     }
   }
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`Remover banner "${title}"?`)) return
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+
+  const handleDelete = async (id: string) => {
     try {
       await bannersApi.adminRemove(id)
       toast('Banner removido!', 'success')
       load()
     } catch (err) {
       toast((err as ApiError).message ?? 'Não foi possível remover o banner', 'error')
+    } finally {
+      setConfirmDeleteId(null)
     }
   }
 
@@ -2132,7 +2230,7 @@ export function AdminBannersPage() {
                   <td className="px-5 py-4 text-sm">{banner.priority ?? 0}</td>
                   <td className="px-5 py-4">
                     <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${banner.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-obsidian-50 text-obsidian-500 border-obsidian-200'}`}>
-                      {banner.status}
+                      {banner.status === 'active' ? 'Ativo' : 'Pausado'}
                     </span>
                   </td>
                   <td className="px-5 py-4 text-sm">{banner.clickCount ?? 0}</td>
@@ -2144,7 +2242,14 @@ export function AdminBannersPage() {
                       ) : (
                         <Button variant="outline" size="sm" onClick={() => handleActivate(banner.id)}>Ativar</Button>
                       )}
-                      <Button variant="danger" size="sm" onClick={() => handleDelete(banner.id, banner.product?.name ?? 'banner')}>Excluir</Button>
+                      {confirmDeleteId === banner.id ? (
+                        <>
+                          <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-0" onClick={() => handleDelete(banner.id)}>Confirmar</Button>
+                          <Button variant="outline" size="sm" onClick={() => setConfirmDeleteId(null)}>Cancelar</Button>
+                        </>
+                      ) : (
+                        <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => setConfirmDeleteId(banner.id)}>Excluir</Button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -2377,6 +2482,147 @@ export function StatusPage() {
           </p>
         </div>
       ) : null}
+    </div>
+  )
+}
+
+// ─── Admin Shipping ───────────────────────────────────────────────────────────
+export function AdminShippingPage() {
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    ordersApi.list().then(r => setOrders(r.orders)).finally(() => setLoading(false))
+  }, [])
+
+  const shippingOrders = useMemo(() =>
+    orders.filter(o => o.shippingProvider != null && o.shippingProvider !== 'STORE_PICKUP'),
+    [orders]
+  )
+
+  const pickupOrders = useMemo(() =>
+    orders.filter(o => o.shippingProvider === 'STORE_PICKUP'),
+    [orders]
+  )
+
+  const awaitingLabel = useMemo(() =>
+    shippingOrders.filter(o => o.paymentStatus === 'paid' && o.status === 'processing'),
+    [shippingOrders]
+  )
+
+  const inTransit = useMemo(() =>
+    shippingOrders.filter(o => o.status === 'shipped'),
+    [shippingOrders]
+  )
+
+  const delivered = useMemo(() =>
+    shippingOrders.filter(o => o.status === 'delivered'),
+    [shippingOrders]
+  )
+
+  const awaitingPickup = useMemo(() =>
+    pickupOrders.filter(o => o.paymentStatus === 'paid' && o.status === 'processing'),
+    [pickupOrders]
+  )
+
+  const renderOrderRow = (order: Order) => (
+    <Link
+      key={order.id}
+      to={`/admin/orders/${order.id}`}
+      className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-obsidian-50 transition-colors"
+    >
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-ink font-mono">#{order.id.slice(-8).toUpperCase()}</p>
+        <p className="text-xs text-obsidian-400 mt-0.5">
+          {order.user?.name || `ID ${order.userId.slice(-8).toUpperCase()}`}
+          {order.shippingServiceName ? ` · ${order.shippingServiceName}` : ''}
+          {order.pickupLocation ? ` · ${pickupLocationLabel[order.pickupLocation] ?? order.pickupLocation}` : ''}
+        </p>
+      </div>
+      <div className="flex items-center gap-3 ml-4 shrink-0">
+        <span className="text-xs text-obsidian-400">{formatDateTime(order.createdAt)}</span>
+        <span className="text-sm font-medium text-ink">{formatCurrency(order.total)}</span>
+        <span className="text-champagne-600 text-sm">→</span>
+      </div>
+    </Link>
+  )
+
+  const SectionCard = ({
+    title,
+    badge,
+    badgeColor,
+    items,
+    emptyText,
+  }: {
+    title: string
+    badge: number
+    badgeColor: string
+    items: Order[]
+    emptyText: string
+  }) => (
+    <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-obsidian-100">
+        <h2 className="font-display text-base text-ink">{title}</h2>
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badgeColor}`}>
+          {badge}
+        </span>
+      </div>
+      <div className="p-2">
+        {loading
+          ? [1, 2, 3].map(i => <Skeleton key={i} className="h-12 m-3 rounded-xl" />)
+          : items.length === 0
+            ? <p className="text-sm text-obsidian-400 px-4 py-4">{emptyText}</p>
+            : items.map(renderOrderRow)
+        }
+      </div>
+    </div>
+  )
+
+  return (
+    <div>
+      <div className="mb-8">
+        <p className="text-xs uppercase tracking-widest text-obsidian-400 mb-1">Logística</p>
+        <h1 className="font-display text-3xl text-ink">Frete & Etiquetas</h1>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {[
+          { label: 'Aguard. Etiqueta', value: loading ? '—' : awaitingLabel.length.toString(),  color: 'bg-orange-50 text-orange-600' },
+          { label: 'Em Trânsito',      value: loading ? '—' : inTransit.length.toString(),       color: 'bg-blue-50 text-blue-600' },
+          { label: 'Entregues',        value: loading ? '—' : delivered.length.toString(),        color: 'bg-green-50 text-green-600' },
+          { label: 'Retirada Pendente',value: loading ? '—' : awaitingPickup.length.toString(),   color: 'bg-amber-50 text-amber-600' },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-2xl border border-obsidian-100 p-5 shadow-card">
+            <p className={`text-2xl font-display ${s.color.split(' ')[1]}`}>{s.value}</p>
+            <p className="text-xs text-obsidian-400 mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-6">
+        <SectionCard
+          title="Aguardando Etiqueta"
+          badge={awaitingLabel.length}
+          badgeColor="bg-orange-100 text-orange-700"
+          items={awaitingLabel}
+          emptyText="Nenhum pedido aguardando etiqueta."
+        />
+        <SectionCard
+          title="Retirada na Loja — Ação Necessária"
+          badge={awaitingPickup.length}
+          badgeColor="bg-amber-100 text-amber-700"
+          items={awaitingPickup}
+          emptyText="Nenhuma retirada pendente."
+        />
+        <SectionCard
+          title="Em Trânsito"
+          badge={inTransit.length}
+          badgeColor="bg-blue-100 text-blue-700"
+          items={inTransit}
+          emptyText="Nenhum pedido em trânsito no momento."
+        />
+      </div>
     </div>
   )
 }

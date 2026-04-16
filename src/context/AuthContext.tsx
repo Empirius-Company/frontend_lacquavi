@@ -40,6 +40,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const { toast } = useToast()
 
+  // Keeps a ref to the latest access token so the visibilitychange handler
+  // can read it without needing to be in the effect dependency array.
+  const accessTokenRef = useRef<string>('')
+
   // Keep hadSessionRef in sync with user state
   useEffect(() => {
     hadSessionRef.current = !!user
@@ -107,11 +111,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [scheduleProactiveRefresh, clearSession])
 
-  // Sync _currentToken whenever accessToken state changes
+  // Sync _currentToken and accessTokenRef whenever accessToken state changes
   // (keeps the in-memory token used by the request interceptor up-to-date)
   useEffect(() => {
     setCurrentToken(accessToken || null)
+    accessTokenRef.current = accessToken
   }, [accessToken])
+
+  // When the tab regains visibility (e.g. after PC sleep or background throttling),
+  // the proactive refresh timer may have been paused by the browser. Re-check token
+  // expiry and refresh early to prevent a jarring 401 on the user's next action.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') return
+      const token = accessTokenRef.current
+      if (!token) return
+
+      try {
+        // Decode exp/iat from the JWT payload (no signature check — server validates)
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        const nowSeconds = Math.floor(Date.now() / 1000)
+        const ttlLeft = (payload.exp as number) - nowSeconds
+        const totalLife = (payload.exp as number) - (payload.iat as number)
+        // Refresh if expired or within the last REFRESH_THRESHOLD of the token's lifetime
+        if (ttlLeft <= 0 || ttlLeft <= totalLife * REFRESH_THRESHOLD) {
+          authApi.refresh()
+            .then((res) => {
+              setCurrentToken(res.accessToken)
+              setAccessToken(res.accessToken)
+              if (res.expiresIn) scheduleProactiveRefresh(res.expiresIn)
+              bcRef.current?.postMessage({ type: 'TOKEN_REFRESHED', accessToken: res.accessToken, expiresIn: res.expiresIn })
+            })
+            .catch(() => {
+              // Refresh failed — the 401 interceptor will handle logout on the next real request
+            })
+        }
+      } catch {
+        // Malformed token shape — ignore, let the request path handle it
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [scheduleProactiveRefresh])
 
   // Wire httpClient — update in-memory token after silent refresh (reactive 401 path)
   useEffect(() => {
