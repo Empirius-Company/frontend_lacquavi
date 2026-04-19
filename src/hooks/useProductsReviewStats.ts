@@ -1,13 +1,10 @@
 import { useEffect, useState } from 'react'
 import { productsApi } from '../api/catalogApi'
-import type { ApiError, ProductReviewStats } from '../types'
+import type { ProductReviewStats } from '../types'
 
 type ProductReviewStatsMap = Record<string, ProductReviewStats>
 
-const EMPTY_STATS: ProductReviewStats = {
-  total: 0,
-  averageRating: 0,
-}
+const EMPTY_STATS: ProductReviewStats = { total: 0, averageRating: 0 }
 
 export function useProductsReviewStats(productIds: string[]) {
   const [statsByProduct, setStatsByProduct] = useState<ProductReviewStatsMap>({})
@@ -24,29 +21,21 @@ export function useProductsReviewStats(productIds: string[]) {
     let cancelled = false
     setLoading(true)
 
-    Promise.allSettled(
-      normalizedIds.map(async (productId) => {
-        try {
-          const response = await productsApi.listReviews(productId)
-          return { productId, stats: response.stats }
-        } catch (error) {
-          const apiError = error as ApiError
-          if (apiError.statusCode === 404 || apiError.statusCode === 500) {
-            return { productId, stats: EMPTY_STATS }
-          }
-          return { productId, stats: EMPTY_STATS }
-        }
-      })
-    )
-      .then((results) => {
+    productsApi
+      .listReviewsBatch(normalizedIds)
+      .then((response) => {
         if (cancelled) return
         const nextStats: ProductReviewStatsMap = {}
-        for (const result of results) {
-          if (result.status === 'fulfilled') {
-            nextStats[result.value.productId] = result.value.stats
-          }
+        for (const id of normalizedIds) {
+          nextStats[id] = response.stats[id] ?? EMPTY_STATS
         }
         setStatsByProduct(nextStats)
+      })
+      .catch(() => {
+        if (cancelled) return
+        const fallback: ProductReviewStatsMap = {}
+        for (const id of normalizedIds) fallback[id] = EMPTY_STATS
+        setStatsByProduct(fallback)
       })
       .finally(() => {
         if (!cancelled) setLoading(false)

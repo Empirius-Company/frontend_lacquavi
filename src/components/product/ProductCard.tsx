@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { formatCurrency, getInstallmentDisplay, getProductPriceSummary } from '../../utils'
-import { getProductPrimaryImage } from '../../utils/productImages'
+import { getProductPrimaryImage, getOptimizedCloudinaryUrl } from '../../utils/productImages'
 import { QuickAddModal } from './QuickAddModal'
 import type { Product, ProductReviewStats } from '../../types'
 
@@ -34,15 +34,19 @@ function ProductImage({ product }: { product: Product }) {
     return <ImagePlaceholder product={product} />
   }
 
+  const optimizedUrl = getOptimizedCloudinaryUrl(primaryImage.url, 456, 456)
+
   return (
     <>
       {!imgLoaded && <div className="absolute inset-0"><ImagePlaceholder product={product} /></div>}
       <img
-        src={primaryImage.url}
+        src={optimizedUrl}
         alt={primaryImage.alt || product.name}
         className={`absolute inset-0 w-full h-full object-contain object-center transition-opacity duration-300 p-2
           ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
         loading="lazy"
+        width="456"
+        height="456"
         onLoad={() => setImgLoaded(true)}
         onError={() => setImgError(true)}
       />

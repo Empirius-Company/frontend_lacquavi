@@ -8,7 +8,7 @@
     <title>Lacqua | Perfumaria Premium — Fragrâncias Originais</title>
     <meta name="description" content="Perfumaria premium em BH com autenticidade garantida. Fragrâncias importadas e nacionais, entrega para todo o Brasil. Descubra a curadoria Lacqua." />
     <meta name="keywords" content="perfume original, fragrância premium, perfumaria BH, Minas Shopping, perfume importado, colônia, eau de parfum, fragrâncias exclusivas" />
-    <meta name="author" content="Lacqua Minas Shopping" />
+    <meta name="author" content="Lacqua" />
     <meta name="theme-color" content="#000000" />
     
     <!-- Open Graph (Facebook, LinkedIn, WhatsApp) -->
@@ -17,10 +17,10 @@
     <meta property="og:description" content="Fragrâncias importadas e nacionais com autenticidade garantida. Descubra a curadoria Lacqua — perfumaria premium em Belo Horizonte com entrega para todo o Brasil." />
     <meta property="og:url" content="https://lacquaminas.com.br" />
     <meta property="og:image" content="https://lacquaminas.com.br/og-image.svg" />
-    <meta property="og:image:alt" content="Lacqua Minas Shopping - Fragrâncias Premium" />
+    <meta property="og:image:alt" content="Lacqua - Fragrâncias Premium" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:site_name" content="Lacqua Minas Shopping" />
+    <meta property="og:site_name" content="Lacqua" />
     <meta property="og:locale" content="pt_BR" />
     
     <!-- Twitter Card -->
@@ -34,9 +34,9 @@
     {
       "@context": "https://schema.org",
       "@type": "LocalBusiness",
-      "name": "Lacqua Minas Shopping",
-      "alternateName": ["Lacqua", "Lacqua Minas", "Perfumaria Lacqua"],
-      "description": "Fragrâncias premium e originais — Perfumaria de luxo em Minas Shopping, Belo Horizonte",
+      "name": "Lacqua",
+      "alternateName": ["Lacqua Minas Shopping", "Perfumaria Lacqua"],
+      "description": "Perfumaria premium com fragrâncias importadas e nacionais originais. Entrega para todo o Brasil. Lojas em Belo Horizonte e Lagoa Santa.",
       "url": "https://lacquaminas.com.br",
       "telephone": "+55 31 97501-9000",
       "email": "contato@lacquaminas.com.br",
@@ -94,12 +94,18 @@
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow" />
     
-    <!-- Preconnect to font providers -->
+    <!-- Preload LCP image -->
+    <link rel="preload" as="image" href="/banner-home-top.webp" type="image/webp" fetchpriority="high" />
+
+    <!-- Preconnect to critical origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://laquaviapi-production.up.railway.app" />
+    <link rel="preconnect" href="https://res.cloudinary.com" />
 
-    <!-- Fonts: Cormorant Garamond (display) + DM Sans (body) + DM Mono -->
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <!-- Fonts: async (non-render-blocking) -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" /></noscript>
 
     <!-- Favicon & App Icons -->
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />

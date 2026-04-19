@@ -15,3 +15,12 @@ export const getProductPrimaryImage = (product: Product | null | undefined): Pro
 
 export const getProductPrimaryImageUrl = (product: Product | null | undefined): string | null =>
   getProductPrimaryImage(product)?.url ?? null
+
+export function getOptimizedCloudinaryUrl(url: string, width: number, height: number): string {
+  if (!url || !url.includes('res.cloudinary.com')) return url
+  const transforms = `w_${width},h_${height},c_limit,f_auto,q_auto`
+  if (url.includes('/upload/f_auto,q_auto/')) {
+    return url.replace('/upload/f_auto,q_auto/', `/upload/${transforms}/`)
+  }
+  return url.replace('/upload/', `/upload/${transforms}/`)
+}

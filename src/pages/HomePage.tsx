@@ -9,7 +9,7 @@ import { StoreTeaser } from '../components/store/StoreTeaser'
 import { useProductsReviewStats } from '../hooks/useProductsReviewStats'
 import { useSEO } from '../components/seo'
 import { getProductPriceSummary } from '../utils'
-import { getProductPrimaryImageUrl } from '../utils/productImages'
+import { getProductPrimaryImageUrl, getOptimizedCloudinaryUrl } from '../utils/productImages'
 import type { Product, Category, Banner, HomeTile } from '../types'
 
 function useReveal(dep?: unknown) {
@@ -62,12 +62,19 @@ function HomeTopBanner() {
       <div className="container-page pt-4 md:pt-6 pb-2 md:pb-3">
         <div className="relative w-full aspect-[1396/642] md:aspect-[3/1] overflow-hidden rounded-2xl border border-[#c8e6d4] shadow-sm">
           {imageOk ? (
-            <img
-              src="/banner-home-top.png"
-              alt="Banner Lacquavi"
-              className="absolute inset-0 w-full h-full object-cover object-top"
-              onError={() => setImageOk(false)}
-            />
+            <picture>
+              <source srcSet="/banner-home-top.webp" type="image/webp" />
+              <img
+                src="/banner-home-top.png"
+                alt="Banner Lacquavi"
+                className="absolute inset-0 w-full h-full object-cover object-top"
+                fetchPriority="high"
+                loading="eager"
+                width="1396"
+                height="642"
+                onError={() => setImageOk(false)}
+              />
+            </picture>
           ) : (
             <div
               className="absolute inset-0 w-full h-full"
@@ -371,10 +378,12 @@ function CategoryTiles({ categories, products, homeTiles }: { categories: Catego
             >
               {tile.imageUrl ? (
                 <img
-                  src={tile.imageUrl}
+                  src={getOptimizedCloudinaryUrl(tile.imageUrl, 400, 530)}
                   alt={tile.label}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
+                  width="400"
+                  height="530"
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-[#999] font-bold text-4xl">

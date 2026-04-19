@@ -180,7 +180,7 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
                             <button
                                 key={idx}
                                 onClick={() => setCurrentIndex(idx)}
-                                className={`h-1.5 rounded-full transition-all ${idx === currentIndex ? 'w-5 bg-[#2a7e51]' : 'w-1.5 bg-emerald-200 hover:bg-emerald-300'}`}
+                                className={`h-1.5 w-1.5 rounded-full transition-transform duration-200 will-change-transform ${idx === currentIndex ? 'scale-[3.33] bg-[#2a7e51]' : 'scale-100 bg-emerald-200 hover:bg-emerald-300'}`}
                                 aria-label={`Ir para o produto ${idx + 1}`}
                             />
                         ))}

@@ -69,7 +69,10 @@ export function Header() {
 
           {/* Logo */}
           <Link to="/" className="flex-shrink-0 flex items-center hover:opacity-90 transition-opacity">
-            <img src="/logo.png" alt="Lacquavi" className="h-[39px] md:h-[50px] object-contain" />
+            <picture>
+              <source srcSet="/logo.webp" type="image/webp" />
+              <img src="/logo.png" alt="Lacquavi" className="h-[39px] md:h-[50px] object-contain" width="160" height="50" />
+            </picture>
           </Link>
 
           {/* Search Bar - Desktop */}
@@ -261,7 +264,10 @@ export function Header() {
             {/* Header with logo */}
             <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
               <Link to="/" onClick={() => setMenuOpen(false)} className="flex-shrink-0">
-                <img src="/logo.png" alt="Lacquavi" className="h-9 object-contain" />
+                <picture>
+                  <source srcSet="/logo.webp" type="image/webp" />
+                  <img src="/logo.png" alt="Lacquavi" className="h-9 object-contain" width="144" height="36" />
+                </picture>
               </Link>
               <button
                 onClick={() => setMenuOpen(false)}

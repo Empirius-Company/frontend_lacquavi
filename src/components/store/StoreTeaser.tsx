@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { STORES } from '../../config/store'
 
@@ -37,6 +37,20 @@ export function StoreTeaser() {
   const s = STORES.find(store => store.id === activeStoreId)!
   const day = new Date().getDay()
   const todayIsOpen = day >= 1 && day <= 6
+
+  const mapRef = useRef<HTMLDivElement>(null)
+  const [mapVisible, setMapVisible] = useState(false)
+
+  useEffect(() => {
+    const el = mapRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setMapVisible(true); obs.disconnect() } },
+      { rootMargin: '200px' }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
   return (
     <section className="bg-white py-10 border-t border-gray-100">
@@ -142,7 +156,7 @@ export function StoreTeaser() {
           </div>
 
           {/* Mapa — 3/5 */}
-          <div className="lg:col-span-3 rounded-xl overflow-hidden relative group h-full bg-gray-100">
+          <div ref={mapRef} className="lg:col-span-3 rounded-xl overflow-hidden relative group h-full bg-gray-100">
             <a
               href={s.mapsUrl}
               target="_blank"
@@ -151,16 +165,18 @@ export function StoreTeaser() {
               aria-label="Abrir no Google Maps"
             />
 
-            <iframe
-              key={s.id}
-              title={`Mapa — ${s.name}`}
-              src={s.mapEmbedUrl}
-              width="100%"
-              height="100%"
-              style={{ border: 0, position: 'absolute', inset: 0, filter: 'grayscale(0.5) contrast(1.05)', pointerEvents: 'none' }}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+            {mapVisible && (
+              <iframe
+                key={s.id}
+                title={`Mapa — ${s.name}`}
+                src={s.mapEmbedUrl}
+                width="100%"
+                height="100%"
+                style={{ border: 0, position: 'absolute', inset: 0, filter: 'grayscale(0.5) contrast(1.05)', pointerEvents: 'none' }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            )}
 
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-10 pointer-events-none drop-shadow-xl" style={{ marginTop: '-12px' }}>
               <svg width="40" height="40" viewBox="0 0 24 24" fill="#2a7e51" stroke="white" strokeWidth="1">

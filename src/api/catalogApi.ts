@@ -133,6 +133,9 @@ export const productsApi = {
   listReviews: (id: string): Promise<ProductReviewsResponse> =>
     httpClient.get<ProductReviewsResponse>(`/products/${id}/reviews`),
 
+  listReviewsBatch: (ids: string[]): Promise<{ stats: Record<string, ProductReviewStats> }> =>
+    httpClient.get<{ stats: Record<string, ProductReviewStats> }>(`/products/reviews/batch?ids=${ids.join(',')}`),
+
   createReview: (id: string, data: CreateProductReviewInput): Promise<CreateProductReviewResponse> =>
     httpClient.post<CreateProductReviewResponse>(`/products/${id}/reviews`, data),
 }
