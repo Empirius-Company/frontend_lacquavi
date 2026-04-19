@@ -3,23 +3,35 @@ import { Link, useLocation } from 'react-router-dom'
 import { CONTACT_CONFIG } from '../../config/contactConfig'
 import { STORES } from '../../config/store'
 import { PaymentIconsBar } from '../ui/PaymentMethodIcons'
+import { newsletterApi } from '../../api'
 
 export function Footer() {
   const location = useLocation()
   const isCheckoutFlow = location.pathname.startsWith('/checkout')
 
-  const [email, setEmail]       = useState('')
-  const [emailSent, setEmailSent] = useState(false)
-  const [emailError, setEmailError] = useState('')
+  const [email, setEmail]             = useState('')
+  const [emailSent, setEmailSent]     = useState(false)
+  const [alreadyExists, setAlreadyExists] = useState(false)
+  const [emailError, setEmailError]   = useState('')
+  const [loading, setLoading]         = useState(false)
 
-  const handleNewsletter = (e: React.FormEvent) => {
+  const handleNewsletter = async (e: React.FormEvent) => {
     e.preventDefault()
     setEmailError('')
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setEmailError('Informe um e-mail válido.')
       return
     }
-    setEmailSent(true)
+    setLoading(true)
+    try {
+      const result = await newsletterApi.subscribe(email)
+      setAlreadyExists(result.alreadyExists)
+      setEmailSent(true)
+    } catch {
+      setEmailError('Erro ao realizar cadastro. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const instagramUrl = STORES[0].instagram
@@ -47,13 +59,33 @@ export function Footer() {
 
           <div className="flex flex-col w-full lg:w-auto">
             {emailSent ? (
-              <div className="flex items-center gap-3 bg-[#2a7e51]/20 border border-[#2a7e51]/30 rounded-lg px-5 py-4">
-                <span className="text-[#D4AF37] text-xl">✓</span>
-                <div>
-                  <p className="text-white font-bold text-sm">Cadastro realizado!</p>
-                  <p className="text-gray-300 text-xs mt-0.5">Enviamos seu cupom de boas-vindas para <strong className="text-white">{email}</strong>.</p>
+              alreadyExists ? (
+                <div className="flex items-center gap-3 bg-white/10 border border-white/20 rounded-lg px-5 py-4">
+                  <span className="text-[#D4AF37] text-xl">ℹ</span>
+                  <div>
+                    <p className="text-white font-bold text-sm">E-mail já cadastrado</p>
+                    <p className="text-gray-300 text-xs mt-0.5">
+                      <strong className="text-white">{email}</strong> já está na nossa lista.
+                    </p>
+                    <p className="text-gray-400 text-xs mt-1">
+                      Verifique sua caixa de entrada em <strong className="text-gray-300">lacqua.noreply@gmail.com</strong>.
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center gap-3 bg-[#2a7e51]/20 border border-[#2a7e51]/30 rounded-lg px-5 py-4">
+                  <span className="text-[#D4AF37] text-xl">✓</span>
+                  <div>
+                    <p className="text-white font-bold text-sm">Cadastro realizado!</p>
+                    <p className="text-gray-300 text-xs mt-0.5">
+                      Enviamos seu cupom de boas-vindas para <strong className="text-white">{email}</strong>.
+                    </p>
+                    <p className="text-gray-400 text-xs mt-1">
+                      Verifique sua caixa de entrada em <strong className="text-gray-300">lacqua.noreply@gmail.com</strong>.
+                    </p>
+                  </div>
+                </div>
+              )
             ) : (
               <form onSubmit={handleNewsletter} noValidate>
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -66,9 +98,10 @@ export function Footer() {
                   />
                   <button
                     type="submit"
-                    className="bg-[#2a7e51] hover:bg-[#236843] active:scale-[0.98] text-white font-bold px-8 py-4 rounded-lg uppercase tracking-widest text-xs transition-all shadow-lg shadow-[#2a7e51]/20 whitespace-nowrap"
+                    disabled={loading}
+                    className="bg-[#2a7e51] hover:bg-[#236843] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold px-8 py-4 rounded-lg uppercase tracking-widest text-xs transition-all shadow-lg shadow-[#2a7e51]/20 whitespace-nowrap"
                   >
-                    QUERO MEU CUPOM
+                    {loading ? 'AGUARDE...' : 'QUERO MEU CUPOM'}
                   </button>
                 </div>
                 {emailError && (

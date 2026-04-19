@@ -152,6 +152,14 @@ export const couponsApi = {
     httpClient.delete<{ message: string }>(`/api/admin/coupons/${id}`),
 }
 
+// ─── Newsletter API ───────────────────────────────────────────────────────────
+interface NewsletterSubscribeResponse { alreadyExists: boolean; message: string }
+
+export const newsletterApi = {
+  subscribe: (email: string): Promise<NewsletterSubscribeResponse> =>
+    httpClient.post<NewsletterSubscribeResponse>('/newsletter/subscribe', { email }),
+}
+
 // ─── Health API ───────────────────────────────────────────────────────────────
 export const healthApi = {
   get: (): Promise<HealthStatus> =>

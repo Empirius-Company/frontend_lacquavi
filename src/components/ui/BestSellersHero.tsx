@@ -70,7 +70,7 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
         <section
             id="selecao-premium-destaque-semana"
             aria-label="Nossos produtos mais vendidos"
-            className="group relative my-4 mx-2 sm:mx-4 overflow-hidden rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/80 via-white to-emerald-50/60 shadow-sm"
+            className="group relative my-4 mx-2 sm:mx-4 overflow-hidden rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/80 via-white to-emerald-50/60 shadow-sm min-h-[440px] sm:min-h-[440px] md:min-h-[350px] lg:min-h-[380px]"
         >
             {/* Background glow — desktop only */}
             <div className="pointer-events-none absolute right-[10%] top-1/2 hidden h-[300px] w-[300px] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(42,126,81,0.12)_0%,rgba(42,126,81,0.06)_45%,rgba(255,255,255,0)_76%)] blur-[2px] md:block" />
@@ -103,14 +103,14 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
 
                     {/* ── Text info — order-2 on mobile (appears below image) ── */}
                     <div
-                        className={`order-2 md:order-1 w-full text-center md:text-left transition-all duration-700 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
+                        className={`order-2 md:order-1 w-full flex flex-col justify-center min-h-[180px] md:h-[270px] lg:h-[300px] text-center md:text-left transition-all duration-700 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
                         key={activeProduct.id}
                     >
                         <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700 md:text-xs">
                             Destaque da Semana
                         </p>
 
-                        <h1 className="font-display text-xl font-medium leading-tight tracking-[0.01em] text-neutral-900 md:text-3xl lg:text-[2.25rem]">
+                        <h1 className="font-display text-xl font-medium leading-tight tracking-[0.01em] text-neutral-900 md:text-3xl lg:text-[2.25rem] line-clamp-2">
                             {activeProduct.name}
                         </h1>
 
