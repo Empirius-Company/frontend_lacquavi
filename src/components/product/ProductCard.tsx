@@ -97,12 +97,12 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
 
           {/* Tags / Brand / Rating */}
           <div className="flex justify-between items-center mb-1.5 gap-2">
-            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate max-w-[60%]">
+            <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest truncate max-w-[60%]">
               {product.brand || 'DIVERSOS'}
             </p>
             <div className="flex items-center gap-0.5 text-[#fcb900] text-[10px] shrink-0 font-medium">
               {renderStars(averageRating)}
-              <span className="text-[9px] text-gray-400 ml-0.5 font-normal">
+              <span className="text-[9px] text-gray-600 ml-0.5 font-normal">
                 ({reviewsTotal})
               </span>
             </div>

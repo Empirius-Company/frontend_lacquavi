@@ -137,7 +137,7 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
                         <div className="mt-4 flex flex-wrap items-center gap-2.5 justify-center md:justify-start">
                             <Link
                                 to={`/products/${activeProduct.id}`}
-                                className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-6 py-2.5 text-xs font-semibold tracking-[0.04em] text-white shadow-[0_8px_18px_rgba(42,126,81,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-600"
+                                className="inline-flex items-center justify-center rounded-full bg-emerald-700 px-6 py-2.5 text-xs font-semibold tracking-[0.04em] text-white shadow-[0_8px_18px_rgba(42,126,81,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-800"
                             >
                                 Comprar agora
                             </Link>
@@ -182,9 +182,11 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
                             <button
                                 key={idx}
                                 onClick={() => setCurrentIndex(idx)}
-                                className={`h-1.5 w-1.5 rounded-full transition-transform duration-200 will-change-transform ${idx === currentIndex ? 'scale-[3.33] bg-[#2a7e51]' : 'scale-100 bg-emerald-200 hover:bg-emerald-300'}`}
+                                className={`-m-2 p-2 rounded-full transition-transform duration-200 will-change-transform ${idx === currentIndex ? '' : ''}`}
                                 aria-label={`Ir para o produto ${idx + 1}`}
-                            />
+                            >
+                                <span className={`block h-1.5 w-1.5 rounded-full transition-transform duration-200 will-change-transform ${idx === currentIndex ? 'scale-[3.33] bg-[#2a7e51]' : 'scale-100 bg-emerald-200 hover:bg-emerald-300'}`} />
+                            </button>
                         ))}
                     </div>
                 </>

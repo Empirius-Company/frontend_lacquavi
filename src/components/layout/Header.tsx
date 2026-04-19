@@ -60,7 +60,7 @@ export function Header() {
             <rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle>
           </svg>
           <span className="text-[11px] text-white tracking-widest font-bold uppercase">
-            FRETE GRÁTIS a partir de R$ 259,00 <span className="opacity-80">+ descontos exclusivos</span>
+            FRETE GRÁTIS a partir de R$ 259,00 <span>+ descontos exclusivos</span>
           </span>
         </div>
 
@@ -86,6 +86,7 @@ export function Header() {
               onKeyDown={handleSearch}
             />
             <button
+              aria-label="Buscar"
               className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#000000]"
               onClick={() => searchTerm.trim() && navigate(`/products?q=${searchTerm.trim()}`)}
             >
@@ -130,7 +131,7 @@ export function Header() {
               )}
             </div>
             {/* Cart */}
-            <button onClick={openCart} className="relative text-[#333] hover:text-[#2a7e51] transition-colors">
+            <button aria-label="Abrir carrinho" onClick={openCart} className="relative text-[#333] hover:text-[#2a7e51] transition-colors">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 01-8 0"></path></svg>
               {totalItems > 0 && (
                 <span className="absolute -top-1 -right-1.5 w-4 h-4 rounded-full bg-[#2a7e51] text-white text-[9px] font-bold flex items-center justify-center">
@@ -140,7 +141,7 @@ export function Header() {
             </button>
 
             {/* Mobile Menu Toggle */}
-            <button className="md:hidden text-[#333]" onClick={() => setMenuOpen(!menuOpen)}>
+            <button aria-label="Abrir menu" className="md:hidden text-[#333]" onClick={() => setMenuOpen(!menuOpen)}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
           </div>
@@ -270,6 +271,7 @@ export function Header() {
                 </picture>
               </Link>
               <button
+                aria-label="Fechar menu"
                 onClick={() => setMenuOpen(false)}
                 className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
               >

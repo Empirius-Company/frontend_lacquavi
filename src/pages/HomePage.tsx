@@ -39,8 +39,8 @@ function SectionHeader({ eyebrow, title, linkTo, linkLabel }: { eyebrow?: string
         <h2 className="text-2xl md:text-3xl font-bold text-[#000000]">{title}</h2>
       </div>
       {linkTo && (
-        <Link to={linkTo} className="text-sm font-semibold text-[#000000] hover:underline flex items-center gap-1">
-          {linkLabel || 'Ver todos'} <span className="text-lg leading-none">›</span>
+        <Link to={linkTo} aria-label={`Ver todos — ${title}`} className="text-sm font-semibold text-[#000000] hover:underline flex items-center gap-1">
+          {linkLabel || 'Ver todos'} <span aria-hidden="true" className="text-lg leading-none">›</span>
         </Link>
       )}
     </div>
@@ -383,7 +383,8 @@ function CategoryTiles({ categories, products, homeTiles }: { categories: Catego
               {tile.imageUrl ? (
                 <img
                   src={getOptimizedCloudinaryUrl(tile.imageUrl, 320, 427)}
-                  alt={tile.label}
+                  alt=""
+                  aria-hidden="true"
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
                   width="320"
