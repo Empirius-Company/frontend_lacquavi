@@ -64,8 +64,12 @@ function HomeTopBanner() {
           {imageOk ? (
             <picture>
               <source
-                srcSet="/banner-home-top-mobile.webp 700w, /banner-home-top.webp 1400w"
-                sizes="(max-width: 768px) 700px, 1400px"
+                media="(max-width: 768px)"
+                srcSet="/banner-home-top-mobile.webp"
+                type="image/webp"
+              />
+              <source
+                srcSet="/banner-home-top.webp"
                 type="image/webp"
               />
               <img

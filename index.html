@@ -94,11 +94,15 @@
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow" />
     
-    <!-- Preload LCP image — mobile gets smaller variant via imagesrcset -->
+    <!-- Preload LCP image — media query ensures mobile gets the small variant -->
+    <link rel="preload" as="image"
+      href="/banner-home-top-mobile.webp"
+      media="(max-width: 768px)"
+      type="image/webp"
+      fetchpriority="high" />
     <link rel="preload" as="image"
       href="/banner-home-top.webp"
-      imagesrcset="/banner-home-top-mobile.webp 700w, /banner-home-top.webp 1400w"
-      imagesizes="(max-width: 768px) 700px, 1400px"
+      media="(min-width: 769px)"
       type="image/webp"
       fetchpriority="high" />
 

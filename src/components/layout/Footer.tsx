@@ -196,7 +196,7 @@ export function Footer() {
       <div className="border-t border-gray-100">
         <div className="container-page py-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <span className="text-xs text-gray-400 uppercase tracking-widest font-medium whitespace-nowrap flex-shrink-0">
+            <span className="text-xs text-gray-600 uppercase tracking-widest font-medium whitespace-nowrap flex-shrink-0">
               Formas de pagamento
             </span>
             <PaymentIconsBar />
@@ -206,7 +206,7 @@ export function Footer() {
 
       {/* Bottom bar */}
       <div className="bg-gray-100 py-6">
-        <div className="container-page flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500 text-center md:text-left">
+        <div className="container-page flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-700 text-center md:text-left">
           <p>
             © {new Date().getFullYear()} Lacquavi. Todos os direitos reservados.
             <br />

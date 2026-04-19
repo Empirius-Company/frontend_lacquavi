@@ -88,7 +88,7 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
                         >
                             {hasImage ? (
                                 <img
-                                    src={getOptimizedCloudinaryUrl(activeProductImage!.url, 460, 520)}
+                                    src={getOptimizedCloudinaryUrl(activeProductImage!.url, 330, 380)}
                                     alt={activeProductImage!.alt || activeProduct.name}
                                     className="soft-edge-image h-full w-full object-contain drop-shadow-[0_12px_22px_rgba(0,0,0,0.18)]"
                                     width="460"
@@ -177,15 +177,15 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
                     </button>
 
                     {/* Pagination dots */}
-                    <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-1.5">
+                    <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2">
                         {products.map((_, idx) => (
                             <button
                                 key={idx}
                                 onClick={() => setCurrentIndex(idx)}
-                                className={`-m-2 p-2 rounded-full transition-transform duration-200 will-change-transform ${idx === currentIndex ? '' : ''}`}
+                                className="flex items-center justify-center w-8 h-8 rounded-full"
                                 aria-label={`Ir para o produto ${idx + 1}`}
                             >
-                                <span className={`block h-1.5 w-1.5 rounded-full transition-transform duration-200 will-change-transform ${idx === currentIndex ? 'scale-[3.33] bg-[#2a7e51]' : 'scale-100 bg-emerald-200 hover:bg-emerald-300'}`} />
+                                <span className={`block h-1.5 w-1.5 rounded-full transition-transform duration-200 will-change-transform ${idx === currentIndex ? 'scale-[3.33] bg-[#2a7e51]' : 'scale-100 bg-emerald-200'}`} />
                             </button>
                         ))}
                     </div>

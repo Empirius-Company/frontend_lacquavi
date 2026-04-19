@@ -72,7 +72,7 @@ export function StoreTeaser() {
                   className={`px-4 py-1.5 rounded-md font-bold text-xs transition-all focus:outline-none whitespace-nowrap ${
                     activeStoreId === store.id
                       ? 'bg-[#2a7e51] text-white shadow-sm'
-                      : 'text-gray-500 hover:text-[#000000] hover:bg-white'
+                      : 'text-gray-700 hover:text-[#000000] hover:bg-white'
                   }`}
                 >
                   {store.locationName}
@@ -96,7 +96,7 @@ export function StoreTeaser() {
 
             {/* Nome da loja */}
             <div>
-              <p className="text-[0.6rem] font-bold text-gray-400 uppercase tracking-widest mb-0.5">
+              <p className="text-[0.6rem] font-bold text-gray-600 uppercase tracking-widest mb-0.5">
                 {s.city}, {s.state}
               </p>
               <h3 className="text-xl font-black font-display text-[#000000] leading-tight mb-4">
@@ -108,8 +108,8 @@ export function StoreTeaser() {
                 <span className="text-gray-400 mt-0.5 flex-shrink-0"><IconMapPin /></span>
                 <div>
                   <p className="text-sm font-semibold text-[#000000] leading-snug">{s.street}</p>
-                  <p className="text-xs text-gray-500">{s.complement}</p>
-                  <p className="text-xs text-gray-400">{s.city}, {s.state} — CEP {s.zip}</p>
+                  <p className="text-xs text-gray-700">{s.complement}</p>
+                  <p className="text-xs text-gray-600">{s.city}, {s.state} — CEP {s.zip}</p>
                 </div>
               </div>
 
@@ -119,8 +119,8 @@ export function StoreTeaser() {
                 <div className="space-y-1">
                   {s.hours.map(h => (
                     <div key={h.days} className="flex gap-3 text-xs">
-                      <span className="text-gray-500 w-32 flex-shrink-0">{h.days}</span>
-                      <span className={`font-bold ${h.time === 'Fechado' ? 'text-gray-400' : 'text-[#000000]'}`}>{h.time}</span>
+                      <span className="text-gray-700 w-32 flex-shrink-0">{h.days}</span>
+                      <span className={`font-bold ${h.time === 'Fechado' ? 'text-gray-600' : 'text-[#000000]'}`}>{h.time}</span>
                     </div>
                   ))}
                 </div>
@@ -149,7 +149,7 @@ export function StoreTeaser() {
 
             <Link
               to="/nossa-loja"
-              className="mt-2 flex items-center justify-center gap-1 text-[0.65rem] text-gray-400 hover:text-[#000000] transition-colors"
+              className="mt-2 flex items-center justify-center gap-1 text-[0.65rem] text-gray-600 hover:text-[#000000] transition-colors"
             >
               Ver página completa <IconArrow />
             </Link>
