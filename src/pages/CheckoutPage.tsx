@@ -602,15 +602,13 @@ export function CheckoutPage() {
                         />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <label htmlFor="dest-complement" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">
-                          Complemento <span className="normal-case text-nude-400">(opcional)</span>
-                        </label>
+                        <label htmlFor="dest-complement" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">Complemento</label>
                         <input
                           id="dest-complement"
                           type="text"
                           value={destination.complement ?? ''}
                           onChange={e => handleDestinationChange('complement', e.target.value)}
-                          placeholder="Apto 12"
+                          placeholder="Apto 12 (opcional)"
                           className="input-luxury text-sm"
                         />
                       </div>

@@ -778,7 +778,7 @@ export function AdminCategoriesPage() {
     try {
       await categoriesApi.reorder(withNewOrder.map(({ id, displayOrder }) => ({ id, displayOrder })))
     } catch (err) {
-      toast('Erro ao reordenar', 'error')
+      toast('Não foi possível reordenar as categorias. Tente novamente.', 'error')
       load()
     } finally {
       setReordering(false)
@@ -1327,7 +1327,7 @@ export function AdminOrderDetailPage() {
       toast('Pedido marcado como pronto para retirada!', 'success')
       await reloadShipment()
     } catch (err) {
-      toast((err as ApiError).message || 'Erro ao marcar como pronto para retirada', 'error')
+      toast((err as ApiError).message || 'Não foi possível marcar o pedido como pronto para retirada.', 'error')
     } finally {
       setMarkingPickupReady(false)
     }
@@ -2645,7 +2645,7 @@ export function AdminHomeTilesPage() {
   useEffect(() => {
     homeTilesApi.list()
       .then((res) => setTiles(res.tiles || []))
-      .catch(() => toast('Erro ao carregar tiles', 'error'))
+      .catch(() => toast('Não foi possível carregar os banners da home. Recarregue a página.', 'error'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -2657,7 +2657,7 @@ export function AdminHomeTilesPage() {
       setTiles((prev) => prev.map((t) => t.key === key ? res.tile : t))
       toast('Imagem atualizada!', 'success')
     } catch {
-      toast('Erro ao atualizar imagem', 'error')
+      toast('Não foi possível atualizar a imagem. Tente novamente.', 'error')
     } finally {
       setUploading(null)
     }

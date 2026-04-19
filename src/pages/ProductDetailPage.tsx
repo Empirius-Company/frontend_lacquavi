@@ -396,7 +396,7 @@ const loadReviews = useCallback(async () => {
 
             {/* Brand & Stars */}
             <div className="flex justify-between items-start mb-2">
-              <Link to={`/brand/${product.brand}`} className="text-xs text-[#2a7e51] hover:underline uppercase tracking-wide">Ver tudo da marca <span className="font-bold">{product.brand || 'DIVERSOS'}</span></Link>
+              <Link to={`/products?q=${encodeURIComponent(product.brand || '')}`} className="text-xs text-[#2a7e51] hover:underline uppercase tracking-wide">Ver tudo da marca <span className="font-bold">{product.brand || 'DIVERSOS'}</span></Link>
               <span className="text-xs text-gray-400">Ref: {product.id.split('-')[0].toUpperCase()}</span>
             </div>
 
@@ -427,7 +427,7 @@ const loadReviews = useCallback(async () => {
                   sem juros no cartão
                 </p>
               )}
-              <p className="text-xs text-gray-500 mt-2">Vendido e entregue por <span className="text-[#2a7e51] font-bold">Lacquavi ›</span></p>
+              <p className="text-xs text-gray-500 mt-2">Vendido e entregue por <span className="text-[#2a7e51] font-bold">Lacqua Minas</span></p>
             </div>
 
             {/* Actions */}

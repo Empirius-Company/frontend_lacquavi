@@ -124,8 +124,24 @@ instance.interceptors.response.use(
     }
 
     const data = err.response?.data
+
+    const translateAxiosMessage = (msg: string): string => {
+      if (/network error/i.test(msg)) {
+        return 'Sem conexão com o servidor. Verifique sua internet e tente novamente.'
+      }
+      if (/timeout/i.test(msg)) {
+        return 'O servidor demorou demais para responder. Tente novamente em instantes.'
+      }
+      if (/request failed with status code/i.test(msg)) {
+        return 'Ocorreu um erro inesperado. Tente novamente.'
+      }
+      return msg
+    }
+
+    const rawMessage = data?.error ?? data?.message ?? err.message ?? 'Ocorreu um erro inesperado'
+
     const apiError: ApiError = {
-      message: data?.error ?? data?.message ?? err.message ?? 'Ocorreu um erro inesperado',
+      message: translateAxiosMessage(rawMessage),
       statusCode: err.response?.status,
       code: data?.code,
       retryAfter: data?.retryAfter,

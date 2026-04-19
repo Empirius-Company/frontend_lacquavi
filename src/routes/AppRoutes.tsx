@@ -5,11 +5,13 @@ import { ProtectedRoute, AdminRoute } from './guards'
 import { useLoginModal, type AuthModalMode } from '../context/LoginModalContext'
 
 // Public pages
-import { HomePage }          from '../pages/HomePage'
-import { ProductListPage }   from '../pages/ProductListPage'
-import { ProductDetailPage } from '../pages/ProductDetailPage'
-import { CartPage }          from '../pages/CartPage'
-import { StorePage }         from '../pages/StorePage'
+import { HomePage }             from '../pages/HomePage'
+import { ProductListPage }      from '../pages/ProductListPage'
+import { ProductDetailPage }    from '../pages/ProductDetailPage'
+import { CartPage }             from '../pages/CartPage'
+import { StorePage }            from '../pages/StorePage'
+import { ForgotPasswordPage }   from '../pages/ForgotPasswordPage'
+import { ResetPasswordPage }    from '../pages/ResetPasswordPage'
 
 // Auth / account / utility pages
 import {
@@ -19,6 +21,15 @@ import {
   PaymentResultPage,
   NotFoundPage,
 } from '../pages/general'
+
+// Informational pages
+import {
+  TermosPage,
+  PrivacidadePage,
+  EntregaPage,
+  TrocasPage,
+  PagamentoPage,
+} from '../pages/InfoPages'
 
 // Redirects /login and /register to the current page with the modal open
 function AuthModalRedirect({ mode }: { mode: AuthModalMode }) {
@@ -66,6 +77,13 @@ export function AppRoutes() {
         <Route path="/products/:id" element={<ProductDetailPage />} />
         <Route path="/cart"         element={<CartPage />} />
         <Route path="/nossa-loja"    element={<StorePage />} />
+        <Route path="/termos"            element={<TermosPage />} />
+        <Route path="/privacidade"       element={<PrivacidadePage />} />
+        <Route path="/entrega"           element={<EntregaPage />} />
+        <Route path="/trocas"            element={<TrocasPage />} />
+        <Route path="/pagamento"         element={<PagamentoPage />} />
+        <Route path="/forgot-password"   element={<ForgotPasswordPage />} />
+        <Route path="/reset-password"    element={<ResetPasswordPage />} />
       </Route>
 
       {/* ── Auth pages — open modal and go back, no fullscreen page ── */}

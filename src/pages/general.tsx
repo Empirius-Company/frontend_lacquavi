@@ -115,7 +115,7 @@ export function LoginPage() {
       await login(form.email, form.password)
       navigate(from, { replace: true })
     } catch (err) {
-      setError((err as ApiError).message ?? 'Email ou senha inválidos')
+      setError((err as ApiError).message ?? 'E-mail ou senha incorretos. Verifique os dados e tente novamente.')
     } finally { setLoading(false) }
   }
 
@@ -187,7 +187,7 @@ export function RegisterPage() {
       await register(form.name, form.email, form.password, rawPhone)
       navigate('/')
     } catch (err) {
-      setError((err as ApiError).message ?? 'Erro ao criar conta')
+      setError((err as ApiError).message ?? 'Não foi possível criar sua conta. Tente novamente.')
     } finally { setLoading(false) }
   }
 
@@ -650,7 +650,7 @@ export function AccountProfilePage() {
       setSuccess(true)
       toast('Perfil atualizado com sucesso!', 'success')
     } catch (err) {
-      setError((err as ApiError).message ?? 'Erro ao salvar')
+      setError((err as ApiError).message ?? 'Não foi possível salvar as alterações. Tente novamente.')
     } finally { setSaving(false) }
   }
 

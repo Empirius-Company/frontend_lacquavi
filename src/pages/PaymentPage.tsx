@@ -343,6 +343,7 @@ export function PaymentPage() {
 
     try {
       let cardTokenStr = ''
+      let cardIssuerId: string | undefined
 
       if (method === 'credit_card') {
         if (!cardForm.cardNumber || !cardForm.securityCode || !cardForm.expiryDate) {
@@ -376,9 +377,22 @@ export function PaymentPage() {
 
         const mpData = await mpRes.json()
         if (!mpRes.ok || !mpData.id) {
-          throw new Error(mpData.message || 'Erro ao validar cartão no Mercado Pago.')
+          const translateMpCardError = (msg: string): string => {
+            if (!msg) return 'Não foi possível validar os dados do cartão. Confira e tente novamente.'
+            const m = msg.toLowerCase()
+            if (m.includes('card_number') || m.includes('cardnumber')) return 'Número do cartão inválido. Verifique os dados.'
+            if (m.includes('expiration_month') || m.includes('expiry')) return 'Mês de validade inválido.'
+            if (m.includes('expiration_year')) return 'Ano de validade inválido.'
+            if (m.includes('security_code') || m.includes('cvv') || m.includes('cvc')) return 'Código de segurança inválido.'
+            if (m.includes('cardholder') || m.includes('name')) return 'Nome do titular inválido. Use o nome como está no cartão.'
+            if (m.includes('cpf') || m.includes('identification')) return 'CPF inválido.'
+            if (m.includes('invalid')) return 'Dados do cartão inválidos. Confira as informações e tente novamente.'
+            return 'Não foi possível validar os dados do cartão. Confira e tente novamente.'
+          }
+          throw new Error(translateMpCardError(mpData.message))
         }
         cardTokenStr = mpData.id
+        cardIssuerId = mpData.issuer_id ? String(mpData.issuer_id) : undefined
       }
 
       const mpMethod = method === 'credit_card'
@@ -390,6 +404,7 @@ export function PaymentPage() {
         paymentMethodId: mpMethod,
         idempotencyKey,
         ...(cardTokenStr ? { cardToken: cardTokenStr } : {}),
+        ...(cardIssuerId ? { issuerId: cardIssuerId } : {}),
         ...(method === 'credit_card' ? { installments } : {}),
       })
       const createdPayment = res.payment ?? await recoverPaymentFromOrder(orderId)
@@ -444,7 +459,7 @@ export function PaymentPage() {
         setError('Falha na integração de pagamento. Tente novamente ou contate o suporte.')
         toast('Erro no provedor de pagamento. Tente novamente.', 'error')
       } else {
-        setError(apiError.message ?? 'Erro ao criar pagamento')
+        setError(apiError.message ?? 'Não foi possível processar o pagamento. Tente novamente.')
       }
 
       canReuseLastAttemptKeyRef.current = shouldReuseKeyForRetry(apiError)
@@ -472,7 +487,7 @@ export function PaymentPage() {
       } else {
         toast('Pagamento ainda pendente.', 'info')
       }
-    } catch { toast('Erro ao verificar pagamento.', 'error') }
+    } catch { toast('Não foi possível verificar o status do pagamento. Tente novamente.', 'error') }
     finally { setChecking(false) }
   }
 
@@ -483,7 +498,7 @@ export function PaymentPage() {
       setCopied(true)
       toast('Código PIX copiado!', 'success')
       setTimeout(() => setCopied(false), 3000)
-    } catch { toast('Erro ao copiar.', 'error') }
+    } catch { toast('Não foi possível copiar o código PIX. Copie manualmente.', 'error') }
   }
 
   if (loading) {

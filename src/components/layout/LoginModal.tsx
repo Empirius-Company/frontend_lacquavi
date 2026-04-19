@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useLoginModal } from '../../context/LoginModalContext'
 import { Button, Input, ErrorMessage } from '../ui'
@@ -9,6 +10,7 @@ import type { ApiError } from '../../types'
 function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
   const { login } = useAuth()
   const { closeLoginModal } = useLoginModal()
+  const navigate = useNavigate()
 
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
@@ -24,7 +26,7 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
       await login(form.email, form.password)
       closeLoginModal()
     } catch (err) {
-      setError((err as ApiError).message ?? 'Email ou senha inválidos')
+      setError((err as ApiError).message ?? 'E-mail ou senha incorretos. Verifique os dados e tente novamente.')
     } finally { setLoading(false) }
   }
 
@@ -67,7 +69,17 @@ function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
         </Button>
       </form>
 
-      <p className="text-center text-sm text-gray-500 mt-5">
+      <p className="text-center text-sm mt-3">
+        <button
+          type="button"
+          onClick={() => { closeLoginModal(); navigate('/forgot-password') }}
+          className="text-gray-400 hover:text-gray-600 transition-colors text-xs"
+        >
+          Esqueci minha senha
+        </button>
+      </p>
+
+      <p className="text-center text-sm text-gray-500 mt-4">
         Não tem conta?{' '}
         <button
           type="button"
@@ -111,7 +123,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
       await register(form.name, form.email, form.password, rawPhone)
       closeLoginModal()
     } catch (err) {
-      setError((err as ApiError).message ?? 'Erro ao criar conta')
+      setError((err as ApiError).message ?? 'Não foi possível criar sua conta. Tente novamente.')
     } finally { setLoading(false) }
   }
 

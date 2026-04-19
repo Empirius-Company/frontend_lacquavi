@@ -33,17 +33,6 @@ const ADMIN_NAV: AdminNavGroup[] = [
     ],
   },
   {
-    label: 'Loja',
-    links: [
-      { to: '/admin/products',      label: 'Produtos',      icon: '◇' },
-      { to: '/admin/categories',    label: 'Categorias',    icon: '⊞' },
-      { to: '/admin/subcategories', label: 'Subcategorias', icon: '⊟' },
-      { to: '/admin/banners',       label: 'Banners',       icon: '◬' },
-      { to: '/admin/home-tiles',    label: 'Tiles Início',  icon: '⊡' },
-      { to: '/admin/coupons',       label: 'Cupons',        icon: '⊛' },
-    ],
-  },
-  {
     label: 'Operações',
     links: [
       { to: '/admin/orders',   label: 'Pedidos',    icon: '◎' },
@@ -54,6 +43,17 @@ const ADMIN_NAV: AdminNavGroup[] = [
     label: 'Logística',
     links: [
       { to: '/admin/shipping', label: 'Frete & Etiquetas', icon: '◫' },
+    ],
+  },
+  {
+    label: 'Loja',
+    links: [
+      { to: '/admin/products',      label: 'Produtos',      icon: '◇' },
+      { to: '/admin/categories',    label: 'Categorias',    icon: '⊞' },
+      { to: '/admin/subcategories', label: 'Subcategorias', icon: '⊟' },
+      { to: '/admin/banners',       label: 'Banners',       icon: '◬' },
+      { to: '/admin/home-tiles',    label: 'Tiles Início',  icon: '⊡' },
+      { to: '/admin/coupons',       label: 'Cupons',        icon: '⊛' },
     ],
   },
   {

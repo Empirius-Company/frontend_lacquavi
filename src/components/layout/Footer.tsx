@@ -1,10 +1,28 @@
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { CONTACT_CONFIG } from '../../config/contactConfig'
+import { STORES } from '../../config/store'
 import { PaymentIconsBar } from '../ui/PaymentMethodIcons'
 
 export function Footer() {
   const location = useLocation()
   const isCheckoutFlow = location.pathname.startsWith('/checkout')
+
+  const [email, setEmail]       = useState('')
+  const [emailSent, setEmailSent] = useState(false)
+  const [emailError, setEmailError] = useState('')
+
+  const handleNewsletter = (e: React.FormEvent) => {
+    e.preventDefault()
+    setEmailError('')
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError('Informe um e-mail válido.')
+      return
+    }
+    setEmailSent(true)
+  }
+
+  const instagramUrl = STORES[0].instagram
 
   return (
     <footer className="bg-white border-t border-gray-200 mt-auto">
@@ -28,19 +46,39 @@ export function Footer() {
           </div>
 
           <div className="flex flex-col w-full lg:w-auto">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="email"
-                placeholder="Seu melhor e-mail"
-                className="px-5 py-4 rounded-lg w-full sm:w-80 text-[#333] bg-white border border-[#D4AF37]/40 focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-all placeholder:text-gray-400"
-              />
-              <button className="bg-[#2a7e51] hover:bg-[#236843] active:scale-[0.98] text-white font-bold px-8 py-4 rounded-lg uppercase tracking-widest text-xs transition-all shadow-lg shadow-[#2a7e51]/20 whitespace-nowrap">
-                QUERO MEU CUPOM
-              </button>
-            </div>
-            <p className="text-xs text-gray-400 mt-3 text-center sm:text-left font-medium">
-              Respeitamos sua privacidade. Saia quando quiser.
-            </p>
+            {emailSent ? (
+              <div className="flex items-center gap-3 bg-[#2a7e51]/20 border border-[#2a7e51]/30 rounded-lg px-5 py-4">
+                <span className="text-[#D4AF37] text-xl">✓</span>
+                <div>
+                  <p className="text-white font-bold text-sm">Cadastro realizado!</p>
+                  <p className="text-gray-300 text-xs mt-0.5">Enviamos seu cupom de boas-vindas para <strong className="text-white">{email}</strong>.</p>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleNewsletter} noValidate>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => { setEmail(e.target.value); setEmailError('') }}
+                    placeholder="Seu melhor e-mail"
+                    className="px-5 py-4 rounded-lg w-full sm:w-80 text-[#333] bg-white border border-[#D4AF37]/40 focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-all placeholder:text-gray-400"
+                  />
+                  <button
+                    type="submit"
+                    className="bg-[#2a7e51] hover:bg-[#236843] active:scale-[0.98] text-white font-bold px-8 py-4 rounded-lg uppercase tracking-widest text-xs transition-all shadow-lg shadow-[#2a7e51]/20 whitespace-nowrap"
+                  >
+                    QUERO MEU CUPOM
+                  </button>
+                </div>
+                {emailError && (
+                  <p className="text-red-400 text-xs mt-2">{emailError}</p>
+                )}
+                <p className="text-xs text-gray-400 mt-3 text-center sm:text-left font-medium">
+                  Respeitamos sua privacidade. Saia quando quiser.
+                </p>
+              </form>
+            )}
           </div>
 
         </div>
@@ -102,12 +140,15 @@ export function Footer() {
           <div>
             <h4 className="font-bold text-[#333] mb-4 uppercase text-sm">Siga-nos</h4>
             <div className="flex gap-4 mb-8">
-              <span className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-[#2a7e51] hover:text-white cursor-pointer transition-colors">
+              <a
+                href={instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram Lacquavi"
+                className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-[#2a7e51] hover:text-white transition-colors"
+              >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-              </span>
-              <span className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-[#2a7e51] hover:text-white cursor-pointer transition-colors">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
-              </span>
+              </a>
             </div>
 
             <h4 className="font-bold text-[#333] mb-2 uppercase text-sm">Atendimento</h4>

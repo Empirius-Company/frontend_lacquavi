@@ -34,4 +34,10 @@ export const authApi = {
   // ← phone incluído no PUT /auth/profile
   updateProfile: (data: ProfileUpdateInput): Promise<{ message: string; user: User }> =>
     httpClient.put<{ message: string; user: User }>('/auth/profile', data),
+
+  forgotPassword: (email: string): Promise<{ message: string }> =>
+    httpClient.post<{ message: string }>('/auth/forgot-password', { email }),
+
+  resetPassword: (token: string, password: string): Promise<{ message: string }> =>
+    httpClient.post<{ message: string }>('/auth/reset-password', { token, password }),
 }
