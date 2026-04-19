@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getProductPrimaryImage } from '../../utils/productImages'
+import { getProductPrimaryImage, getOptimizedCloudinaryUrl } from '../../utils/productImages'
 import { formatCurrency, getInstallmentDisplay, getProductFinalPrice } from '../../utils'
 import { Skeleton } from './index'
 import type { Product, ProductReviewStats } from '../../types'
@@ -88,9 +88,11 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
                         >
                             {hasImage ? (
                                 <img
-                                    src={activeProductImage!.url}
+                                    src={getOptimizedCloudinaryUrl(activeProductImage!.url, 460, 520)}
                                     alt={activeProductImage!.alt || activeProduct.name}
                                     className="soft-edge-image h-full w-full object-contain drop-shadow-[0_12px_22px_rgba(0,0,0,0.18)]"
+                                    width="460"
+                                    height="520"
                                     style={{ animation: 'float 6s ease-in-out infinite', maxWidth: '100%' }}
                                 />
                             ) : (

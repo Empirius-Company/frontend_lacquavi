@@ -94,8 +94,13 @@
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow" />
     
-    <!-- Preload LCP image -->
-    <link rel="preload" as="image" href="/banner-home-top.webp" type="image/webp" fetchpriority="high" />
+    <!-- Preload LCP image — mobile gets smaller variant via imagesrcset -->
+    <link rel="preload" as="image"
+      href="/banner-home-top.webp"
+      imagesrcset="/banner-home-top-mobile.webp 700w, /banner-home-top.webp 1400w"
+      imagesizes="(max-width: 768px) 700px, 1400px"
+      type="image/webp"
+      fetchpriority="high" />
 
     <!-- Preconnect to critical origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

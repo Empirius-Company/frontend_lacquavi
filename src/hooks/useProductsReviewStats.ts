@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, startTransition } from 'react'
 import { productsApi } from '../api/catalogApi'
 import type { ProductReviewStats } from '../types'
 
@@ -29,13 +29,13 @@ export function useProductsReviewStats(productIds: string[]) {
         for (const id of normalizedIds) {
           nextStats[id] = response.stats[id] ?? EMPTY_STATS
         }
-        setStatsByProduct(nextStats)
+        startTransition(() => setStatsByProduct(nextStats))
       })
       .catch(() => {
         if (cancelled) return
         const fallback: ProductReviewStatsMap = {}
         for (const id of normalizedIds) fallback[id] = EMPTY_STATS
-        setStatsByProduct(fallback)
+        startTransition(() => setStatsByProduct(fallback))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)

@@ -63,7 +63,11 @@ function HomeTopBanner() {
         <div className="relative w-full aspect-[1396/642] md:aspect-[3/1] overflow-hidden rounded-2xl border border-[#c8e6d4] shadow-sm">
           {imageOk ? (
             <picture>
-              <source srcSet="/banner-home-top.webp" type="image/webp" />
+              <source
+                srcSet="/banner-home-top-mobile.webp 700w, /banner-home-top.webp 1400w"
+                sizes="(max-width: 768px) 700px, 1400px"
+                type="image/webp"
+              />
               <img
                 src="/banner-home-top.png"
                 alt="Banner Lacquavi"
@@ -378,12 +382,12 @@ function CategoryTiles({ categories, products, homeTiles }: { categories: Catego
             >
               {tile.imageUrl ? (
                 <img
-                  src={getOptimizedCloudinaryUrl(tile.imageUrl, 400, 530)}
+                  src={getOptimizedCloudinaryUrl(tile.imageUrl, 320, 427)}
                   alt={tile.label}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
-                  width="400"
-                  height="530"
+                  width="320"
+                  height="427"
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-[#999] font-bold text-4xl">
