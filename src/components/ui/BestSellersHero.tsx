@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { getProductPrimaryImage, getOptimizedCloudinaryUrl } from '../../utils/productImages'
 import { formatCurrency, getInstallmentDisplay, getProductFinalPrice } from '../../utils'
@@ -31,30 +31,56 @@ function BestSellersHeroSkeleton() {
   )
 }
 
+const SLIDE_DURATION = 320
+
+type AnimState = 'idle' | 'exit' | 'enter'
+
 export function BestSellersHero({ products, reviewStatsByProduct = {}, loading = false }: BestSellersHeroProps) {
     const [mounted, setMounted] = useState(false)
-    const [currentIndex, setCurrentIndex] = useState(0)
+    const [displayIndex, setDisplayIndex] = useState(0)
+    const [animState, setAnimState] = useState<AnimState>('idle')
+    const [direction, setDirection] = useState<'left' | 'right'>('left')
+
+    const animStateRef = useRef<AnimState>('idle')
+    const displayIndexRef = useRef(0)
+
+    useEffect(() => { animStateRef.current = animState }, [animState])
+    useEffect(() => { displayIndexRef.current = displayIndex }, [displayIndex])
 
     useEffect(() => {
         const t = setTimeout(() => setMounted(true), 100)
         return () => clearTimeout(t)
     }, [])
 
+    const goTo = useCallback((nextIndex: number, dir: 'left' | 'right') => {
+        if (animStateRef.current !== 'idle') return
+        setDirection(dir)
+        setAnimState('exit')
+        setTimeout(() => {
+            setDisplayIndex(nextIndex)
+            setAnimState('enter')
+            setTimeout(() => {
+                setAnimState('idle')
+            }, SLIDE_DURATION)
+        }, SLIDE_DURATION)
+    }, [])
+
     useEffect(() => {
         if (products.length <= 1) return
         const interval = setInterval(() => {
-            setCurrentIndex((prev) => (prev + 1) % products.length)
+            const next = (displayIndexRef.current + 1) % products.length
+            goTo(next, 'left')
         }, 5000)
         return () => clearInterval(interval)
-    }, [products.length])
+    }, [products.length, goTo])
 
     if (loading) return <BestSellersHeroSkeleton />
     if (!products || products.length === 0) return null
 
-    const handleNext = () => setCurrentIndex((prev) => (prev + 1) % products.length)
-    const handlePrev = () => setCurrentIndex((prev) => (prev === 0 ? products.length - 1 : prev - 1))
+    const handleNext = () => goTo((displayIndex + 1) % products.length, 'left')
+    const handlePrev = () => goTo(displayIndex === 0 ? products.length - 1 : displayIndex - 1, 'right')
 
-    const activeProduct = products[currentIndex]
+    const activeProduct = products[displayIndex]
     const activeProductFinalPrice = getProductFinalPrice(activeProduct)
     const activeProductImage = getProductPrimaryImage(activeProduct)
     const hasImage = !!activeProductImage?.url
@@ -66,6 +92,13 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
     const installment = getInstallmentDisplay(activeProductFinalPrice)
     const displayedRating = averageRating.toFixed(1).replace('.', ',')
 
+    const slideClass =
+        animState === 'exit'
+            ? (direction === 'left' ? 'hero-slide-out-left' : 'hero-slide-out-right')
+            : animState === 'enter'
+            ? (direction === 'left' ? 'hero-slide-in-right' : 'hero-slide-in-left')
+            : ''
+
     return (
         <section
             id="selecao-premium-destaque-semana"
@@ -76,16 +109,15 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
             <div className="pointer-events-none absolute right-[10%] top-1/2 hidden h-[300px] w-[300px] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(42,126,81,0.12)_0%,rgba(42,126,81,0.06)_45%,rgba(255,255,255,0)_76%)] blur-[2px] md:block" />
 
             <div className="relative z-10 px-5 py-6 md:px-10 md:py-8 max-w-5xl mx-auto">
-                {/* Mobile: column (image first, text below). Desktop: side-by-side grid */}
-                <div className="flex flex-col md:grid md:grid-cols-[1fr_1fr] items-center gap-2 md:gap-10 lg:gap-16">
+                <div
+                    className={`flex flex-col md:grid md:grid-cols-[1fr_1fr] items-center gap-2 md:gap-10 lg:gap-16 ${slideClass} ${mounted ? '' : 'opacity-0 translate-y-8'}`}
+                    style={{ transition: animState === 'idle' && !mounted ? 'opacity 0.7s, transform 0.7s' : undefined }}
+                >
 
                     {/* ── Image — order-1 on mobile (appears first/top) ── */}
                     <div className="order-1 md:order-2 relative flex h-[220px] sm:h-[250px] md:h-[270px] lg:h-[300px] w-full items-center justify-center">
                         <div className="pointer-events-none absolute z-0 left-1/2 top-1/2 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(42,126,81,0.18)_0%,rgba(42,126,81,0.08)_44%,rgba(255,255,255,0)_76%)] md:h-[250px] md:w-[250px]" />
-                        <div
-                            key={`img-${activeProduct.id}`}
-                            className="relative z-10 flex items-center justify-center animate-fade-in-up w-[165px] h-[190px] sm:w-[195px] sm:h-[220px] md:w-[225px] md:h-[255px] lg:w-[255px] lg:h-[290px]"
-                        >
+                        <div className="relative z-10 flex items-center justify-center w-[165px] h-[190px] sm:w-[195px] sm:h-[220px] md:w-[225px] md:h-[255px] lg:w-[255px] lg:h-[290px]">
                             {hasImage ? (
                                 <img
                                     src={getOptimizedCloudinaryUrl(activeProductImage!.url, 330, 380)}
@@ -104,10 +136,7 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
                     </div>
 
                     {/* ── Text info — order-2 on mobile (appears below image) ── */}
-                    <div
-                        className={`order-2 md:order-1 w-full flex flex-col justify-center min-h-[180px] md:h-[270px] lg:h-[300px] text-center md:text-left transition-all duration-700 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}
-                        key={activeProduct.id}
-                    >
+                    <div className="order-2 md:order-1 w-full flex flex-col justify-center min-h-[180px] md:h-[270px] lg:h-[300px] text-center md:text-left">
                         <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700 md:text-xs">
                             Destaque da Semana
                         </p>
@@ -181,11 +210,11 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
                         {products.map((_, idx) => (
                             <button
                                 key={idx}
-                                onClick={() => setCurrentIndex(idx)}
+                                onClick={() => goTo(idx, idx > displayIndex ? 'left' : 'right')}
                                 className="flex items-center justify-center w-8 h-8 rounded-full"
                                 aria-label={`Ir para o produto ${idx + 1}`}
                             >
-                                <span className={`block h-1.5 w-1.5 rounded-full transition-transform duration-200 will-change-transform ${idx === currentIndex ? 'scale-[3.33] bg-[#2a7e51]' : 'scale-100 bg-emerald-200'}`} />
+                                <span className={`block h-1.5 w-1.5 rounded-full transition-transform duration-200 will-change-transform ${idx === displayIndex ? 'scale-[3.33] bg-[#2a7e51]' : 'scale-100 bg-emerald-200'}`} />
                             </button>
                         ))}
                     </div>
@@ -197,13 +226,26 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
                     0%, 100% { transform: translateY(0); }
                     50% { transform: translateY(-8px); }
                 }
-                @keyframes fadeInUp {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
+                @keyframes heroSlideOutLeft {
+                    from { opacity: 1; transform: translateX(0); }
+                    to   { opacity: 0; transform: translateX(-72px); }
                 }
-                .animate-fade-in-up {
-                    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                @keyframes heroSlideOutRight {
+                    from { opacity: 1; transform: translateX(0); }
+                    to   { opacity: 0; transform: translateX(72px); }
                 }
+                @keyframes heroSlideInFromRight {
+                    from { opacity: 0; transform: translateX(72px); }
+                    to   { opacity: 1; transform: translateX(0); }
+                }
+                @keyframes heroSlideInFromLeft {
+                    from { opacity: 0; transform: translateX(-72px); }
+                    to   { opacity: 1; transform: translateX(0); }
+                }
+                .hero-slide-out-left  { animation: heroSlideOutLeft  ${SLIDE_DURATION}ms cubic-bezier(0.4, 0, 0.6, 1) forwards; }
+                .hero-slide-out-right { animation: heroSlideOutRight ${SLIDE_DURATION}ms cubic-bezier(0.4, 0, 0.6, 1) forwards; }
+                .hero-slide-in-right  { animation: heroSlideInFromRight ${SLIDE_DURATION}ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+                .hero-slide-in-left   { animation: heroSlideInFromLeft  ${SLIDE_DURATION}ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
                 .soft-edge-image {
                     -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 70%, rgba(0,0,0,0.68) 86%, rgba(0,0,0,0) 100%);
                     mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 70%, rgba(0,0,0,0.68) 86%, rgba(0,0,0,0) 100%);
