@@ -87,7 +87,7 @@ export function Header() {
             />
             <button
               aria-label="Buscar"
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#000000]"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-[#000000]"
               onClick={() => searchTerm.trim() && navigate(`/products?q=${searchTerm.trim()}`)}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
