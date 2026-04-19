@@ -34,7 +34,7 @@ function ProductImage({ product }: { product: Product }) {
     return <ImagePlaceholder product={product} />
   }
 
-  const optimizedUrl = getOptimizedCloudinaryUrl(primaryImage.url, 280, 280)
+  const optimizedUrl = getOptimizedCloudinaryUrl(primaryImage.url, 230, 230)
 
   return (
     <>
@@ -45,8 +45,8 @@ function ProductImage({ product }: { product: Product }) {
         className={`absolute inset-0 w-full h-full object-contain object-center transition-opacity duration-300 p-2
           ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
         loading="lazy"
-        width="280"
-        height="280"
+        width="230"
+        height="230"
         onLoad={() => setImgLoaded(true)}
         onError={() => setImgError(true)}
       />
