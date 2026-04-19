@@ -67,7 +67,10 @@ export function ResetPasswordPage() {
 
           {/* Logo */}
           <div className="text-center mb-8">
-            <img src="/logo.png" alt="Lacqua" className="h-9 object-contain mx-auto" />
+            <picture>
+              <source srcSet="/logo.webp" type="image/webp" />
+              <img src="/logo.png" alt="Lacqua" className="h-9 object-contain mx-auto" width="144" height="36" />
+            </picture>
           </div>
 
           {done ? (

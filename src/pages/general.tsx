@@ -48,7 +48,10 @@ function AuthLayout({ children, eyebrow, title, sub }: {
             <div aria-hidden className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-[#2a7e51]/10 blur-2xl" />
             <div>
               <Link to="/" className="inline-flex items-center hover:opacity-90 transition-opacity">
-                <img src="/logo.png" alt="Lacquavi" className="h-[43px] md:h-[54px] object-contain" />
+                <picture>
+                  <source srcSet="/logo.webp" type="image/webp" />
+                  <img src="/logo.png" alt="Lacquavi" className="h-[43px] md:h-[54px] object-contain" width="160" height="50" />
+                </picture>
               </Link>
               <p className="text-xs font-bold text-[#2a7e51] uppercase tracking-widest mt-8 mb-3">Experiência Premium</p>
               <h2 className="font-display text-4xl text-[#000000] font-black leading-tight mb-4">
@@ -75,7 +78,10 @@ function AuthLayout({ children, eyebrow, title, sub }: {
           <div className="flex items-center justify-center">
             <div className="w-full max-w-md bg-white rounded-3xl border border-gray-100 shadow-sm p-6 sm:p-8">
               <Link to="/" className="block lg:hidden text-center mb-8">
-                <img src="/logo.png" alt="Lacquavi" className="h-[43px] object-contain mx-auto" />
+                <picture>
+                  <source srcSet="/logo.webp" type="image/webp" />
+                  <img src="/logo.png" alt="Lacquavi" className="h-[43px] object-contain mx-auto" width="160" height="50" />
+                </picture>
               </Link>
 
               <div className="mb-7">

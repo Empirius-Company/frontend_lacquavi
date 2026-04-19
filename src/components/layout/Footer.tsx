@@ -213,7 +213,10 @@ export function Footer() {
             Preços e condições de pagamento exclusivos para compras via internet.
           </p>
           <div className="flex items-center gap-1 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
-            <img src="/logo.png" alt="Lacquavi" className="h-[43px] object-contain" />
+            <picture>
+              <source srcSet="/logo.webp" type="image/webp" />
+              <img src="/logo.png" alt="Lacquavi" className="h-[43px] object-contain" width="160" height="50" />
+            </picture>
           </div>
         </div>
       </div>

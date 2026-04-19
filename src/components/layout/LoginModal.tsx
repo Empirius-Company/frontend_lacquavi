@@ -263,7 +263,10 @@ export function LoginModal() {
         <div className="px-8 pt-6 pb-8">
           {/* Logo */}
           <div className="text-center mb-5">
-            <img src="/logo.png" alt="Lacquavi" className="h-9 object-contain mx-auto" />
+            <picture>
+              <source srcSet="/logo.webp" type="image/webp" />
+              <img src="/logo.png" alt="Lacquavi" className="h-9 object-contain mx-auto" width="144" height="36" />
+            </picture>
           </div>
 
           {mode === 'login' ? (
