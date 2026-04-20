@@ -253,13 +253,17 @@ export function CheckoutPage() {
           const parsed = JSON.parse(raw) as ShippingSessionCache
           if (parsed.cartSignature === cartSignature && parsed.orderId) {
             const { order } = await ordersApi.getById(parsed.orderId)
-            setOrderDraft(order)
-            setShippingQuotes(parsed.quotes ?? [])
-            setSelectedQuoteId(parsed.selectedQuoteId ?? '')
-            setShippingConfirmed(Boolean(order.shippingQuoteId))
-            setShippingAmountCents(order.shippingAmountCents ?? 0)
-            setShippingDiscountCents(order.shippingDiscountCents ?? 0)
-            foundValidSession = true
+            if (order.status === 'cancelled') {
+              sessionStorage.removeItem(SHIPPING_SESSION_KEY)
+            } else {
+              setOrderDraft(order)
+              setShippingQuotes(parsed.quotes ?? [])
+              setSelectedQuoteId(parsed.selectedQuoteId ?? '')
+              setShippingConfirmed(Boolean(order.shippingQuoteId))
+              setShippingAmountCents(order.shippingAmountCents ?? 0)
+              setShippingDiscountCents(order.shippingDiscountCents ?? 0)
+              foundValidSession = true
+            }
           } else {
             sessionStorage.removeItem(SHIPPING_SESSION_KEY)
           }
