@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { STORES } from '../config/store'
+import { useSEO } from '../components/seo'
 
 const escapeForJsonLd = (data: unknown): string =>
   JSON.stringify(data)
@@ -58,6 +59,12 @@ export function StorePage() {
   const s = STORES.find(store => store.id === activeId)!
   const day = new Date().getDay()
   const todayIsOpen = day >= 1 && day <= 6
+
+  useSEO({
+    title: 'Nossas Lojas — Minas Shopping e Lagoa Santa',
+    description: 'Visite a Lacqua em Belo Horizonte (Minas Shopping) ou Lagoa Santa. Fragrâncias originais, consultoria olfativa gratuita e retirada em 1 hora. Seg–Sáb 10h–22h.',
+    canonical: 'https://lacquaminas.com.br/nossa-loja',
+  })
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">

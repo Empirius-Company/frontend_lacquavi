@@ -478,6 +478,13 @@ export function HomePage() {
   return (
     <div className="bg-[#F5F5F5] min-h-screen pb-16">
 
+      {/* Parágrafo indexável pelo Google — descreve a página antes do banner dinâmico */}
+      <p className="sr-only">
+        Lacqua é uma perfumaria premium com lojas no Minas Shopping em Belo Horizonte e em Lagoa Santa.
+        Vendemos fragrâncias importadas e nacionais 100% originais, com entrega para todo o Brasil e
+        retirada em loja em até 1 hora. Descubra nossa curadoria de perfumes exclusivos.
+      </p>
+
       {/* Banner principal logo abaixo do menu */}
       <HomeTopBanner />
 

@@ -1058,9 +1058,10 @@ export function AdminOrdersPage() {
 
   const kpis = useMemo(() => {
     const base = filteredOrders
-    const paidCount = base.filter(order => order.paymentStatus === 'paid').length
-    const revenue = base.reduce((sum, order) => sum + order.total, 0)
-    const avgTicket = base.length ? revenue / base.length : 0
+    const paidOrders = base.filter(order => order.paymentStatus === 'paid')
+    const paidCount = paidOrders.length
+    const revenue = paidOrders.reduce((sum, order) => sum + order.total, 0)
+    const avgTicket = paidCount ? revenue / paidCount : 0
 
     return {
       total: base.length,
@@ -1590,7 +1591,7 @@ export function AdminPaymentsPage() {
     const paidCount = base.filter(payment => payment.status === 'paid').length
     const failedCount = base.filter(payment => payment.status === 'failed').length
     const refundedCount = base.filter(payment => payment.status === 'refunded').length
-    const totalAmount = base.reduce((sum, payment) => sum + payment.amount, 0)
+    const totalAmount = base.filter(payment => payment.status === 'paid').reduce((sum, payment) => sum + payment.amount, 0)
 
     return {
       total: base.length,

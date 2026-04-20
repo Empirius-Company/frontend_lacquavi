@@ -89,10 +89,10 @@ export function StoreTeaser() {
         </div>
 
         {/* Layout principal */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4" style={{ height: 'clamp(340px, 52vh, 480px)' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:h-[clamp(340px,52vh,480px)]">
 
           {/* Painel de info — 2/5 */}
-          <div className="lg:col-span-2 flex flex-col justify-between bg-[#F5F5F5] rounded-xl p-5 h-full">
+          <div className="lg:col-span-2 flex flex-col justify-between bg-[#F5F5F5] rounded-xl p-5 lg:h-full">
 
             {/* Nome da loja */}
             <div>
@@ -156,7 +156,7 @@ export function StoreTeaser() {
           </div>
 
           {/* Mapa — 3/5 */}
-          <div ref={mapRef} className="lg:col-span-3 rounded-xl overflow-hidden relative group h-full bg-gray-100">
+          <div ref={mapRef} className="lg:col-span-3 rounded-xl overflow-hidden relative group h-[320px] sm:h-[380px] lg:h-full bg-gray-100">
             <a
               href={s.mapsUrl}
               target="_blank"

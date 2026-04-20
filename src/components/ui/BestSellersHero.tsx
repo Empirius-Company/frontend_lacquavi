@@ -40,6 +40,7 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
     const [displayIndex, setDisplayIndex] = useState(0)
     const [animState, setAnimState] = useState<AnimState>('idle')
     const [direction, setDirection] = useState<'left' | 'right'>('left')
+    const [autoplayKey, setAutoplayKey] = useState(0)
 
     const animStateRef = useRef<AnimState>('idle')
     const displayIndexRef = useRef(0)
@@ -72,13 +73,15 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
             goTo(next, 'left')
         }, 5000)
         return () => clearInterval(interval)
-    }, [products.length, goTo])
+    }, [products.length, goTo, autoplayKey])
 
     if (loading) return <BestSellersHeroSkeleton />
     if (!products || products.length === 0) return null
 
-    const handleNext = () => goTo((displayIndex + 1) % products.length, 'left')
-    const handlePrev = () => goTo(displayIndex === 0 ? products.length - 1 : displayIndex - 1, 'right')
+    const resetAutoplay = () => setAutoplayKey(k => k + 1)
+
+    const handleNext = () => { resetAutoplay(); goTo((displayIndex + 1) % products.length, 'left') }
+    const handlePrev = () => { resetAutoplay(); goTo(displayIndex === 0 ? products.length - 1 : displayIndex - 1, 'right') }
 
     const activeProduct = products[displayIndex]
     const activeProductFinalPrice = getProductFinalPrice(activeProduct)
@@ -115,9 +118,9 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
                 >
 
                     {/* ── Image — order-1 on mobile (appears first/top) ── */}
-                    <div className="order-1 md:order-2 relative flex h-[220px] sm:h-[250px] md:h-[270px] lg:h-[300px] w-full items-center justify-center">
+                    <div className="order-1 md:order-2 relative flex h-[260px] sm:h-[280px] md:h-[270px] lg:h-[300px] w-full items-center justify-center">
                         <div className="pointer-events-none absolute z-0 left-1/2 top-1/2 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(42,126,81,0.18)_0%,rgba(42,126,81,0.08)_44%,rgba(255,255,255,0)_76%)] md:h-[250px] md:w-[250px]" />
-                        <div className="relative z-10 flex items-center justify-center w-[165px] h-[190px] sm:w-[195px] sm:h-[220px] md:w-[225px] md:h-[255px] lg:w-[255px] lg:h-[290px]">
+                        <div className="relative z-10 flex items-center justify-center w-[185px] h-[230px] sm:w-[210px] sm:h-[255px] md:w-[225px] md:h-[255px] lg:w-[255px] lg:h-[290px]">
                             {hasImage ? (
                                 <img
                                     src={getOptimizedCloudinaryUrl(activeProductImage!.url, 330, 380)}
@@ -210,7 +213,7 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
                         {products.map((_, idx) => (
                             <button
                                 key={idx}
-                                onClick={() => goTo(idx, idx > displayIndex ? 'left' : 'right')}
+                                onClick={() => { resetAutoplay(); goTo(idx, idx > displayIndex ? 'left' : 'right') }}
                                 className="flex items-center justify-center w-8 h-8 rounded-full"
                                 aria-label={`Ir para o produto ${idx + 1}`}
                             >
@@ -247,8 +250,8 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
                 .hero-slide-in-right  { animation: heroSlideInFromRight ${SLIDE_DURATION}ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
                 .hero-slide-in-left   { animation: heroSlideInFromLeft  ${SLIDE_DURATION}ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
                 .soft-edge-image {
-                    -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 70%, rgba(0,0,0,0.68) 86%, rgba(0,0,0,0) 100%);
-                    mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 70%, rgba(0,0,0,0.68) 86%, rgba(0,0,0,0) 100%);
+                    -webkit-mask-image: radial-gradient(ellipse 90% 96% at center, rgba(0,0,0,1) 78%, rgba(0,0,0,0.5) 92%, rgba(0,0,0,0) 100%);
+                    mask-image: radial-gradient(ellipse 90% 96% at center, rgba(0,0,0,1) 78%, rgba(0,0,0,0.5) 92%, rgba(0,0,0,0) 100%);
                 }
             `}</style>
         </section>
