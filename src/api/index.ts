@@ -56,6 +56,7 @@ interface CreatePaymentInput {
   cardToken?: string
   issuerId?: string
   installments?: number
+  cpf?: string
   idempotencyKey: string
 }
 interface PaymentResponse {
@@ -91,7 +92,7 @@ export const paymentsApi = {
     return httpClient.get<InstallmentOptionsResponse>(`/api/payments/installments?${qs}`)
   },
 
-  create: ({ orderId, paymentMethodId, cardToken, issuerId, installments, idempotencyKey }: CreatePaymentInput): Promise<PaymentResponse> =>
+  create: ({ orderId, paymentMethodId, cardToken, issuerId, installments, cpf, idempotencyKey }: CreatePaymentInput): Promise<PaymentResponse> =>
     httpClient.post<PaymentResponse>(
       '/api/payments',
       {
@@ -100,6 +101,7 @@ export const paymentsApi = {
         ...(cardToken ? { cardToken } : {}),
         ...(issuerId ? { issuerId } : {}),
         ...(installments ? { installments } : {}),
+        ...(cpf ? { cpf } : {}),
       },
       { headers: { 'Idempotency-Key': idempotencyKey } }
     ),

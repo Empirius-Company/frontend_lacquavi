@@ -406,6 +406,7 @@ export function PaymentPage() {
         ...(cardTokenStr ? { cardToken: cardTokenStr } : {}),
         ...(cardIssuerId ? { issuerId: cardIssuerId } : {}),
         ...(method === 'credit_card' ? { installments } : {}),
+        ...(method === 'credit_card' && cardForm.cpf ? { cpf: cardForm.cpf } : {}),
       })
       const createdPayment = res.payment ?? await recoverPaymentFromOrder(orderId)
       if (!createdPayment) {
