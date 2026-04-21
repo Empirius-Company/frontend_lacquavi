@@ -10,6 +10,25 @@ import { PaymentBrandBadges, PaymentIconsCheckout, detectCardBrand } from '../co
 import { formatCurrency, generateIdempotencyKey } from '../utils'
 import type { Order, Payment, InstallmentOption, ApiError } from '../types'
 
+const CARD_REJECTION_MESSAGES: Record<string, string> = {
+  cc_rejected_insufficient_amount: 'Saldo insuficiente no cartão.',
+  cc_rejected_bad_filled_security_code: 'Código de segurança (CVV) incorreto.',
+  cc_rejected_bad_filled_date: 'Data de validade incorreta.',
+  cc_rejected_bad_filled_other: 'Dados do cartão incorretos.',
+  cc_rejected_card_disabled: 'Cartão bloqueado. Entre em contato com seu banco.',
+  cc_rejected_high_risk: 'Pagamento recusado por análise de risco.',
+  cc_rejected_duplicated_payment: 'Pagamento duplicado detectado.',
+  cc_rejected_max_attempts: 'Número máximo de tentativas atingido. Tente outro cartão.',
+  cc_rejected_invalid_installments: 'Número de parcelas inválido para este cartão.',
+  cc_rejected_call_for_authorize: 'Autorização necessária. Entre em contato com seu banco.',
+  cc_rejected_card_type_not_allowed: 'Tipo de cartão não aceito.',
+}
+
+const getCardRejectionMessage = (statusDetail: string | null | undefined): string => {
+  if (!statusDetail) return 'Pagamento recusado pelo Mercado Pago.'
+  return CARD_REJECTION_MESSAGES[statusDetail] ?? 'Pagamento recusado pelo Mercado Pago.'
+}
+
 const PAYMENT_METHODS = [
   { id: 'pix', label: 'PIX', sub: 'Aprovação instantânea', icon: '⚡' },
   { id: 'credit_card', label: 'Cartão de Crédito', sub: 'Visa, Master, Amex', icon: '💳' },
@@ -310,6 +329,11 @@ export function PaymentPage() {
         return null
       }
 
+      const recoveredStatus = paymentResponse.payment.status
+      if (recoveredStatus === 'failed' || recoveredStatus === 'cancelled') {
+        return null
+      }
+
       setPayment(paymentResponse.payment)
       return paymentResponse.payment
     } catch {
@@ -482,11 +506,15 @@ export function PaymentPage() {
       }
 
       setPayment(res.payment)
-      if (res.payment.status === 'paid' || res.payment.status === 'authorized') {
+      const s = res.payment.status
+      if (s === 'paid' || s === 'authorized') {
         toast('Pagamento confirmado!', 'success')
         navigate(`/checkout/payment/${orderId}/result?paymentId=${payment.id}`)
+      } else if (s === 'failed' || s === 'cancelled') {
+        const detail = res.payment.attempts?.[0]?.statusDetail
+        toast(getCardRejectionMessage(detail), 'error')
       } else {
-        toast('Pagamento ainda pendente.', 'info')
+        toast('Pagamento ainda em análise. Aguarde e tente novamente.', 'info')
       }
     } catch { toast('Não foi possível verificar o status do pagamento. Tente novamente.', 'error') }
     finally { setChecking(false) }
@@ -749,9 +777,23 @@ export function PaymentPage() {
                       Ver Pedido
                     </Button>
                   </div>
+                ) : method === 'credit_card' && (payment?.status === 'failed' || payment?.status === 'cancelled') ? (
+                  <div className="text-center py-6 space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center text-2xl mx-auto">✕</div>
+                    <div>
+                      <h3 className="font-display text-xl text-noir-950">Pagamento Recusado</h3>
+                      <p className="text-sm text-nude-600 mt-1">
+                        {getCardRejectionMessage(payment?.attempts?.[0]?.statusDetail)}
+                      </p>
+                    </div>
+                    <Button variant="primary" fullWidth onClick={() => { setPayment(null); setError('') }}>
+                      Tentar Novamente
+                    </Button>
+                  </div>
                 ) : method === 'credit_card' ? (
-                  <div className="text-center py-6">
+                  <div className="text-center py-6 space-y-2">
                     <p className="text-nude-600">Seu cartão está em análise de segurança pelo Mercado Pago.</p>
+                    <p className="text-xs text-nude-400">Isso costuma resolver em alguns minutos. Clique em "Atualizar Status" para verificar.</p>
                     <Button variant="outline" className="mt-4" fullWidth onClick={checkStatus} loading={checking}>
                       Atualizar Status
                     </Button>

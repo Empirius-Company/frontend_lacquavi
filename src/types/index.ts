@@ -261,6 +261,13 @@ export interface InstallmentOption {
   label: string
 }
 
+export interface PaymentAttempt {
+  id: string
+  resultStatus: string
+  statusDetail: string | null
+  createdAt: string
+}
+
 export interface Payment {
   id: string
   orderId: string
@@ -280,6 +287,7 @@ export interface Payment {
   isExpired?: boolean
   order?: Partial<Order>
   refunds?: Refund[]
+  attempts?: PaymentAttempt[]
 }
 
 export interface Refund {
