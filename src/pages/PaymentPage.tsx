@@ -11,22 +11,26 @@ import { formatCurrency, generateIdempotencyKey } from '../utils'
 import type { Order, Payment, InstallmentOption, ApiError } from '../types'
 
 const CARD_REJECTION_MESSAGES: Record<string, string> = {
-  cc_rejected_insufficient_amount: 'Saldo insuficiente no cartão.',
+  cc_rejected_insufficient_amount: 'Saldo insuficiente. Verifique o limite disponível no cartão.',
   cc_rejected_bad_filled_security_code: 'Código de segurança (CVV) incorreto.',
   cc_rejected_bad_filled_date: 'Data de validade incorreta.',
-  cc_rejected_bad_filled_other: 'Dados do cartão incorretos.',
+  cc_rejected_bad_filled_other: 'Dados do cartão incorretos. Confira e tente novamente.',
+  cc_rejected_bad_filled_card_number: 'Número do cartão incorreto.',
   cc_rejected_card_disabled: 'Cartão bloqueado. Entre em contato com seu banco.',
-  cc_rejected_high_risk: 'Pagamento recusado por análise de risco.',
+  cc_rejected_high_risk: 'Pagamento recusado por análise de risco. Tente outro cartão ou entre em contato com seu banco.',
   cc_rejected_duplicated_payment: 'Pagamento duplicado detectado.',
   cc_rejected_max_attempts: 'Número máximo de tentativas atingido. Tente outro cartão.',
   cc_rejected_invalid_installments: 'Número de parcelas inválido para este cartão.',
-  cc_rejected_call_for_authorize: 'Autorização necessária. Entre em contato com seu banco.',
+  cc_rejected_call_for_authorize: 'Seu banco precisa autorizar este pagamento. Entre em contato com ele.',
   cc_rejected_card_type_not_allowed: 'Tipo de cartão não aceito.',
+  cc_rejected_other_reason: 'Pagamento recusado pelo banco. Tente outro cartão ou entre em contato com seu banco.',
+  pending_review: 'Pagamento cancelado após análise de segurança. Tente novamente ou use outro cartão.',
+  pending_contingency: 'Não foi possível processar o pagamento no momento. Tente novamente em alguns minutos.',
 }
 
 const getCardRejectionMessage = (statusDetail: string | null | undefined): string => {
-  if (!statusDetail) return 'Pagamento recusado pelo Mercado Pago.'
-  return CARD_REJECTION_MESSAGES[statusDetail] ?? 'Pagamento recusado pelo Mercado Pago.'
+  if (!statusDetail) return 'Pagamento recusado. Tente novamente ou use outro cartão.'
+  return CARD_REJECTION_MESSAGES[statusDetail] ?? 'Pagamento recusado. Tente novamente ou use outro cartão.'
 }
 
 const PAYMENT_METHODS = [
@@ -170,7 +174,7 @@ export function PaymentPage() {
                 toast('Pagamento aprovado!', 'success')
                 navigate(`/checkout/payment/${orderId}/result?paymentId=${payment.id}`)
               } else if (s === 'failed' || s === 'cancelled') {
-                toast(getCardRejectionMessage(res.payment.attempts?.[0]?.statusDetail), 'error')
+                toast(getCardRejectionMessage(res.payment.statusDetail ?? res.payment.attempts?.[0]?.statusDetail), 'error')
               } else {
                 toast('Autenticação concluída. Verificando pagamento...', 'info')
               }
@@ -546,7 +550,7 @@ export function PaymentPage() {
         toast('Pagamento confirmado!', 'success')
         navigate(`/checkout/payment/${orderId}/result?paymentId=${payment.id}`)
       } else if (s === 'failed' || s === 'cancelled') {
-        const detail = res.payment.attempts?.[0]?.statusDetail
+        const detail = res.payment.statusDetail ?? res.payment.attempts?.[0]?.statusDetail
         toast(getCardRejectionMessage(detail), 'error')
       } else {
         toast('Pagamento ainda em análise. Aguarde e tente novamente.', 'info')
@@ -850,7 +854,7 @@ export function PaymentPage() {
                     <div>
                       <h3 className="font-display text-xl text-noir-950">Pagamento Recusado</h3>
                       <p className="text-sm text-nude-600 mt-1">
-                        {getCardRejectionMessage(payment?.attempts?.[0]?.statusDetail)}
+                        {getCardRejectionMessage(payment?.statusDetail ?? payment?.attempts?.[0]?.statusDetail)}
                       </p>
                     </div>
                     <Button variant="primary" fullWidth onClick={() => { setPayment(null); setError('') }}>
