@@ -149,6 +149,26 @@ export function PaymentPage() {
   const [loadingInstallments, setLoadingInstallments] = useState(false)
   const lastInstallmentFetchRef = useRef<string>('')
 
+  // Carrega o SDK do Mercado Pago para captura de fingerprint do dispositivo
+  // Sem isso o antifraude não tem dados de sessão e rejeita como alto risco
+  useEffect(() => {
+    const mpPublicKey = (import.meta as unknown as { env: { VITE_MP_PUBLIC_KEY?: string } }).env.VITE_MP_PUBLIC_KEY
+    if (!mpPublicKey) return
+    const scriptId = 'mp-sdk-v2'
+    if (document.getElementById(scriptId)) {
+      try { (window as unknown as { MercadoPago: new (key: string) => void }).MercadoPago && new (window as unknown as { MercadoPago: new (key: string) => void }).MercadoPago(mpPublicKey) } catch { /* já inicializado */ }
+      return
+    }
+    const script = document.createElement('script')
+    script.id = scriptId
+    script.src = 'https://sdk.mercadopago.com/js/v2'
+    script.async = true
+    script.onload = () => {
+      try { new (window as unknown as { MercadoPago: new (key: string) => void }).MercadoPago(mpPublicKey) } catch { /* ignorar */ }
+    }
+    document.head.appendChild(script)
+  }, [])
+
   useEffect(() => {
     if (!orderId) return
     ordersApi.getById(orderId)
@@ -413,9 +433,8 @@ export function PaymentPage() {
         const [month, yearRaw] = cardForm.expiryDate.split('/')
         const year = yearRaw?.length === 2 ? `20${yearRaw}` : yearRaw
 
-        // Generate token via Mercado Pago API directly from frontend
-        // Note: For production use VITE_MP_PUBLIC_KEY in .env file
-        const mpPublicKey = (import.meta as unknown as { env: { VITE_MP_PUBLIC_KEY?: string } }).env.VITE_MP_PUBLIC_KEY || 'TEST-00000000-0000-0000-0000-000000000000'
+        const mpPublicKey = (import.meta as unknown as { env: { VITE_MP_PUBLIC_KEY?: string } }).env.VITE_MP_PUBLIC_KEY
+        if (!mpPublicKey) throw new Error('Chave pública do Mercado Pago não configurada. Defina VITE_MP_PUBLIC_KEY no arquivo .env.')
 
         const mpRes = await fetch(`https://api.mercadopago.com/v1/card_tokens?public_key=${mpPublicKey}`, {
           method: 'POST',

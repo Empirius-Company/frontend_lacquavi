@@ -364,6 +364,12 @@ export function CheckoutPage() {
         setShippingQuotes([])
         setShippingError('O endereço mudou desde a cotação. Recalcule o frete.')
         break
+      case 'SHIPPING_QUOTE_INVALIDATED':
+        setShippingConfirmed(false)
+        setSelectedQuoteId('')
+        setShippingQuotes([])
+        setShippingError('A cotação expirou ou foi invalidada. Recalcule o frete.')
+        break
       case 'SHIPPING_NO_PHYSICAL_ITEMS':
         setShippingRequired(false)
         setShippingConfirmed(true)
@@ -434,7 +440,7 @@ export function CheckoutPage() {
     setSubmitting(true)
     setError('')
     try {
-      if (shippingRequired && selectedQuoteId) {
+      if (shippingRequired && selectedQuoteId && draftOrder.shippingQuoteId !== selectedQuoteId) {
         await shippingApi.select({
           orderId: draftOrder.id,
           quoteId: selectedQuoteId,
