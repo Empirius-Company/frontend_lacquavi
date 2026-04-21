@@ -1806,6 +1806,7 @@ export function AdminPaymentDetailPage() {
               { label: 'Valor', value: formatCurrency(payment.amount) },
               { label: 'Moeda', value: payment.currency },
               { label: 'Criado em', value: formatDateTime(payment.createdAt) },
+              { label: 'Status Detail (MP)', value: payment.statusDetail ?? '—', mono: true },
             ].map(row => (
               <div key={row.label} className="flex justify-between border-b border-obsidian-50 pb-2.5 last:border-0">
                 <span className="text-obsidian-500">{row.label}</span>
@@ -1813,6 +1814,30 @@ export function AdminPaymentDetailPage() {
               </div>
             ))}
           </div>
+
+          {payment.attempts && payment.attempts.length > 0 && (
+            <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card p-6">
+              <h3 className="font-display text-base text-ink mb-4">Tentativas de Pagamento</h3>
+              <div className="space-y-3">
+                {payment.attempts.map((attempt, i) => (
+                  <div key={attempt.id} className="text-sm border border-obsidian-100 rounded-xl p-3 space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-obsidian-500 text-xs">Tentativa #{payment.attempts!.length - i}</span>
+                      <span className="text-xs text-obsidian-400">{formatDateTime(attempt.createdAt)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-obsidian-500">Status interno</span>
+                      <span className="font-mono text-xs text-ink">{attempt.resultStatus}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-obsidian-500">Status detail MP</span>
+                      <span className="font-mono text-xs text-ink">{attempt.statusDetail ?? '—'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">

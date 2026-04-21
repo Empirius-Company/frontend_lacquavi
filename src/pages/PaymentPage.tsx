@@ -875,6 +875,11 @@ export function PaymentPage() {
                       <p className="text-sm text-nude-600 mt-1">
                         {getCardRejectionMessage(payment?.statusDetail ?? payment?.attempts?.[0]?.statusDetail)}
                       </p>
+                      {(payment?.statusDetail ?? payment?.attempts?.[0]?.statusDetail) && (
+                        <p className="text-xs text-nude-400 mt-2 font-mono">
+                          código: {payment?.statusDetail ?? payment?.attempts?.[0]?.statusDetail}
+                        </p>
+                      )}
                     </div>
                     <Button variant="primary" fullWidth onClick={() => { setPayment(null); setError('') }}>
                       Tentar Novamente
