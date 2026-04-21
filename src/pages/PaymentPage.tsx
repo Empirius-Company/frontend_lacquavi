@@ -121,6 +121,7 @@ export function PaymentPage() {
   const [creating, setCreating] = useState(false)
   const [checking, setChecking] = useState(false)
   const [waitingPixData, setWaitingPixData] = useState(false)
+  const [threeDsUrl, setThreeDsUrl] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [method, setMethod] = useState('pix')
   const [copied, setCopied] = useState(false)
@@ -151,6 +152,37 @@ export function PaymentPage() {
       .catch(() => navigate('/account/orders'))
       .finally(() => setLoading(false))
   }, [orderId])
+
+  // Listener para conclusão do desafio 3DS enviado pelo Mercado Pago via postMessage
+  useEffect(() => {
+    const handle3dsMessage = (event: MessageEvent) => {
+      if (event.data?.type === '3DS_AUTHORIZATION_COMPLETED' || event.data?.type === 'CHALLENGE_COMPLETED') {
+        setThreeDsUrl(null)
+        if (payment) {
+          setChecking(true)
+          paymentsApi.getById(payment.id)
+            .then(res => {
+              if (!res.payment) return
+              setPayment(res.payment)
+              const s = res.payment.status
+              if (s === 'paid' || s === 'authorized') {
+                clearCart()
+                toast('Pagamento aprovado!', 'success')
+                navigate(`/checkout/payment/${orderId}/result?paymentId=${payment.id}`)
+              } else if (s === 'failed' || s === 'cancelled') {
+                toast(getCardRejectionMessage(res.payment.attempts?.[0]?.statusDetail), 'error')
+              } else {
+                toast('Autenticação concluída. Verificando pagamento...', 'info')
+              }
+            })
+            .catch(() => toast('Erro ao verificar status após autenticação. Use "Atualizar Status".', 'error'))
+            .finally(() => setChecking(false))
+        }
+      }
+    }
+    window.addEventListener('message', handle3dsMessage)
+    return () => window.removeEventListener('message', handle3dsMessage)
+  }, [payment, orderId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Derive card brand and BIN from card number for installment lookup
   const cardBrand = detectCardBrand(cardForm.cardNumber)
@@ -442,9 +474,12 @@ export function PaymentPage() {
 
       if (method === 'credit_card') {
         if (createdPayment.status === 'paid' || createdPayment.status === 'authorized') {
-          clearCart() // Order effectively confirmed
+          clearCart()
           toast('Pagamento aprovado!', 'success')
           navigate(`/checkout/payment/${orderId}/result?paymentId=${createdPayment.id}`)
+        } else if (createdPayment.statusDetail === 'pending_challenge' && createdPayment.three_ds_info?.external_resource_url) {
+          setThreeDsUrl(createdPayment.three_ds_info.external_resource_url)
+          toast('Autentique o pagamento com seu banco para concluir.', 'info')
         } else {
           toast('Pagamento sendo processado...', 'info')
         }
@@ -539,6 +574,38 @@ export function PaymentPage() {
   }
 
   const isPaid = payment?.status === 'paid' || payment?.status === 'authorized'
+
+  if (threeDsUrl) {
+    return (
+      <div className="min-h-screen bg-obsidian-950/80 flex items-center justify-center p-4 fixed inset-0 z-50">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+          <div className="px-6 py-4 border-b border-nude-100 flex items-center justify-between">
+            <div>
+              <h3 className="font-display text-lg text-noir-950">Autenticação do Banco</h3>
+              <p className="text-xs text-nude-500 mt-0.5">Conclua a verificação para aprovar o pagamento</p>
+            </div>
+            <button
+              onClick={() => { setThreeDsUrl(null); setChecking(false) }}
+              className="text-nude-400 hover:text-nude-600 text-xl leading-none"
+              aria-label="Fechar"
+            >✕</button>
+          </div>
+          <iframe
+            src={threeDsUrl}
+            className="w-full border-0"
+            style={{ height: '400px' }}
+            title="Autenticação 3DS"
+            sandbox="allow-scripts allow-forms allow-same-origin allow-top-navigation"
+          />
+          <div className="px-6 py-3 bg-nude-50 border-t border-nude-100">
+            <p className="text-xs text-nude-500 text-center">
+              Siga as instruções do seu banco. Esta janela fecha automaticamente ao concluir.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-white pt-6 pb-12">

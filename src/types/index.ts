@@ -276,6 +276,7 @@ export interface Payment {
   amount: number
   currency: string
   status: PaymentStatus
+  statusDetail?: string | null
   installments: number
   installmentAmount: number | null
   createdAt: string
@@ -285,6 +286,7 @@ export interface Payment {
   ticket_url?: string | null
   expiresAt?: string | null
   isExpired?: boolean
+  three_ds_info?: { external_resource_url: string } | null
   order?: Partial<Order>
   refunds?: Refund[]
   attempts?: PaymentAttempt[]
