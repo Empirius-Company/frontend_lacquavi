@@ -131,8 +131,6 @@ export function PaymentPage() {
   const [copied, setCopied] = useState(false)
   const [pixExpired, setPixExpired] = useState(false)
   const [deviceId, setDeviceId] = useState<string | null>(null)
-  const [deviceScriptError, setDeviceScriptError] = useState<string | null>(null)
-  const [deviceScriptLoaded, setDeviceScriptLoaded] = useState(false)
   const isCreatingRef = useRef(false)
   const lastAttemptKeyRef = useRef<string | null>(null)
   const canReuseLastAttemptKeyRef = useRef(false)
@@ -159,20 +157,18 @@ export function PaymentPage() {
 
     const setDeviceSession = () => {
       setDeviceId((window as any).MP_DEVICE_SESSION_ID || null)
-      setDeviceScriptLoaded(true)
     }
 
     const existingScript = document.querySelector<HTMLScriptElement>('script[src="https://www.mercadopago.com/v2/security.js"]')
     if (existingScript) {
-      if ((window as any).MP_DEVICE_SESSION_ID || existingScript.readyState === 'complete') {
+      if ((window as any).MP_DEVICE_SESSION_ID || (existingScript as any).readyState === 'complete') {
         setDeviceSession()
         return
       }
 
       existingScript.addEventListener('load', setDeviceSession)
       existingScript.addEventListener('error', () => {
-        setDeviceScriptError('Falha ao carregar segurança do Mercado Pago. Recarregue a página e tente novamente.')
-        setDeviceScriptLoaded(true)
+        setError('Falha ao carregar segurança do Mercado Pago. Recarregue a página e tente novamente.')
       })
       return () => {
         existingScript.removeEventListener('load', setDeviceSession)
@@ -185,8 +181,7 @@ export function PaymentPage() {
     script.setAttribute('view', 'checkout')
 
     const handleError = () => {
-      setDeviceScriptError('Falha ao carregar segurança do Mercado Pago. Recarregue a página e tente novamente.')
-      setDeviceScriptLoaded(true)
+      setError('Falha ao carregar segurança do Mercado Pago. Recarregue a página e tente novamente.')
     }
 
     script.addEventListener('load', setDeviceSession)
