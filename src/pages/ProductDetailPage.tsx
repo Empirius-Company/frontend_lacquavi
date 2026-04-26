@@ -8,7 +8,7 @@ import { useToast } from '../context/ToastContext'
 import { Button, ProductDetailSkeleton, ReviewSkeleton } from '../components/ui'
 import { useSEO, ProductSchema, BreadcrumbSchema } from '../components/seo'
 import { formatCurrency, getInstallmentDisplay, getProductPriceSummary } from '../utils'
-import { getOrderedGallery, getProductPrimaryImage } from '../utils/productImages'
+import { getOptimizedCloudinaryUrl, getOrderedGallery, getProductPrimaryImage } from '../utils/productImages'
 import type { ApiError, Product, ProductImage, ProductReview, ProductReviewStats, ShippingQuote } from '../types'
 
 const PRODUCT_DETAIL_ZIP_CACHE_KEY = 'lacquavi_product_detail_zip'
@@ -38,7 +38,7 @@ function FloatingBuyBar({ product, onAdd, onVisibilityChange }: { product: Produ
         <div className="flex justify-between items-center max-w-5xl mx-auto">
           <div className="flex items-center gap-4 hidden md:flex">
             <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center pb-1">
-              {primaryImage?.url ? <img src={primaryImage.url} className="max-h-full" alt={primaryImage.alt || product.name} /> : product.name.charAt(0)}
+              {primaryImage?.url ? <img src={getOptimizedCloudinaryUrl(primaryImage.url, 80, 80)} className="max-h-full" alt={primaryImage.alt || product.name} width={80} height={80} loading="lazy" /> : product.name.charAt(0)}
             </div>
             <div>
               <p className="text-xs font-bold text-gray-500 uppercase">{product.brand || 'DIVERSOS'}</p>
@@ -357,7 +357,7 @@ const loadReviews = useCallback(async () => {
                 {galleryImages.map((img, idx) => (
                   <div key={img.id} className={`aspect-square border-2 rounded ${idx === selectedImageIndex ? 'border-[#2a7e51]' : 'border-transparent hover:border-gray-200'} cursor-pointer overflow-hidden p-1 bg-white shadow-sm`}>
                     <button type="button" onClick={() => setSelectedImageIndex(idx)} className="w-full h-full">
-                      <img src={img.url} alt={img.alt || `${product.name} ${idx + 1}`} className="w-full h-full object-contain" />
+                      <img src={getOptimizedCloudinaryUrl(img.url, 160, 160)} alt={img.alt || `${product.name} ${idx + 1}`} className="w-full h-full object-contain" width={160} height={160} loading="lazy" />
                     </button>
                   </div>
                 ))}
@@ -373,7 +373,15 @@ const loadReviews = useCallback(async () => {
                 </div>
               )}
               {selectedImage?.url ? (
-                <img src={selectedImage.url} alt={selectedImage.alt || product.name} className="w-full h-full object-contain" />
+                <img
+                  src={getOptimizedCloudinaryUrl(selectedImage.url, 690, 730)}
+                  alt={selectedImage.alt || product.name}
+                  className="w-full h-full object-contain"
+                  fetchPriority="high"
+                  loading="eager"
+                  width={690}
+                  height={730}
+                />
               ) : (
                 <div className="w-64 h-64 bg-gray-50 flex items-center justify-center rounded-2xl">
                   <span className="text-[#2a7e51] text-6xl font-black italic opacity-20">{product.name[0]}</span>

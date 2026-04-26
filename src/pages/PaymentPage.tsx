@@ -130,6 +130,9 @@ export function PaymentPage() {
   const [method, setMethod] = useState('pix')
   const [copied, setCopied] = useState(false)
   const [pixExpired, setPixExpired] = useState(false)
+  const [deviceId, setDeviceId] = useState<string | null>(null)
+  const [deviceScriptError, setDeviceScriptError] = useState<string | null>(null)
+  const [deviceScriptLoaded, setDeviceScriptLoaded] = useState(false)
   const isCreatingRef = useRef(false)
   const lastAttemptKeyRef = useRef<string | null>(null)
   const canReuseLastAttemptKeyRef = useRef(false)
@@ -149,25 +152,52 @@ export function PaymentPage() {
   const [loadingInstallments, setLoadingInstallments] = useState(false)
   const lastInstallmentFetchRef = useRef<string>('')
 
-  // Carrega o SDK do Mercado Pago para captura de fingerprint do dispositivo
-  // Sem isso o antifraude não tem dados de sessão e rejeita como alto risco
+  // Carrega o script de segurança do Mercado Pago para gerar MP_DEVICE_SESSION_ID
+  // Esse fingerprint é crítico para reduzir falsos bloqueios de risco.
   useEffect(() => {
-    const mpPublicKey = (import.meta as unknown as { env: { VITE_MP_PUBLIC_KEY?: string } }).env.VITE_MP_PUBLIC_KEY
-    if (!mpPublicKey) return
-    const scriptId = 'mp-sdk-v2'
-    if (document.getElementById(scriptId)) {
-      try { (window as unknown as { MercadoPago: new (key: string) => void }).MercadoPago && new (window as unknown as { MercadoPago: new (key: string) => void }).MercadoPago(mpPublicKey) } catch { /* já inicializado */ }
-      return
+    if (method !== 'credit_card') return
+
+    const setDeviceSession = () => {
+      setDeviceId((window as any).MP_DEVICE_SESSION_ID || null)
+      setDeviceScriptLoaded(true)
     }
+
+    const existingScript = document.querySelector<HTMLScriptElement>('script[src="https://www.mercadopago.com/v2/security.js"]')
+    if (existingScript) {
+      if ((window as any).MP_DEVICE_SESSION_ID || existingScript.readyState === 'complete') {
+        setDeviceSession()
+        return
+      }
+
+      existingScript.addEventListener('load', setDeviceSession)
+      existingScript.addEventListener('error', () => {
+        setDeviceScriptError('Falha ao carregar segurança do Mercado Pago. Recarregue a página e tente novamente.')
+        setDeviceScriptLoaded(true)
+      })
+      return () => {
+        existingScript.removeEventListener('load', setDeviceSession)
+      }
+    }
+
     const script = document.createElement('script')
-    script.id = scriptId
-    script.src = 'https://sdk.mercadopago.com/js/v2'
+    script.src = 'https://www.mercadopago.com/v2/security.js'
     script.async = true
-    script.onload = () => {
-      try { new (window as unknown as { MercadoPago: new (key: string) => void }).MercadoPago(mpPublicKey) } catch { /* ignorar */ }
+    script.setAttribute('view', 'checkout')
+
+    const handleError = () => {
+      setDeviceScriptError('Falha ao carregar segurança do Mercado Pago. Recarregue a página e tente novamente.')
+      setDeviceScriptLoaded(true)
     }
+
+    script.addEventListener('load', setDeviceSession)
+    script.addEventListener('error', handleError)
     document.head.appendChild(script)
-  }, [])
+
+    return () => {
+      script.removeEventListener('load', setDeviceSession)
+      script.removeEventListener('error', handleError)
+    }
+  }, [method])
 
   useEffect(() => {
     if (!orderId) return
@@ -478,6 +508,10 @@ export function PaymentPage() {
         ? (mpBrandMap[cardBrand || ''] || 'master')
         : method
 
+      if (method === 'credit_card' && !deviceId) {
+        throw new Error('Falha ao validar o dispositivo de pagamento. Recarregue a página e tente novamente.')
+      }
+
       const res = await paymentsApi.create({
         orderId,
         paymentMethodId: mpMethod,
@@ -486,6 +520,7 @@ export function PaymentPage() {
         ...(cardIssuerId ? { issuerId: cardIssuerId } : {}),
         ...(method === 'credit_card' ? { installments } : {}),
         ...(method === 'credit_card' && cardForm.cpf ? { cpf: cardForm.cpf } : {}),
+        ...(method === 'credit_card' && deviceId ? { deviceId } : {}),
       })
       const createdPayment = res.payment ?? await recoverPaymentFromOrder(orderId)
       if (!createdPayment) {
