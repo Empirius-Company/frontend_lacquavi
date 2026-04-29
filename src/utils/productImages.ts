@@ -18,7 +18,7 @@ export const getProductPrimaryImageUrl = (product: Product | null | undefined): 
 
 export function getOptimizedCloudinaryUrl(url: string, width: number, height: number): string {
   if (!url || !url.includes('res.cloudinary.com')) return url
-  const transforms = `w_${width},h_${height},c_fill,f_auto,q_auto`
+  const transforms = `w_${width},h_${height},c_fit,f_auto,q_auto`
   if (url.includes('/upload/f_auto,q_auto/')) {
     return url.replace('/upload/f_auto,q_auto/', `/upload/${transforms}/`)
   }

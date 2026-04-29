@@ -131,6 +131,7 @@ export function PaymentPage() {
   const [method, setMethod] = useState('pix')
   const [copied, setCopied] = useState(false)
   const [pixExpired, setPixExpired] = useState(false)
+  const [deviceId, setDeviceId] = useState<string | null>(null)
   const isCreatingRef = useRef(false)
   const lastAttemptKeyRef = useRef<string | null>(null)
   const canReuseLastAttemptKeyRef = useRef(false)
@@ -151,25 +152,58 @@ export function PaymentPage() {
   const [installmentError, setInstallmentError] = useState('')
   const lastInstallmentFetchRef = useRef<string>('')
 
-  // Carrega o SDK do Mercado Pago para captura de fingerprint do dispositivo
-  // Sem isso o antifraude não tem dados de sessão e rejeita como alto risco
+  // Carrega o script de segurança do Mercado Pago para gerar MP_DEVICE_SESSION_ID
+  // Esse fingerprint é crítico para reduzir falsos bloqueios de risco.
   useEffect(() => {
+<<<<<<< HEAD
     const mpPublicKey = import.meta.env.VITE_MP_PUBLIC_KEY
     if (!mpPublicKey) return
     const scriptId = 'mp-sdk-v2'
     if (document.getElementById(scriptId)) {
       try { (window as unknown as { MercadoPago: new (key: string) => void }).MercadoPago && new (window as unknown as { MercadoPago: new (key: string) => void }).MercadoPago(mpPublicKey) } catch { /* já inicializado */ }
       return
+=======
+    if (method !== 'credit_card') return
+
+    const setDeviceSession = () => {
+      setDeviceId((window as any).MP_DEVICE_SESSION_ID || null)
+>>>>>>> 9624bff24ab6c1e6eb818237235a46d30528ebad
     }
+
+    const existingScript = document.querySelector<HTMLScriptElement>('script[src="https://www.mercadopago.com/v2/security.js"]')
+    if (existingScript) {
+      if ((window as any).MP_DEVICE_SESSION_ID || (existingScript as any).readyState === 'complete') {
+        setDeviceSession()
+        return
+      }
+
+      existingScript.addEventListener('load', setDeviceSession)
+      existingScript.addEventListener('error', () => {
+        setError('Falha ao carregar segurança do Mercado Pago. Recarregue a página e tente novamente.')
+      })
+      return () => {
+        existingScript.removeEventListener('load', setDeviceSession)
+      }
+    }
+
     const script = document.createElement('script')
-    script.id = scriptId
-    script.src = 'https://sdk.mercadopago.com/js/v2'
+    script.src = 'https://www.mercadopago.com/v2/security.js'
     script.async = true
-    script.onload = () => {
-      try { new (window as unknown as { MercadoPago: new (key: string) => void }).MercadoPago(mpPublicKey) } catch { /* ignorar */ }
+    script.setAttribute('view', 'checkout')
+
+    const handleError = () => {
+      setError('Falha ao carregar segurança do Mercado Pago. Recarregue a página e tente novamente.')
     }
+
+    script.addEventListener('load', setDeviceSession)
+    script.addEventListener('error', handleError)
     document.head.appendChild(script)
-  }, [])
+
+    return () => {
+      script.removeEventListener('load', setDeviceSession)
+      script.removeEventListener('error', handleError)
+    }
+  }, [method])
 
   useEffect(() => {
     if (!orderId) return
@@ -486,6 +520,10 @@ export function PaymentPage() {
         ? (mpBrandMap[cardBrand || ''] || 'master')
         : method
 
+      if (method === 'credit_card' && !deviceId) {
+        throw new Error('Falha ao validar o dispositivo de pagamento. Recarregue a página e tente novamente.')
+      }
+
       const res = await paymentsApi.create({
         orderId,
         paymentMethodId: mpMethod,
@@ -494,6 +532,8 @@ export function PaymentPage() {
         ...(cardIssuerId ? { issuerId: cardIssuerId } : {}),
         ...(method === 'credit_card' ? { installments } : {}),
         ...(method === 'credit_card' && cardForm.cpf ? { cpf: cardForm.cpf } : {}),
+        ...(method === 'credit_card' && cardForm.cardholderName ? { cardholderName: cardForm.cardholderName } : {}),
+        ...(method === 'credit_card' && deviceId ? { deviceId } : {}),
       })
       const createdPayment = res.payment ?? await recoverPaymentFromOrder(orderId)
       if (!createdPayment) {
