@@ -25,6 +25,7 @@ const CARD_REJECTION_MESSAGES: Record<string, string> = {
   cc_rejected_card_type_not_allowed: 'Tipo de cartão não aceito.',
   cc_rejected_other_reason: 'Pagamento recusado pelo banco. Tente outro cartão ou entre em contato com seu banco.',
   pending_review: 'Pagamento cancelado após análise de segurança. Tente novamente ou use outro cartão.',
+  pending_review_manual: 'Pagamento cancelado após revisão manual do Mercado Pago. Tente novamente ou entre em contato com o suporte do Mercado Pago.',
   pending_contingency: 'Não foi possível processar o pagamento no momento. Tente novamente em alguns minutos.',
 }
 
@@ -147,12 +148,13 @@ export function PaymentPage() {
   const [installments, setInstallments] = useState(1)
   const [installmentOptions, setInstallmentOptions] = useState<InstallmentOption[]>([])
   const [loadingInstallments, setLoadingInstallments] = useState(false)
+  const [installmentError, setInstallmentError] = useState('')
   const lastInstallmentFetchRef = useRef<string>('')
 
   // Carrega o SDK do Mercado Pago para captura de fingerprint do dispositivo
   // Sem isso o antifraude não tem dados de sessão e rejeita como alto risco
   useEffect(() => {
-    const mpPublicKey = (import.meta as unknown as { env: { VITE_MP_PUBLIC_KEY?: string } }).env.VITE_MP_PUBLIC_KEY
+    const mpPublicKey = import.meta.env.VITE_MP_PUBLIC_KEY
     if (!mpPublicKey) return
     const scriptId = 'mp-sdk-v2'
     if (document.getElementById(scriptId)) {
@@ -286,6 +288,7 @@ export function PaymentPage() {
     lastInstallmentFetchRef.current = fetchKey
 
     setLoadingInstallments(true)
+    setInstallmentError('')
     try {
       const res = await paymentsApi.getInstallmentOptions({ paymentMethodId, amount, bin })
       setInstallmentOptions(res.installmentOptions)
@@ -293,6 +296,7 @@ export function PaymentPage() {
       setInstallments(1)
     } catch {
       setInstallmentOptions([])
+      setInstallmentError('Não foi possível carregar as opções de parcelamento.')
     } finally {
       setLoadingInstallments(false)
     }
@@ -323,19 +327,23 @@ export function PaymentPage() {
     lastInstallmentFetchRef.current = fetchKey
 
     setLoadingInstallments(true)
+    setInstallmentError('')
     paymentsApi.getInstallmentOptions({ paymentMethodId: mpMethod, amount: order.total })
       .then(res => {
         setInstallmentOptions(res.installmentOptions)
         setInstallments(1)
       })
-      .catch(() => setInstallmentOptions([]))
+      .catch(() => {
+        setInstallmentOptions([])
+        setInstallmentError('Não foi possível carregar as opções de parcelamento.')
+      })
       .finally(() => setLoadingInstallments(false))
   }, [method, order]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const shouldReuseKeyForRetry = (apiError: ApiError): boolean => {
     if (apiError.statusCode) return false
     const normalizedMessage = apiError.message.toLowerCase()
-    return /timeout|timed out|network|conex|conexão|internet/.test(normalizedMessage)
+    return /timeout|timed out|network|conex|conexão|internet|rede|tempo limite|esgotou|esgotado|instável|servidor demorou|ECONNRESET|ETIMEDOUT|ENOTFOUND/i.test(normalizedMessage)
   }
 
   const hasPixPayload = (p?: Payment | null): boolean => Boolean(p?.qr_code || p?.qr_code_base64)
@@ -433,7 +441,7 @@ export function PaymentPage() {
         const [month, yearRaw] = cardForm.expiryDate.split('/')
         const year = yearRaw?.length === 2 ? `20${yearRaw}` : yearRaw
 
-        const mpPublicKey = (import.meta as unknown as { env: { VITE_MP_PUBLIC_KEY?: string } }).env.VITE_MP_PUBLIC_KEY
+        const mpPublicKey = import.meta.env.VITE_MP_PUBLIC_KEY
         if (!mpPublicKey) throw new Error('Chave pública do Mercado Pago não configurada. Defina VITE_MP_PUBLIC_KEY no arquivo .env.')
 
         const mpRes = await fetch(`https://api.mercadopago.com/v1/card_tokens?public_key=${mpPublicKey}`, {
@@ -827,6 +835,8 @@ export function PaymentPage() {
                         <div className="py-4 flex justify-center">
                           <Spinner size="sm" />
                         </div>
+                      ) : installmentError ? (
+                        <p className="text-xs text-amber-600 py-2">{installmentError} Tente inserir o número do cartão novamente.</p>
                       ) : (
                         <p className="text-xs text-nude-500 py-2">
                           Insira o número do cartão para ver as opções de parcelamento.
@@ -1002,6 +1012,17 @@ export function PaymentPage() {
                         <Button variant="outline" fullWidth onClick={checkStatus} loading={checking}>
                           Verificar Pagamento
                         </Button>
+
+                        {!payment.qr_code && !payment.qr_code_base64 && (
+                          <div className="text-center mt-3">
+                            <button
+                              onClick={() => { setPayment(null); setError('') }}
+                              className="text-sm text-[#2a7e51] hover:underline"
+                            >
+                              QR Code não carregou? Gerar novo PIX
+                            </button>
+                          </div>
+                        )}
 
                         <p className="text-center text-xs text-nude-500 mt-3 leading-relaxed">
                           Após pagar, a confirmação pode levar até alguns minutos para aparecer aqui. Fique tranquilo — assim que identificarmos o pagamento, seu pedido será atualizado automaticamente.

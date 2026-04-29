@@ -98,7 +98,7 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
   const { register } = useAuth()
   const { closeLoginModal } = useLoginModal()
 
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '' })
+  const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -114,13 +114,13 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.name || !form.email || !form.password) { setError('Preencha todos os campos obrigatórios.'); return }
+    if (!form.fullName || !form.email || !form.password) { setError('Preencha todos os campos obrigatórios.'); return }
     if (form.password.length < 8) { setError('Senha deve ter pelo menos 8 caracteres.'); return }
     if (form.phone && form.phone.replace(/\D/g, '').length < 10) { setError('Telefone inválido.'); return }
     setLoading(true); setError('')
     try {
       const rawPhone = form.phone ? form.phone.replace(/\D/g, '') : undefined
-      await register(form.name, form.email, form.password, rawPhone)
+      await register(form.fullName, form.email, form.password, rawPhone)
       closeLoginModal()
     } catch (err) {
       setError((err as ApiError).message ?? 'Não foi possível criar sua conta. Tente novamente.')
@@ -147,8 +147,8 @@ function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
             <Input
               label="Nome completo"
               type="text"
-              value={form.name}
-              onChange={e => set('name', e.target.value)}
+              value={form.fullName}
+              onChange={e => set('fullName', e.target.value)}
               placeholder="Seu nome"
               autoComplete="name"
               required

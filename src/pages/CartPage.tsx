@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
@@ -47,12 +47,15 @@ function CartItem({ item }: { item: any }) {
           <div className="flex items-center border border-gray-200 rounded-full overflow-hidden bg-white">
             <button
               onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-              className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-[#111111] hover:bg-gray-50 transition-colors"
+              disabled={item.quantity <= 1}
+              aria-label="Diminuir quantidade"
+              className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-[#111111] hover:bg-gray-50 transition-colors disabled:opacity-30"
             >−</button>
-            <span className="w-7 text-center text-sm font-medium text-[#111111]">{item.quantity}</span>
+            <span className="w-7 text-center text-sm font-medium text-[#111111]" aria-live="polite">{item.quantity}</span>
             <button
               onClick={() => updateQuantity(item.productId, item.quantity + 1)}
               disabled={item.quantity >= (item.product?.stock ?? 99)}
+              aria-label="Aumentar quantidade"
               className="w-10 h-10 flex items-center justify-center text-gray-500 hover:text-[#111111] hover:bg-gray-50 transition-colors disabled:opacity-30"
             >+</button>
           </div>
@@ -84,6 +87,12 @@ export function CartPage() {
   const { openLoginModal } = useLoginModal()
   const navigate = useNavigate()
   const [confirmingClear, setConfirmingClear] = useState(false)
+
+  useEffect(() => {
+    if (!confirmingClear) return
+    const t = setTimeout(() => setConfirmingClear(false), 5000)
+    return () => clearTimeout(t)
+  }, [confirmingClear])
 
   const handleCheckout = () => {
     if (!isAuthenticated) {

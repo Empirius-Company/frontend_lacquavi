@@ -23,13 +23,17 @@ export default {
         'card-hover': '0 8px 16px rgba(0,0,0,0.12)',
       },
       animation: {
-        'fade-in': 'fadeIn 0.3s ease-out both',
+        'fade-in':  'fadeIn 0.3s ease-out both',
         'slide-up': 'slideUp 0.4s ease-out both',
+        'slide-in': 'slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both',
+        'scale-in': 'scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both',
       },
       keyframes: {
-        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-        slideUp: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+        fadeIn:    { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+        slideUp:   { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
         slideLeft: { '0%': { transform: 'translateX(100%)' }, '100%': { transform: 'translateX(0)' } },
+        slideIn:   { '0%': { opacity: '0', transform: 'translateX(20px)' }, '100%': { opacity: '1', transform: 'translateX(0)' } },
+        scaleIn:   { '0%': { opacity: '0', transform: 'scale(0.95)' },      '100%': { opacity: '1', transform: 'scale(1)' } },
       }
     },
   },

@@ -1046,7 +1046,7 @@ export function AdminOrdersPage() {
         if (searchTerm) {
           const orderCode = order.id.slice(-8).toLowerCase()
           const couponCode = order.couponCode?.toLowerCase() ?? ''
-          const customerName = order.user?.name?.toLowerCase() ?? ''
+          const customerName = order.user?.fullName?.toLowerCase() ?? ''
           const customerEmail = order.user?.email?.toLowerCase() ?? ''
           const destinationZip = order.shippingDestinationZip?.toLowerCase() ?? ''
           if (!orderCode.includes(searchTerm) && !couponCode.includes(searchTerm) && !customerName.includes(searchTerm) && !customerEmail.includes(searchTerm) && !destinationZip.includes(searchTerm)) return false
@@ -1208,7 +1208,7 @@ export function AdminOrdersPage() {
                 >
                   <td className="px-5 py-4 font-mono text-sm text-ink">#{order.id.slice(-8).toUpperCase()}</td>
                   <td className="px-5 py-4 text-sm text-ink">
-                    <p className="font-medium">{order.user?.name || 'Cliente não identificado'}</p>
+                    <p className="font-medium">{order.user?.fullName || 'Cliente não identificado'}</p>
                     <p className="text-xs text-obsidian-400">{order.user?.email || `ID: ${order.userId.slice(-8).toUpperCase()}`}</p>
                   </td>
                   <td className="px-5 py-4 text-xs text-obsidian-500 whitespace-nowrap">{formatDateTime(order.createdAt)}</td>
@@ -1484,7 +1484,7 @@ export function AdminOrderDetailPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-obsidian-500">Cliente</span>
-              <span className="text-right">{order.user?.name || `ID ${order.userId.slice(-8).toUpperCase()}`}</span>
+              <span className="text-right">{order.user?.fullName || `ID ${order.userId.slice(-8).toUpperCase()}`}</span>
             </div>
             {order.user?.email && (
               <div className="flex justify-between gap-2">
@@ -2560,7 +2560,7 @@ export function AdminShippingPage() {
       <div className="min-w-0">
         <p className="text-sm font-medium text-ink font-mono">#{order.id.slice(-8).toUpperCase()}</p>
         <p className="text-xs text-obsidian-400 mt-0.5">
-          {order.user?.name || `ID ${order.userId.slice(-8).toUpperCase()}`}
+          {order.user?.fullName || `ID ${order.userId.slice(-8).toUpperCase()}`}
           {order.shippingServiceName ? ` · ${order.shippingServiceName}` : ''}
           {order.pickupLocation ? ` · ${pickupLocationLabel[order.pickupLocation] ?? order.pickupLocation}` : ''}
         </p>

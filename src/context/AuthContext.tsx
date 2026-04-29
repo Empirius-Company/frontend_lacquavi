@@ -17,8 +17,9 @@ interface AuthContextValue {
   isLoading: boolean
   isAuthenticated: boolean
   isAdmin: boolean
+  isOperator: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (name: string, email: string, password: string, phone?: string) => Promise<void>
+  register: (fullName: string, email: string, password: string, phone?: string) => Promise<void>
   logout: () => Promise<void>
   logoutAll: () => Promise<void>
   refreshSession: () => Promise<void>
@@ -33,6 +34,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState('')
   const [isLoading, setIsLoading]     = useState(true)
   const refreshTimerRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // How many consecutive proactive-refresh failures have occurred; resets on success.
+  // Limits back-off retries so an expired refresh token doesn't loop forever.
+  const proactiveFailCountRef         = useRef(0)
   // BroadcastChannel for cross-tab token sync (prevents refresh race conditions)
   const bcRef                         = useRef<BroadcastChannel | null>(null)
   // Tracks whether there was an active session — used to decide if an expiry toast is appropriate
@@ -59,13 +63,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshTimerRef.current = setTimeout(async () => {
       try {
         const res = await authApi.refresh()
+        proactiveFailCountRef.current = 0
         setCurrentToken(res.accessToken)
         setAccessToken(res.accessToken)
         if (res.expiresIn) scheduleProactiveRefresh(res.expiresIn)
         // Tell other tabs: "I just refreshed — update your token, cancel your pending timers"
         bcRef.current?.postMessage({ type: 'TOKEN_REFRESHED', accessToken: res.accessToken, expiresIn: res.expiresIn })
       } catch {
-        // Refresh token expired or lost the multi-tab race — the 401 interceptor handles logout
+        // Refresh failed: could be a transient network error, a multi-tab race (another tab
+        // already rotated the token), or a genuinely expired refresh token.
+        // Retry once with a short back-off so a single network blip doesn't force
+        // the user to rely on the reactive 401 path for their next request.
+        // Cap at 2 retries — if the refresh token is truly expired, stop looping.
+        if (proactiveFailCountRef.current < 2) {
+          proactiveFailCountRef.current += 1
+          scheduleProactiveRefresh(30)
+        }
+        // Beyond the retry cap: let the 401 interceptor handle logout on the next real request.
       }
     }, delayMs)
   }, [])
@@ -79,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearSession = useCallback(() => {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
+    proactiveFailCountRef.current = 0
     setCurrentToken(null)
     setAccessToken('')
     setUser(null)
@@ -202,8 +217,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveSession(res.accessToken, res.user, res.expiresIn)
   }, [saveSession])
 
-  const register = useCallback(async (name: string, email: string, password: string, phone?: string) => {
-    const res = await authApi.register({ name, email, password, ...(phone ? { phone } : {}) })
+  const register = useCallback(async (fullName: string, email: string, password: string, phone?: string) => {
+    const res = await authApi.register({ fullName, email, password, ...(phone ? { phone } : {}) })
     saveSession(res.accessToken, res.user, res.expiresIn)
   }, [saveSession])
 
@@ -233,6 +248,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
+    isOperator: user?.role === 'operator' || user?.role === 'admin',
     login,
     register,
     logout,

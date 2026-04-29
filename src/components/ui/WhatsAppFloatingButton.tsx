@@ -1,7 +1,7 @@
 import React from 'react'
 import { getWhatsAppUrl } from '../../config/contactConfig'
 
-const WHATSAPP_MESSAGE = 'Olá! Gostaria de mais informações sobre os produtos.'
+const WHATSAPP_MESSAGE = 'Olá! Vim pelo site e gostaria de mais informações sobre os produtos.'
 
 interface WhatsAppFloatingButtonProps {
   message?: string

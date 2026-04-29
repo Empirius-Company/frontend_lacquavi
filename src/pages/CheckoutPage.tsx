@@ -11,6 +11,21 @@ import type { CouponValidation, ApiError, Order, ShippingDestination, ShippingQu
 const SHIPPING_DESTINATION_KEY = 'lacquavi_checkout_shipping_destination'
 const SHIPPING_SESSION_KEY = 'lacquavi_checkout_shipping_session'
 
+const PICKUP_LOCATIONS: Record<string, { label: string; address: string; neighborhood: string; city: string }> = {
+  lagoa_santa: {
+    label: 'Open Mall — Lagoa Santa',
+    address: 'Loja 05',
+    neighborhood: 'Centro',
+    city: 'Lagoa Santa — MG · CEP 33400-000',
+  },
+  minas_shopping: {
+    label: 'Minas Shopping',
+    address: 'Piso 1, Loja 610',
+    neighborhood: 'Belo Horizonte — MG',
+    city: 'CEP 31160-551',
+  },
+}
+
 type ShippingSessionCache = {
   cartSignature: string
   orderId: string
@@ -153,6 +168,7 @@ export function CheckoutPage() {
       return getEmptyDestination()
     }
   })
+  const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery')
   const [orderDraft, setOrderDraft] = useState<Order | null>(null)
   const [shippingQuotes, setShippingQuotes] = useState<ShippingQuote[]>([])
   const [selectedQuoteId, setSelectedQuoteId] = useState<string>('')
@@ -297,21 +313,36 @@ export function CheckoutPage() {
 
   const ensureOrderDraft = async (): Promise<Order> => {
     if (orderDraft) return orderDraft
-    const { order } = await ordersApi.create({
-      items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
-      couponCode: coupon?.coupon.code,
-      idempotencyKey: orderIdempotencyKeyRef.current,
-    })
-    setOrderDraft(order)
-    persistShippingSession({ orderId: order.id, quotes: [], selectedQuoteId: null })
-    return order
+    try {
+      const { order } = await ordersApi.create({
+        items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
+        couponCode: coupon?.coupon.code,
+        idempotencyKey: orderIdempotencyKeyRef.current,
+      })
+      setOrderDraft(order)
+      persistShippingSession({ orderId: order.id, quotes: [], selectedQuoteId: null })
+      return order
+    } catch (err) {
+      const apiError = err as { message?: string; statusCode?: number }
+      if (apiError.message?.includes('idempotente') || apiError.message?.includes('processamento')) {
+        orderIdempotencyKeyRef.current = generateIdempotencyKey()
+        const { order } = await ordersApi.create({
+          items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
+          couponCode: coupon?.coupon.code,
+          idempotencyKey: orderIdempotencyKeyRef.current,
+        })
+        setOrderDraft(order)
+        persistShippingSession({ orderId: order.id, quotes: [], selectedQuoteId: null })
+        return order
+      }
+      throw err
+    }
   }
 
   const setCouponErrorWithTimeout = (msg: string) => {
-    setCouponError(msg)
     if (couponErrorTimerRef.current) clearTimeout(couponErrorTimerRef.current)
-    // Mantém o erro visível por 6s antes de sumir — evita desaparecer antes de ser lido
-    couponErrorTimerRef.current = setTimeout(() => setCouponError(''), 6000)
+    couponErrorTimerRef.current = null
+    setCouponError(msg)
   }
 
   const validateCoupon = async () => {
@@ -376,7 +407,6 @@ export function CheckoutPage() {
         setShippingQuotes([])
         setShippingAmountCents(0)
         setShippingDiscountCents(0)
-        setShippingError('Este pedido não possui itens físicos. Frete não é necessário.')
         break
       default:
         setShippingError(apiError.message ?? 'Erro no processo de frete')
@@ -425,6 +455,33 @@ export function CheckoutPage() {
     }
   }
 
+  const handleDeliveryMethodChange = async (method: 'delivery' | 'pickup') => {
+    if (method === deliveryMethod) return
+    setDeliveryMethod(method)
+    setShippingQuotes([])
+    setSelectedQuoteId('')
+    setShippingConfirmed(false)
+    setShippingAmountCents(0)
+    setShippingDiscountCents(0)
+    setShippingError('')
+    setError('')
+
+    if (method === 'pickup') {
+      setShippingLoading(true)
+      try {
+        const draftOrder = await ensureOrderDraft()
+        const response = await shippingApi.pickupQuote(draftOrder.id)
+        const validQuotes = response.quotes.filter(q => new Date(q.expiresAt).getTime() > Date.now())
+        setShippingQuotes(validQuotes)
+        persistShippingSession({ orderId: draftOrder.id, quotes: validQuotes, selectedQuoteId: null })
+      } catch (err) {
+        handleShippingBusinessError(err as ApiError)
+      } finally {
+        setShippingLoading(false)
+      }
+    }
+  }
+
   const scrollToShipping = useCallback(() => {
     shippingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [])
@@ -441,10 +498,11 @@ export function CheckoutPage() {
     setError('')
     try {
       if (shippingRequired && selectedQuoteId && draftOrder.shippingQuoteId !== selectedQuoteId) {
+        const isPickup = deliveryMethod === 'pickup'
         await shippingApi.select({
           orderId: draftOrder.id,
           quoteId: selectedQuoteId,
-          destination: normalizeDestination(destination),
+          ...(isPickup ? {} : { destination: normalizeDestination(destination) }),
         })
       }
       clearCart()
@@ -456,7 +514,7 @@ export function CheckoutPage() {
   }
 
   const hasShippingError = Boolean(error || shippingError)
-  const isPickupMode = shippingQuotes.length > 0 && shippingQuotes.every(q => q.provider === 'STORE_PICKUP')
+  const isPickupMode = deliveryMethod === 'pickup'
   const isPickupConfirmed = shippingConfirmed && shippingQuotes.some(q => q.quoteId === selectedQuoteId && q.provider === 'STORE_PICKUP')
 
   return (
@@ -531,12 +589,38 @@ export function CheckoutPage() {
                     </span>
                     <h3 className="font-display text-base text-noir-950">Entrega</h3>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {shippingConfirmed && (
-                      <span className="text-xs text-green-700 font-medium bg-green-50 border border-green-200 rounded-full px-2 py-0.5">Confirmado</span>
-                    )}
-                    {!isPickupMode && <span className="text-xs text-nude-500">Frete via SEDEX</span>}
-                  </div>
+                  {shippingConfirmed && (
+                    <span className="text-xs text-green-700 font-medium bg-green-50 border border-green-200 rounded-full px-2 py-0.5">Confirmado</span>
+                  )}
+                </div>
+
+                {/* Seletor de método de entrega */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDeliveryMethodChange('delivery')}
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
+                      deliveryMethod === 'delivery'
+                        ? 'border-[#2a7e51] bg-[#2a7e51]/5 text-[#2a7e51]'
+                        : 'border-nude-200 text-nude-600 hover:border-nude-300'
+                    }`}
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    Entrega em casa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeliveryMethodChange('pickup')}
+                    disabled={shippingLoading}
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+                      deliveryMethod === 'pickup'
+                        ? 'border-[#2a7e51] bg-[#2a7e51]/5 text-[#2a7e51]'
+                        : 'border-nude-200 text-nude-600 hover:border-nude-300'
+                    }`}
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    Retirar na loja
+                  </button>
                 </div>
 
                 {/* Erro de validação (frete não selecionado ao tentar avançar) */}
@@ -566,6 +650,7 @@ export function CheckoutPage() {
                           type="text"
                           inputMode="numeric"
                           value={destination.zip}
+                          disabled={shippingLoading}
                           onChange={e => {
                             const digits = e.target.value.replace(/\D/g, '').slice(0, 8)
                             const masked = digits.length > 5
@@ -574,7 +659,7 @@ export function CheckoutPage() {
                             handleDestinationChange('zip', masked)
                           }}
                           placeholder="00000-000"
-                          className="input-luxury text-sm"
+                          className="input-luxury text-sm disabled:opacity-50"
                         />
                       </div>
                       <div className="flex flex-col gap-1">
@@ -583,9 +668,10 @@ export function CheckoutPage() {
                           id="dest-number"
                           type="text"
                           value={destination.number}
+                          disabled={shippingLoading}
                           onChange={e => handleDestinationChange('number', e.target.value)}
                           placeholder="123"
-                          className="input-luxury text-sm"
+                          className="input-luxury text-sm disabled:opacity-50"
                         />
                       </div>
                       <div className="flex flex-col gap-1">
@@ -594,10 +680,11 @@ export function CheckoutPage() {
                           id="dest-state"
                           type="text"
                           value={destination.state}
+                          disabled={shippingLoading}
                           onChange={e => handleDestinationChange('state', e.target.value.toUpperCase().slice(0, 2))}
                           placeholder="MG"
                           maxLength={2}
-                          className="input-luxury text-sm"
+                          className="input-luxury text-sm disabled:opacity-50"
                         />
                       </div>
                       <div className="flex flex-col gap-1 col-span-2 sm:col-span-3">
@@ -606,9 +693,10 @@ export function CheckoutPage() {
                           id="dest-street"
                           type="text"
                           value={destination.street}
+                          disabled={shippingLoading}
                           onChange={e => handleDestinationChange('street', e.target.value)}
                           placeholder="Rua das Flores"
-                          className="input-luxury text-sm"
+                          className="input-luxury text-sm disabled:opacity-50"
                         />
                       </div>
                       <div className="flex flex-col gap-1">
@@ -617,9 +705,10 @@ export function CheckoutPage() {
                           id="dest-complement"
                           type="text"
                           value={destination.complement ?? ''}
+                          disabled={shippingLoading}
                           onChange={e => handleDestinationChange('complement', e.target.value)}
                           placeholder="Apto 12 (opcional)"
-                          className="input-luxury text-sm"
+                          className="input-luxury text-sm disabled:opacity-50"
                         />
                       </div>
                       <div className="flex flex-col gap-1">
@@ -628,9 +717,10 @@ export function CheckoutPage() {
                           id="dest-district"
                           type="text"
                           value={destination.district}
+                          disabled={shippingLoading}
                           onChange={e => handleDestinationChange('district', e.target.value)}
                           placeholder="Centro"
-                          className="input-luxury text-sm"
+                          className="input-luxury text-sm disabled:opacity-50"
                         />
                       </div>
                       <div className="flex flex-col gap-1">
@@ -639,9 +729,10 @@ export function CheckoutPage() {
                           id="dest-city"
                           type="text"
                           value={destination.city}
+                          disabled={shippingLoading}
                           onChange={e => handleDestinationChange('city', e.target.value)}
                           placeholder="Belo Horizonte"
-                          className="input-luxury text-sm"
+                          className="input-luxury text-sm disabled:opacity-50"
                         />
                       </div>
                     </div>
@@ -659,58 +750,67 @@ export function CheckoutPage() {
                 {/* Modo retirada */}
                 {isPickupMode && (
                   <div className="space-y-3">
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                      SEDEX não disponível para este CEP. Selecione um ponto de retirada:
-                    </div>
-                    <div className="space-y-2">
-                      {shippingQuotes.map(quote => {
-                        const checked = selectedQuoteId === quote.quoteId
-                        const locationLabel = quote.serviceCode === 'lagoa_santa' ? 'Lagoa Santa' : 'Minas Shopping'
-                        return (
-                          <label
-                            key={quote.quoteId}
-                            className={`flex items-center justify-between rounded-xl border px-3 py-3 cursor-pointer transition-colors ${
-                              checked ? 'border-[#2a7e51] bg-[#2a7e51]/5' : 'border-nude-200 hover:border-nude-300'
-                            }`}
-                          >
-                            <div className="flex items-start gap-2">
-                              <input
-                                type="radio"
-                                name="shipping-quote"
-                                checked={checked}
-                                onChange={() => {
-                                  setSelectedQuoteId(quote.quoteId)
-                                  setShippingConfirmed(true)
-                                  setShippingRequired(true)
-                                  setShippingAmountCents(0)
-                                  setShippingDiscountCents(0)
-                                  setError('')
-                                  persistShippingSession({ selectedQuoteId: quote.quoteId })
-                                }}
-                                className="mt-0.5"
-                              />
-                              <div>
-                                <p className="text-sm font-medium text-noir-950">Retirar em {locationLabel}</p>
-                                <p className="text-xs text-nude-500">Você retira no local após notificação</p>
+                    {shippingLoading && (
+                      <p className="text-xs text-nude-500 text-center py-2">Carregando opções de retirada...</p>
+                    )}
+                    {!shippingLoading && shippingQuotes.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {shippingQuotes.map(quote => {
+                          const checked = selectedQuoteId === quote.quoteId
+                          const loc = PICKUP_LOCATIONS[quote.serviceCode] ?? { label: quote.serviceCode, address: '', neighborhood: '', city: '' }
+                          return (
+                            <label
+                              key={quote.quoteId}
+                              className={`flex flex-col rounded-xl border p-4 cursor-pointer transition-all ${
+                                checked
+                                  ? 'border-[#2a7e51] bg-[#2a7e51]/5 ring-1 ring-[#2a7e51]/20'
+                                  : 'border-nude-200 hover:border-nude-300 hover:bg-nude-50/50'
+                              }`}
+                            >
+                              {/* Cabeçalho do card */}
+                              <div className="flex items-start justify-between gap-2 mb-3">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="radio"
+                                    name="shipping-quote"
+                                    checked={checked}
+                                    onChange={() => {
+                                      setSelectedQuoteId(quote.quoteId)
+                                      setShippingConfirmed(true)
+                                      setShippingRequired(true)
+                                      setShippingAmountCents(0)
+                                      setShippingDiscountCents(0)
+                                      setError('')
+                                      persistShippingSession({ selectedQuoteId: quote.quoteId })
+                                    }}
+                                    className="flex-shrink-0"
+                                  />
+                                  <p className="text-sm font-semibold text-noir-950">{loc.label}</p>
+                                </div>
+                                <span className="text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-0.5 flex-shrink-0">
+                                  Grátis
+                                </span>
                               </div>
-                            </div>
-                            <p className="text-sm font-semibold text-green-600">Grátis</p>
-                          </label>
-                        )
-                      })}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShippingQuotes([])
-                        setSelectedQuoteId('')
-                        setShippingConfirmed(false)
-                        setShippingAmountCents(0)
-                      }}
-                      className="text-xs text-nude-500 hover:text-noir-950 transition-colors w-full text-center"
-                    >
-                      Tentar outro CEP
-                    </button>
+
+                              {/* Endereço */}
+                              <div className="flex items-start gap-1.5 mb-1">
+                                <svg className="w-3.5 h-3.5 text-nude-400 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                <div>
+                                  <p className="text-xs text-nude-700 leading-snug">{loc.address}</p>
+                                  <p className="text-xs text-nude-500 mt-0.5">{loc.neighborhood} · {loc.city}</p>
+                                </div>
+                              </div>
+
+                              {/* Prazo */}
+                              <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-nude-100">
+                                <svg className="w-3.5 h-3.5 text-[#2a7e51] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                <p className="text-xs text-[#2a7e51] font-medium">Pronto em até 1 hora</p>
+                              </div>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -759,7 +859,11 @@ export function CheckoutPage() {
                   <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 flex items-center gap-2">
                     <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
                     {isPickupMode
-                      ? `Retirada confirmada em ${shippingQuotes.find(q => q.quoteId === selectedQuoteId)?.serviceCode === 'lagoa_santa' ? 'Lagoa Santa' : 'Minas Shopping'}.`
+                      ? (() => {
+                          const selectedQuote = shippingQuotes.find(q => q.quoteId === selectedQuoteId)
+                          const loc = selectedQuote ? (PICKUP_LOCATIONS[selectedQuote.serviceCode] ?? { label: selectedQuote.serviceCode }) : null
+                          return `Retirada em ${loc?.label ?? '—'} confirmada — pronto em até 1 hora.`
+                        })()
                       : 'Frete confirmado para este pedido.'}
                   </div>
                 )}
@@ -816,8 +920,7 @@ export function CheckoutPage() {
                         value={couponCode}
                         onChange={e => {
                           setCouponCode(e.target.value.toUpperCase())
-                          if (couponErrorTimerRef.current) clearTimeout(couponErrorTimerRef.current)
-                          couponErrorTimerRef.current = setTimeout(() => setCouponError(''), 2000)
+                          setCouponError('')
                         }}
                         onKeyDown={e => e.key === 'Enter' && validateCoupon()}
                         placeholder="CÓDIGO DO CUPOM"

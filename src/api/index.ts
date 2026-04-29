@@ -13,6 +13,8 @@ import type {
   ShippingSelectionResponse,
   Shipment,
   OrderShipmentResponse,
+  BatchLabelsResponse,
+  PrintLabelsResponse,
 } from '../types'
 export { bannersApi } from './bannerApi'
 
@@ -47,6 +49,9 @@ export const ordersApi = {
 
   getShipment: (id: string): Promise<OrderShipmentResponse> =>
     httpClient.get<OrderShipmentResponse>(`/orders/${id}/shipment`),
+
+  opsCount: (): Promise<{ pendingCount: number }> =>
+    httpClient.get<{ pendingCount: number }>('/orders/ops-count'),
 }
 
 // ─── Payments API ─────────────────────────────────────────────────────────────
@@ -177,7 +182,7 @@ interface ShippingQuoteInput {
 interface ShippingSelectionInput {
   orderId: string
   quoteId: string
-  destination: ShippingDestination
+  destination?: ShippingDestination
 }
 
 interface PublicQuoteInput {
@@ -192,6 +197,9 @@ export const shippingApi = {
   quote: (data: ShippingQuoteInput): Promise<ShippingQuoteListResponse> =>
     httpClient.post<ShippingQuoteListResponse>('/shipping/quotes', data),
 
+  pickupQuote: (orderId: string): Promise<ShippingQuoteListResponse> =>
+    httpClient.post<ShippingQuoteListResponse>('/shipping/pickup-quotes', { orderId }),
+
   select: (data: ShippingSelectionInput): Promise<ShippingSelectionResponse> =>
     httpClient.post<ShippingSelectionResponse>('/shipping/selection', data),
 
@@ -203,4 +211,13 @@ export const shippingApi = {
 
   markPickupReady: (orderId: string): Promise<{ message: string; shipment: Shipment }> =>
     httpClient.post<{ message: string; shipment: Shipment }>(`/shipping/orders/${orderId}/pickup-ready`),
+
+  confirmCollection: (orderId: string): Promise<{ message: string; shipment: Shipment }> =>
+    httpClient.post<{ message: string; shipment: Shipment }>(`/shipping/orders/${orderId}/collected`),
+
+  batchLabels: (orderIds: string[]): Promise<BatchLabelsResponse> =>
+    httpClient.post<BatchLabelsResponse>('/shipping/labels/batch', { orderIds }),
+
+  printLabels: (orderIds: string[]): Promise<PrintLabelsResponse> =>
+    httpClient.get<PrintLabelsResponse>('/shipping/labels/print', { params: { orderIds: orderIds.join(',') } }),
 }

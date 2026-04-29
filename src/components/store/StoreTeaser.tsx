@@ -138,7 +138,7 @@ export function StoreTeaser() {
                 <IconMapPin /> Como Chegar
               </a>
               <a
-                href={`https://wa.me/${s.whatsapp}?text=Olá!%20Gostaria%20de%20visitar%20a%20${encodeURIComponent(s.name)}.`}
+                href={`https://wa.me/${s.whatsapp}?text=${encodeURIComponent(`Olá! Vim pelo site e gostaria de visitar a ${s.name}.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 border border-gray-200 bg-white text-[#000000] py-2.5 rounded-lg font-bold text-xs text-center hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center justify-center gap-1.5"

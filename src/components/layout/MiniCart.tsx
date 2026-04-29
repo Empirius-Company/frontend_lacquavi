@@ -86,12 +86,15 @@ export function MiniCart() {
                                             <div className="flex items-center border border-nude-200 rounded-full bg-white">
                                                 <button
                                                     onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                                                    className="w-9 h-9 flex items-center justify-center text-nude-500 hover:text-noir-950 transition-colors"
+                                                    disabled={item.quantity <= 1}
+                                                    aria-label="Diminuir quantidade"
+                                                    className="w-9 h-9 flex items-center justify-center text-nude-500 hover:text-noir-950 transition-colors disabled:opacity-30"
                                                 >−</button>
-                                                <span className="w-6 text-center text-xs font-semibold">{item.quantity}</span>
+                                                <span className="w-6 text-center text-xs font-semibold" aria-live="polite">{item.quantity}</span>
                                                 <button
                                                     onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                                                     disabled={item.quantity >= (item.product?.stock ?? 99)}
+                                                    aria-label="Aumentar quantidade"
                                                     className="w-7 h-7 flex items-center justify-center text-nude-500 hover:text-noir-950 transition-colors disabled:opacity-30"
                                                 >+</button>
                                             </div>

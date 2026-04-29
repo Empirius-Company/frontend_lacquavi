@@ -10,11 +10,29 @@ export interface HomeTile {
 // ─── User ────────────────────────────────────────────────────────────────────
 export interface User {
   id: string
-  name: string
+  fullName: string
   email: string
   phone?: string | null
-  role: 'customer' | 'admin'
+  role: 'customer' | 'operator' | 'admin'
   createdAt: string
+}
+
+export interface BatchLabelResult {
+  orderId: string
+  success: boolean
+  error?: string
+}
+
+export interface BatchLabelsResponse {
+  results: BatchLabelResult[]
+}
+
+export interface PrintLabelsResponse {
+  labels: Array<{
+    orderId: string
+    labelUrl: string | null
+    labelPdfUrl: string | null
+  }>
 }
 
 // ─── Auth Tokens ─────────────────────────────────────────────────────────────
@@ -121,7 +139,7 @@ export interface Order {
   userId: string
   user?: {
     id: string
-    name: string
+    fullName: string
     email: string
     phone?: string | null
   }

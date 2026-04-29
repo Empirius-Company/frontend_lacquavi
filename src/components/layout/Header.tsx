@@ -103,7 +103,7 @@ export function Header() {
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-bold text-[#333]">{isAuthenticated ? `Oie, ${user?.name?.split(' ')[0]}!` : 'Oie!'}</span>
+                <span className="text-sm font-bold text-[#333]">{isAuthenticated ? `Oie, ${user?.fullName?.split(' ')[0]}!` : 'Oie!'}</span>
                 <span className="text-[11px] text-gray-500 flex items-center gap-1">
                   {isAuthenticated ? 'Sua conta' : 'Vem fazer seu login :)'}
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>

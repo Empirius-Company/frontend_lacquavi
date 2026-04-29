@@ -51,10 +51,8 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
     case 'UPDATE_QTY': {
       const safeQty = Number(action.quantity)
-      if (!Number.isFinite(safeQty) || safeQty <= 0) {
-        return { items: state.items.filter(i => i.productId !== action.productId) }
-      }
-      const clampedQty = Math.min(MAX_QUANTITY, Math.floor(safeQty))
+      if (!Number.isFinite(safeQty)) return state
+      const clampedQty = Math.max(1, Math.min(MAX_QUANTITY, Math.floor(safeQty)))
       return {
         items: state.items.map(i =>
           i.productId === action.productId ? { ...i, quantity: clampedQty } : i

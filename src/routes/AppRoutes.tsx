@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
-import { MainLayout, AdminLayout } from '../components/layout'
-import { ProtectedRoute, AdminRoute } from './guards'
+import { MainLayout, AdminLayout, OpsLayout } from '../components/layout'
+import { ProtectedRoute, AdminRoute, OperatorRoute } from './guards'
 import { useLoginModal, type AuthModalMode } from '../context/LoginModalContext'
 
 // Home is eagerly loaded — it's the entry point and the LCP page
@@ -30,6 +30,11 @@ const MyOrdersPage       = lazy(() => import('../pages/general').then(m => ({ de
 const OrderDetailPage    = lazy(() => import('../pages/general').then(m => ({ default: m.OrderDetailPage })))
 const PaymentResultPage  = lazy(() => import('../pages/general').then(m => ({ default: m.PaymentResultPage })))
 const NotFoundPage       = lazy(() => import('../pages/general').then(m => ({ default: m.NotFoundPage })))
+
+// Ops pages (operator panel)
+const OpsDashboardPage   = lazy(() => import('../pages/ops').then(m => ({ default: m.OpsDashboardPage })))
+const OpsOrderDetailPage = lazy(() => import('../pages/ops').then(m => ({ default: m.OpsOrderDetailPage })))
+const OpsOrdersPage      = lazy(() => import('../pages/ops').then(m => ({ default: m.OpsOrdersPage })))
 
 // Admin pages
 const AdminDashboardPage    = lazy(() => import('../pages/admin').then(m => ({ default: m.AdminDashboardPage })))
@@ -93,6 +98,15 @@ export function AppRoutes() {
           <Route path="/checkout"                           element={<CheckoutPage />} />
           <Route path="/checkout/payment/:orderId"          element={<PaymentPage />} />
           <Route path="/checkout/payment/:orderId/result"   element={<PaymentResultPage />} />
+        </Route>
+
+        {/* ── Ops routes (operator + admin) ────────────────────── */}
+        <Route element={<OperatorRoute />}>
+          <Route element={<OpsLayout />}>
+            <Route path="/ops"              element={<OpsDashboardPage />} />
+            <Route path="/ops/orders"       element={<OpsOrdersPage />} />
+            <Route path="/ops/orders/:id"   element={<OpsOrderDetailPage />} />
+          </Route>
         </Route>
 
         {/* ── Admin routes ──────────────────────────────────────── */}

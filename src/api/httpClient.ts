@@ -65,9 +65,15 @@ instance.interceptors.request.use((config) => {
 instance.interceptors.response.use(
   (res) => res,
   async (err: AxiosError<{ error?: string; message?: string; code?: string; retryAfter?: number }>) => {
-    const originalRequest = err.config as (AxiosRequestConfig & { _retry?: boolean; _refreshAttempts?: number; _refreshSucceeded?: boolean }) | undefined
+    const originalRequest = err.config as (AxiosRequestConfig & { _retry?: boolean; _refreshAttempts?: number; _refreshSucceeded?: boolean; _staleTokenRetried?: boolean }) | undefined
     const isUnauthorized = err.response?.status === 401
     const isAuthEndpoint = originalRequest?.url?.includes('/auth/')
+    // Capture the token that was sent in this request so we can detect a concurrent refresh later.
+    const tokenAtRequestTime = (() => {
+      const auth = originalRequest?.headers?.['Authorization']
+      if (typeof auth !== 'string') return null
+      return auth.startsWith('Bearer ') ? auth.slice(7) : null
+    })()
 
     if (isUnauthorized && originalRequest && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true
@@ -120,6 +126,25 @@ instance.interceptors.response.use(
     // after a successful token refresh — that 401 is from the endpoint/provider,
     // not from an expired session.
     if (isUnauthorized && !originalRequest?._refreshSucceeded) {
+      // Race-condition guard: the proactive refresh timer (AuthContext) and this interceptor
+      // use separate HTTP clients — they can both attempt a refresh with the same refresh
+      // token. If the timer won the DB race, _currentToken was already updated while this
+      // interceptor's refresh request was still in-flight. Retrying with the fresh token is
+      // correct; calling _onUnauthorized() here would log the user out despite a valid session.
+      const freshToken = _currentToken
+      if (
+        freshToken &&
+        tokenAtRequestTime &&
+        freshToken !== tokenAtRequestTime &&
+        originalRequest &&
+        !isAuthEndpoint &&
+        !originalRequest._staleTokenRetried
+      ) {
+        originalRequest._staleTokenRetried = true
+        originalRequest._refreshSucceeded = true
+        originalRequest.headers = { ...(originalRequest.headers ?? {}), Authorization: `Bearer ${freshToken}` }
+        return instance.request(originalRequest)
+      }
       _onUnauthorized()
     }
 

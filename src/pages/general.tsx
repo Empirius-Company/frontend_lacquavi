@@ -166,7 +166,7 @@ export function RegisterPage() {
   const { register } = useAuth()
   const navigate = useNavigate()
 
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '' })
+  const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -183,14 +183,14 @@ export function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.name || !form.email || !form.password) { setError('Preencha todos os campos obrigatórios.'); return }
+    if (!form.fullName || !form.email || !form.password) { setError('Preencha todos os campos obrigatórios.'); return }
     if (form.password.length < 8) { setError('Senha deve ter pelo menos 8 caracteres.'); return }
     if (form.phone && form.phone.replace(/\D/g, '').length < 10) { setError('Telefone inválido.'); return }
     setLoading(true); setError('')
     try {
       // Envia phone como dígitos puros para o backend
       const rawPhone = form.phone ? form.phone.replace(/\D/g, '') : undefined
-      await register(form.name, form.email, form.password, rawPhone)
+      await register(form.fullName, form.email, form.password, rawPhone)
       navigate('/')
     } catch (err) {
       setError((err as ApiError).message ?? 'Não foi possível criar sua conta. Tente novamente.')
@@ -200,7 +200,7 @@ export function RegisterPage() {
   return (
     <AuthLayout eyebrow="Junte-se à Lacquavi" title="Criar sua conta" sub="Cadastre-se e acesse fragrâncias exclusivas com entrega para todo o Brasil.">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input label="Nome completo" type="text" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Seu nome" required />
+        <Input label="Nome completo" type="text" value={form.fullName} onChange={e => set('fullName', e.target.value)} placeholder="Seu nome completo" required />
         <Input label="E-mail" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="seu@email.com" required />
         <Input
           label="Telefone"
@@ -642,7 +642,7 @@ export function AccountProfilePage() {
     if (digits.length > 7)  formatted = `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`
     setForm(f => ({ ...f, phone: formatted }))
   }
-  const [form,    setForm]    = useState({ name: user?.name ?? '', email: user?.email ?? '', phone: formatPhone(user?.phone) })
+  const [form,    setForm]    = useState({ fullName: user?.fullName ?? '', email: user?.email ?? '', phone: formatPhone(user?.phone) })
   const [saving,  setSaving]  = useState(false)
   const [success, setSuccess] = useState(false)
   const [error,   setError]   = useState('')
@@ -652,7 +652,7 @@ export function AccountProfilePage() {
     setSaving(true); setSuccess(false); setError('')
     try {
       const rawPhone = form.phone ? form.phone.replace(/\D/g, '') : undefined
-      await authApi.updateProfile({ name: form.name, email: form.email, ...(rawPhone !== undefined ? { phone: rawPhone } : {}) })
+      await authApi.updateProfile({ fullName: form.fullName, email: form.email, ...(rawPhone !== undefined ? { phone: rawPhone } : {}) })
       setSuccess(true)
       toast('Perfil atualizado com sucesso!', 'success')
     } catch (err) {
@@ -678,10 +678,10 @@ export function AccountProfilePage() {
           <ScrollReveal>
             <div className="bg-white rounded-3xl border border-gray-100 p-7 shadow-sm flex items-center gap-5">
               <div className="w-16 h-16 rounded-full bg-[#2a7e51]/10 border border-[#2a7e51]/20 flex items-center justify-center text-2xl font-display text-[#2a7e51]">
-                {user?.name?.[0]?.toUpperCase()}
+                {user?.fullName?.[0]?.toUpperCase()}
               </div>
               <div>
-                <p className="font-display text-xl text-[#000000] font-bold">{user?.name}</p>
+                <p className="font-display text-xl text-[#000000] font-bold">{user?.fullName}</p>
                 <p className="text-sm text-gray-500">{user?.email}</p>
                 <span className={`mt-1.5 inline-flex items-center px-2 py-0.5 rounded-full text-2xs border font-medium ${
                   user?.role === 'admin'
@@ -699,9 +699,9 @@ export function AccountProfilePage() {
             <form onSubmit={handleSave} className="bg-white rounded-3xl border border-gray-100 p-7 shadow-sm space-y-5">
               <h2 className="font-display text-lg text-[#000000] font-bold">Editar Dados</h2>
               <Input
-                label="Nome"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                label="Nome completo"
+                value={form.fullName}
+                onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
                 placeholder="Seu nome completo"
               />
               <Input

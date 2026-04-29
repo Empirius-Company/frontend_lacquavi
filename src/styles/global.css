@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 :root {
   --font-body: 'Inter', system-ui, sans-serif;
   --color-green: #000000;
@@ -85,6 +83,35 @@ h6 {
   /* Header helpers */
   .header-link {
     @apply text-sm font-medium text-[#4A4A4A] hover:text-[#000000] transition-colors relative;
+  }
+}
+
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position:  200% 0; }
+}
+
+@layer components {
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.04) 25%,
+      rgba(255, 255, 255, 0.11) 50%,
+      rgba(255, 255, 255, 0.04) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  .skeleton-light {
+    background: linear-gradient(
+      90deg,
+      #ebebeb 25%,
+      #d6d6d6 50%,
+      #ebebeb 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
   }
 }
 

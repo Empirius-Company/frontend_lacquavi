@@ -159,15 +159,15 @@ export function Skeleton({ className = '', dark = false }: { className?: string;
 }
 
 export function ProductCardSkeleton({ dark = false }: { dark?: boolean }) {
-  const bg = dark ? 'bg-white/5' : 'bg-nude-100/50'
+  const bg = dark ? 'bg-white/5' : 'bg-gray-50'
   return (
-    <div className={`rounded-2xl overflow-hidden ${bg}`}>
+    <div className={`rounded-2xl overflow-hidden border ${dark ? 'border-white/5' : 'border-gray-100'} ${bg}`}>
       <Skeleton className="aspect-[3/4] w-full rounded-none" dark={dark} />
       <div className="p-4 space-y-3">
-        <Skeleton className="h-2.5 w-1/2" dark={dark} />
-        <Skeleton className="h-5 w-full" dark={dark} />
-        <Skeleton className="h-4 w-2/3" dark={dark} />
-        <Skeleton className="h-11 w-full rounded-full" dark={dark} />
+        <Skeleton className="h-2.5 w-1/3 rounded-md" dark={dark} />
+        <Skeleton className="h-5 w-full rounded-md" dark={dark} />
+        <Skeleton className="h-4 w-2/3 rounded-md" dark={dark} />
+        <Skeleton className="h-11 w-full rounded-full mt-2" dark={dark} />
       </div>
     </div>
   )
