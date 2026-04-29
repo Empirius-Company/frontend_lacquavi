@@ -155,19 +155,10 @@ export function PaymentPage() {
   // Carrega o script de segurança do Mercado Pago para gerar MP_DEVICE_SESSION_ID
   // Esse fingerprint é crítico para reduzir falsos bloqueios de risco.
   useEffect(() => {
-<<<<<<< HEAD
-    const mpPublicKey = import.meta.env.VITE_MP_PUBLIC_KEY
-    if (!mpPublicKey) return
-    const scriptId = 'mp-sdk-v2'
-    if (document.getElementById(scriptId)) {
-      try { (window as unknown as { MercadoPago: new (key: string) => void }).MercadoPago && new (window as unknown as { MercadoPago: new (key: string) => void }).MercadoPago(mpPublicKey) } catch { /* já inicializado */ }
-      return
-=======
     if (method !== 'credit_card') return
 
     const setDeviceSession = () => {
       setDeviceId((window as any).MP_DEVICE_SESSION_ID || null)
->>>>>>> 9624bff24ab6c1e6eb818237235a46d30528ebad
     }
 
     const existingScript = document.querySelector<HTMLScriptElement>('script[src="https://www.mercadopago.com/v2/security.js"]')
