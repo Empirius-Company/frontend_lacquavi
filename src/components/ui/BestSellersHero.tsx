@@ -111,7 +111,7 @@ export function BestSellersHero({ products, reviewStatsByProduct = {}, loading =
             {/* Background glow — desktop only */}
             <div className="pointer-events-none absolute right-[10%] top-1/2 hidden h-[300px] w-[300px] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(42,126,81,0.12)_0%,rgba(42,126,81,0.06)_45%,rgba(255,255,255,0)_76%)] blur-[2px] md:block" />
 
-            <div className="relative z-10 px-5 py-6 md:px-10 md:py-8 max-w-5xl mx-auto">
+            <div className="relative z-10 px-5 pt-6 pb-10 md:px-10 md:py-8 max-w-5xl mx-auto">
                 <div
                     className={`flex flex-col md:grid md:grid-cols-[1fr_1fr] items-center gap-2 md:gap-10 lg:gap-16 ${slideClass} ${mounted ? '' : 'opacity-0 translate-y-8'}`}
                     style={{ transition: animState === 'idle' && !mounted ? 'opacity 0.7s, transform 0.7s' : undefined }}
