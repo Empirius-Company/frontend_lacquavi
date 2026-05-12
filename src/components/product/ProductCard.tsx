@@ -120,22 +120,24 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
               {pricing.finalPrice > 0 ? (
                 <>
                   {pricing.hasDiscount && (
-                    <span className="text-[10px] text-gray-400 line-through leading-none mb-0.5">
+                    <span className="text-[9px] text-gray-400 line-through leading-none mb-0.5">
                       {formatCurrency(pricing.basePrice)}
                     </span>
                   )}
-                  <span className="text-[15px] font-black text-black leading-none">
-                    {formatCurrency(pricing.finalPrice)}
-                  </span>
-                  {installment && (
-                    <span className="text-[9px] text-gray-600 leading-none mt-0.5">
-                      ou {installment.count}x de {formatCurrency(installment.amountPerInstallment)} sem juros
-                    </span>
-                  )}
-                  <span className="text-[10px] font-bold text-[#2a7e51] leading-none mt-1 flex items-center gap-1">
-                    <span className="font-black bg-[#2a7e51] text-white px-1 py-px rounded-sm text-[7px] uppercase tracking-wider">PIX</span>
+                  {/* PIX — preço herói */}
+                  <span className="text-[15px] font-black text-[#2a7e51] leading-none flex items-center gap-1">
+                    <span className="font-black bg-[#2a7e51] text-white px-1 py-px rounded-sm text-[7px] uppercase tracking-wider shrink-0">PIX</span>
                     {formatCurrency(getPixPrice(pricing.finalPrice))}
                   </span>
+                  {/* Cartão */}
+                  <span className="text-[9px] text-gray-500 leading-none mt-0.5">
+                    no cartão: {formatCurrency(pricing.finalPrice)}
+                  </span>
+                  {installment && (
+                    <span className="text-[9px] text-gray-400 leading-none">
+                      ou {installment.count}x de {formatCurrency(installment.amountPerInstallment)} s/ juros
+                    </span>
+                  )}
                 </>
               ) : (
                 <span className="text-[12px] text-[#2a7e51] font-bold leading-[1.2]">Sob Consulta</span>

@@ -7,7 +7,7 @@ import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
 import { Button, ProductDetailSkeleton, ReviewSkeleton } from '../components/ui'
 import { useSEO, ProductSchema, BreadcrumbSchema } from '../components/seo'
-import { formatCurrency, getInstallmentDisplay, getProductPriceSummary, getPixPrice, getPixSavings } from '../utils'
+import { formatCurrency, getInstallmentDisplay, getProductPriceSummary, getPixPrice } from '../utils'
 import { getOptimizedCloudinaryUrl, getOrderedGallery, getProductPrimaryImage } from '../utils/productImages'
 import type { ApiError, Product, ProductImage, ProductReview, ProductReviewStats, ShippingQuote } from '../types'
 
@@ -48,11 +48,17 @@ function FloatingBuyBar({ product, onAdd, onVisibilityChange }: { product: Produ
 
           <div className="flex items-center gap-6 justify-end flex-1 md:flex-none">
             <div className="text-right">
-              {pricing.hasDiscount && <p className="text-xs text-gray-400 line-through">{formatCurrency(pricing.basePrice)}</p>}
-              <p className="text-sm text-gray-400 line-through leading-none">{formatCurrency(pricing.finalPrice)}</p>
-              <p className="text-lg font-bold text-[#2a7e51] leading-none">
-                <span className="text-[8px] font-black bg-[#2a7e51] text-white px-1 py-px rounded-sm uppercase tracking-wider mr-1">PIX</span>
+              {pricing.hasDiscount && (
+                <p className="text-[10px] text-gray-400 line-through leading-none">{formatCurrency(pricing.basePrice)}</p>
+              )}
+              {/* PIX herói */}
+              <p className="text-base font-black text-[#2a7e51] leading-none flex items-center justify-end gap-1">
+                <span className="text-[7px] font-black bg-[#2a7e51] text-white px-1 py-px rounded-sm uppercase tracking-wider">PIX</span>
                 {formatCurrency(getPixPrice(pricing.finalPrice))}
+              </p>
+              {/* Cartão */}
+              <p className="text-[10px] text-gray-400 leading-none mt-0.5">
+                cartão: {formatCurrency(pricing.finalPrice)}
               </p>
             </div>
 
@@ -432,29 +438,46 @@ const loadReviews = useCallback(async () => {
 
             {/* Pricing */}
             <div className="mb-6">
-              {pricing.hasDiscount && <p className="text-sm text-gray-400 line-through mb-1">{formatCurrency(pricing.basePrice)}</p>}
-              <div className="flex items-end gap-2">
-                <span className="text-3xl font-black text-black leading-none">{formatCurrency(pricing.finalPrice)}</span>
-              </div>
-              {pricing.finalPrice > 0 && (
-                <div className="inline-flex items-center gap-2 mt-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                  <span className="text-[9px] font-black bg-[#2a7e51] text-white px-1.5 py-0.5 rounded uppercase tracking-wider">PIX</span>
-                  <span className="text-[#2a7e51] font-black text-xl leading-none">{formatCurrency(getPixPrice(pricing.finalPrice))}</span>
-                  <span className="text-xs text-green-600 font-bold bg-green-100 px-1.5 py-0.5 rounded">
-                    -{Math.round(getPixSavings(pricing.finalPrice) / pricing.finalPrice * 100)}% OFF
-                  </span>
+              {pricing.hasDiscount && (
+                <p className="text-sm text-gray-400 line-through mb-1">{formatCurrency(pricing.basePrice)}</p>
+              )}
+
+              {pricing.finalPrice > 0 ? (
+                <div className="space-y-2">
+                  {/* PIX — preço herói */}
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[10px] font-black bg-[#2a7e51] text-white px-2 py-1 rounded uppercase tracking-wider shrink-0">PIX</span>
+                    <span className="text-3xl font-black text-[#2a7e51] leading-none">
+                      {formatCurrency(getPixPrice(pricing.finalPrice))}
+                    </span>
+                    <span className="text-xs font-bold text-white bg-[#2a7e51] px-2 py-0.5 rounded-full">
+                      5% OFF
+                    </span>
+                  </div>
+
+                  {/* Cartão */}
+                  <div className="flex flex-col gap-0.5 pl-0.5">
+                    <span className="text-sm text-gray-500 flex items-center gap-1.5">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-gray-400"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                      no cartão:{' '}
+                      <span className="font-semibold text-gray-700">{formatCurrency(pricing.finalPrice)}</span>
+                    </span>
+                    {installment && (
+                      <span className="text-sm text-gray-500 pl-5">
+                        ou{' '}
+                        <span className="font-semibold text-gray-700">
+                          {installment.count}x de {formatCurrency(installment.amountPerInstallment)}
+                        </span>{' '}
+                        sem juros
+                      </span>
+                    )}
+                  </div>
                 </div>
+              ) : (
+                <span className="text-xl font-bold text-[#2a7e51]">Sob Consulta</span>
               )}
-              {installment && (
-                <p className="text-sm text-gray-600 mt-2">
-                  ou{' '}
-                  <span className="font-semibold text-gray-800">
-                    {installment.count}x de {formatCurrency(installment.amountPerInstallment)}
-                  </span>{' '}
-                  sem juros no cartão
-                </p>
-              )}
-              <p className="text-xs text-gray-500 mt-2">Vendido e entregue por <span className="text-[#2a7e51] font-bold">Lacqua Minas</span></p>
+
+              <p className="text-xs text-gray-500 mt-3">Vendido e entregue por <span className="text-[#2a7e51] font-bold">Lacqua Minas</span></p>
             </div>
 
             {/* Actions */}
