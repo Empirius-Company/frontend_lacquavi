@@ -98,7 +98,8 @@ export function ProductDetailPage() {
   })
   const [reviews, setReviews] = useState<ProductReview[]>([])
   const [reviewsStats, setReviewsStats] = useState<ProductReviewStats>({ total: 0, averageRating: 0 })
-  const [reviewsLoading, setReviewsLoading] = useState(true)
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [reviewsExpanded, setReviewsExpanded] = useState(false)
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewForm, setReviewForm] = useState(() => {
     // Restaura review pendente salva antes de redirect para login
@@ -116,6 +117,7 @@ export function ProductDetailPage() {
   const [shippingError, setShippingError] = useState('')
   const [shippingQuotes, setShippingQuotes] = useState<ShippingQuote[]>([])
   const [floatingBarVisible, setFloatingBarVisible] = useState(false)
+  const [visibleReviewCount, setVisibleReviewCount] = useState(5)
 
   // SEO Meta Tags
   useSEO({
@@ -132,6 +134,7 @@ const loadReviews = useCallback(async () => {
       const response = await productsApi.listReviews(id)
       setReviews(response.reviews)
       setReviewsStats(response.stats)
+      setVisibleReviewCount(5)
     } catch (error) {
       const apiError = error as ApiError
       if (apiError.statusCode === 404 || apiError.statusCode === 500) {
@@ -168,8 +171,11 @@ const loadReviews = useCallback(async () => {
   }, [id, navigate, toast])
 
   useEffect(() => {
-    void loadReviews()
-  }, [loadReviews])
+    if (!id) return
+    productsApi.listReviewsBatch([id])
+      .then(({ stats }) => { if (stats[id]) setReviewsStats(stats[id]) })
+      .catch(() => {})
+  }, [id])
 
   useEffect(() => {
     setSelectedImageIndex(0)
@@ -549,75 +555,106 @@ const loadReviews = useCallback(async () => {
                   </div>
                 </div>
 
-                {isAuthenticated ? (
-                  <form onSubmit={handleReviewSubmit} className="border border-gray-200 rounded p-4 bg-white mb-4 space-y-4">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800 mb-2">Deixe sua avaliação</p>
-                      <div className="flex gap-2" role="radiogroup" aria-label="Nota do produto">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            type="button"
-                            onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
-                            className={`text-2xl leading-none ${reviewForm.rating >= star ? 'text-[#fcb900]' : 'text-gray-300'}`}
-                            aria-label={`${star} estrela${star > 1 ? 's' : ''}`}
-                          >
-                            ★
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="product-review-comment" className="block text-xs text-gray-600 font-medium mb-2">Comentário</label>
-                      <textarea
-                        id="product-review-comment"
-                        value={reviewForm.comment}
-                        onChange={(event) => setReviewForm(prev => ({ ...prev, comment: event.target.value }))}
-                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
-                        rows={4}
-                        placeholder="Conte como foi sua experiência com este produto"
-                        required
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={submittingReview}
-                      className="bg-[#2a7e51] hover:bg-[#236843] text-white px-6 py-2.5 rounded text-sm font-bold uppercase tracking-wide transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {submittingReview ? 'Enviando...' : 'Enviar avaliação'}
-                    </button>
-                  </form>
+                {!reviewsExpanded ? (
+                  <button
+                    onClick={() => { setReviewsExpanded(true); void loadReviews() }}
+                    className="w-full border border-gray-300 rounded py-2.5 text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Ver avaliações{reviewsStats.total > 0 ? ` (${reviewsStats.total})` : ''}
+                  </button>
                 ) : (
-                  <div className="border border-gray-200 rounded p-4 bg-white mb-4 text-sm text-gray-600">
-                    Faça <Link to={`/login?redirect=${encodeURIComponent(`/products/${id}`)}`} className="text-[#2a7e51] font-semibold hover:underline">login</Link> para enviar sua avaliação.
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  {reviewsLoading ? (
-                    <>
-                      <ReviewSkeleton />
-                      <ReviewSkeleton />
-                    </>
-                  ) : reviews.length === 0 ? (
-                    <div className="border border-gray-200 rounded p-4 bg-white text-sm text-gray-500">Este produto ainda não possui avaliações.</div>
-                  ) : (
-                    reviews.map((review) => (
-                      <div key={review.id} className="border border-gray-200 rounded p-4 bg-white">
-                        <div className="flex flex-wrap justify-between gap-2 mb-2">
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900">{review.user.name}</p>
-                            <p className="text-xs text-gray-500">{formatReviewDate(review.createdAt)}</p>
+                  <>
+                    {isAuthenticated ? (
+                      <form onSubmit={handleReviewSubmit} className="border border-gray-200 rounded p-4 bg-white mb-4 space-y-4">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800 mb-2">Deixe sua avaliação</p>
+                          <div className="flex gap-2" role="radiogroup" aria-label="Nota do produto">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
+                                className={`text-2xl leading-none ${reviewForm.rating >= star ? 'text-[#fcb900]' : 'text-gray-300'}`}
+                                aria-label={`${star} estrela${star > 1 ? 's' : ''}`}
+                              >
+                                ★
+                              </button>
+                            ))}
                           </div>
-                          <p className="text-[#fcb900] text-sm">{renderStars(review.rating)}</p>
                         </div>
-                        <p className="text-sm text-gray-700 whitespace-pre-line">{review.comment}</p>
+
+                        <div>
+                          <label htmlFor="product-review-comment" className="block text-xs text-gray-600 font-medium mb-2">Comentário</label>
+                          <textarea
+                            id="product-review-comment"
+                            value={reviewForm.comment}
+                            onChange={(event) => setReviewForm(prev => ({ ...prev, comment: event.target.value }))}
+                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
+                            rows={4}
+                            placeholder="Conte como foi sua experiência com este produto"
+                            required
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={submittingReview}
+                          className="bg-[#2a7e51] hover:bg-[#236843] text-white px-6 py-2.5 rounded text-sm font-bold uppercase tracking-wide transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {submittingReview ? 'Enviando...' : 'Enviar avaliação'}
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="border border-gray-200 rounded p-4 bg-white mb-4 text-sm text-gray-600">
+                        Faça <Link to={`/login?redirect=${encodeURIComponent(`/products/${id}`)}`} className="text-[#2a7e51] font-semibold hover:underline">login</Link> para enviar sua avaliação.
                       </div>
-                    ))
-                  )}
-                </div>
+                    )}
+
+                    <div className="space-y-3">
+                      {reviewsLoading ? (
+                        <>
+                          <ReviewSkeleton />
+                          <ReviewSkeleton />
+                        </>
+                      ) : reviews.length === 0 ? (
+                        <div className="border border-gray-200 rounded p-4 bg-white text-sm text-gray-500">Este produto ainda não possui avaliações.</div>
+                      ) : (() => {
+                        const sorted = [...reviews].sort((a, b) => {
+                          const aHas = a.comment.trim().length > 0 ? 0 : 1
+                          const bHas = b.comment.trim().length > 0 ? 0 : 1
+                          return aHas - bHas
+                        })
+                        const visible = sorted.slice(0, visibleReviewCount)
+                        return (
+                          <>
+                            {visible.map((review) => (
+                              <div key={review.id} className="border border-gray-200 rounded p-4 bg-white">
+                                <div className="flex flex-wrap justify-between gap-2 mb-2">
+                                  <div>
+                                    <p className="text-sm font-semibold text-gray-900">{review.user.name}</p>
+                                    <p className="text-xs text-gray-500">{formatReviewDate(review.createdAt)}</p>
+                                  </div>
+                                  <p className="text-[#fcb900] text-sm">{renderStars(review.rating)}</p>
+                                </div>
+                                {review.comment.trim().length > 0 && (
+                                  <p className="text-sm text-gray-700 whitespace-pre-line">{review.comment}</p>
+                                )}
+                              </div>
+                            ))}
+                            {visibleReviewCount < sorted.length && (
+                              <button
+                                onClick={() => setVisibleReviewCount(c => c + 5)}
+                                className="w-full border border-gray-300 rounded py-2.5 text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors"
+                              >
+                                Ver mais avaliações
+                              </button>
+                            )}
+                          </>
+                        )
+                      })()}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
