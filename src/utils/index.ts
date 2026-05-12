@@ -48,6 +48,15 @@ export const getProductPriceSummary = (product: Pick<Product, 'price' | 'discoun
   }
 }
 
+// ─── PIX Discount ────────────────────────────────────────────────────────────
+export const PIX_DISCOUNT_RATE = 0.05
+
+export const getPixPrice = (price: number): number =>
+  Math.round(price * (1 - PIX_DISCOUNT_RATE) * 100) / 100
+
+export const getPixSavings = (price: number): number =>
+  Math.round(price * PIX_DISCOUNT_RATE * 100) / 100
+
 // ─── Installment Display ──────────────────────────────────────────────────────
 export const MAX_INSTALLMENTS = 3
 

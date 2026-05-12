@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { formatCurrency, getInstallmentDisplay, getProductPriceSummary } from '../../utils'
+import { formatCurrency, getInstallmentDisplay, getProductPriceSummary, getPixPrice } from '../../utils'
 import { getProductPrimaryImage, getOptimizedCloudinaryUrl } from '../../utils/productImages'
 import { QuickAddModal } from './QuickAddModal'
 import type { Product, ProductReviewStats } from '../../types'
@@ -132,6 +132,10 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
                       ou {installment.count}x de {formatCurrency(installment.amountPerInstallment)} sem juros
                     </span>
                   )}
+                  <span className="text-[10px] font-bold text-[#2a7e51] leading-none mt-1 flex items-center gap-1">
+                    <span className="font-black bg-[#2a7e51] text-white px-1 py-px rounded-sm text-[7px] uppercase tracking-wider">PIX</span>
+                    {formatCurrency(getPixPrice(pricing.finalPrice))}
+                  </span>
                 </>
               ) : (
                 <span className="text-[12px] text-[#2a7e51] font-bold leading-[1.2]">Sob Consulta</span>

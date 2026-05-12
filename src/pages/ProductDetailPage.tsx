@@ -7,7 +7,7 @@ import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
 import { Button, ProductDetailSkeleton, ReviewSkeleton } from '../components/ui'
 import { useSEO, ProductSchema, BreadcrumbSchema } from '../components/seo'
-import { formatCurrency, getInstallmentDisplay, getProductPriceSummary } from '../utils'
+import { formatCurrency, getInstallmentDisplay, getProductPriceSummary, getPixPrice, getPixSavings } from '../utils'
 import { getOptimizedCloudinaryUrl, getOrderedGallery, getProductPrimaryImage } from '../utils/productImages'
 import type { ApiError, Product, ProductImage, ProductReview, ProductReviewStats, ShippingQuote } from '../types'
 
@@ -49,7 +49,11 @@ function FloatingBuyBar({ product, onAdd, onVisibilityChange }: { product: Produ
           <div className="flex items-center gap-6 justify-end flex-1 md:flex-none">
             <div className="text-right">
               {pricing.hasDiscount && <p className="text-xs text-gray-400 line-through">{formatCurrency(pricing.basePrice)}</p>}
-              <p className="text-lg font-bold text-black leading-none">{formatCurrency(pricing.finalPrice)} <span className="text-[10px] font-normal text-gray-500">no PIX</span></p>
+              <p className="text-sm text-gray-400 line-through leading-none">{formatCurrency(pricing.finalPrice)}</p>
+              <p className="text-lg font-bold text-[#2a7e51] leading-none">
+                <span className="text-[8px] font-black bg-[#2a7e51] text-white px-1 py-px rounded-sm uppercase tracking-wider mr-1">PIX</span>
+                {formatCurrency(getPixPrice(pricing.finalPrice))}
+              </p>
             </div>
 
             <div className="flex items-center gap-4">
@@ -432,8 +436,17 @@ const loadReviews = useCallback(async () => {
               <div className="flex items-end gap-2">
                 <span className="text-3xl font-black text-black leading-none">{formatCurrency(pricing.finalPrice)}</span>
               </div>
+              {pricing.finalPrice > 0 && (
+                <div className="inline-flex items-center gap-2 mt-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                  <span className="text-[9px] font-black bg-[#2a7e51] text-white px-1.5 py-0.5 rounded uppercase tracking-wider">PIX</span>
+                  <span className="text-[#2a7e51] font-black text-xl leading-none">{formatCurrency(getPixPrice(pricing.finalPrice))}</span>
+                  <span className="text-xs text-green-600 font-bold bg-green-100 px-1.5 py-0.5 rounded">
+                    -{Math.round(getPixSavings(pricing.finalPrice) / pricing.finalPrice * 100)}% OFF
+                  </span>
+                </div>
+              )}
               {installment && (
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-600 mt-2">
                   ou{' '}
                   <span className="font-semibold text-gray-800">
                     {installment.count}x de {formatCurrency(installment.amountPerInstallment)}
@@ -622,7 +635,8 @@ const loadReviews = useCallback(async () => {
                         const sorted = [...reviews].sort((a, b) => {
                           const aHas = a.comment.trim().length > 0 ? 0 : 1
                           const bHas = b.comment.trim().length > 0 ? 0 : 1
-                          return aHas - bHas
+                          if (aHas !== bHas) return aHas - bHas
+                          return b.rating - a.rating
                         })
                         const visible = sorted.slice(0, visibleReviewCount)
                         return (

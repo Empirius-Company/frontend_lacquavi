@@ -4,7 +4,7 @@ import { ordersApi, couponsApi, shippingApi } from '../api/index'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
 import { Button } from '../components/ui'
-import { formatCurrency, generateIdempotencyKey, getProductFinalPrice } from '../utils'
+import { formatCurrency, generateIdempotencyKey, getProductFinalPrice, getPixPrice, getPixSavings } from '../utils'
 import { getProductPrimaryImage } from '../utils/productImages'
 import type { CouponValidation, ApiError, Order, ShippingDestination, ShippingQuote } from '../types'
 
@@ -970,6 +970,19 @@ export function CheckoutPage() {
                     <p className="text-2xs text-nude-400">10× {formatCurrency(displayTotal / 10)}</p>
                   </div>
                 </div>
+                {displayTotal > 0 && (
+                  <div className="flex items-center gap-2.5 p-3 bg-green-50 rounded-xl border border-green-200 mt-2">
+                    <span className="text-[9px] font-black bg-[#2a7e51] text-white px-1.5 py-0.5 rounded uppercase tracking-wider flex-shrink-0">PIX</span>
+                    <div>
+                      <p className="text-xs font-semibold text-green-800">
+                        Pague no PIX e economize {formatCurrency(getPixSavings(displayTotal))}
+                      </p>
+                      <p className="text-[11px] text-green-700">
+                        Total no PIX: <span className="font-bold">{formatCurrency(getPixPrice(displayTotal))}</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="px-6 pb-6 bg-[#FAF7F2] space-y-3">
                 {/* Aviso inline junto ao botão quando frete não selecionado */}

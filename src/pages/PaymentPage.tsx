@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { useLoginModal } from '../context/LoginModalContext'
 import { Button, Spinner, ErrorMessage } from '../components/ui'
 import { PaymentBrandBadges, PaymentIconsCheckout, detectCardBrand } from '../components/ui/PaymentMethodIcons'
-import { formatCurrency, generateIdempotencyKey } from '../utils'
+import { formatCurrency, generateIdempotencyKey, getPixPrice, getPixSavings } from '../utils'
 import type { Order, Payment, InstallmentOption, ApiError } from '../types'
 
 const CARD_REJECTION_MESSAGES: Record<string, string> = {
@@ -97,7 +97,14 @@ function FloatingTotalBar({ order, payment, onSubmit, loading, method }: { order
         <div className="flex justify-between items-center max-w-xl mx-auto">
           <div>
             <p className="text-2xs text-nude-500 uppercase tracking-wide mb-0.5">Total</p>
-            <p className="font-display text-lg text-noir-950">{formatCurrency(order.total)}</p>
+            {method === 'pix' ? (
+              <>
+                <p className="text-xs text-nude-400 line-through leading-none">{formatCurrency(order.total)}</p>
+                <p className="font-display text-lg text-[#2a7e51]">{formatCurrency(getPixPrice(order.total))}</p>
+              </>
+            ) : (
+              <p className="font-display text-lg text-noir-950">{formatCurrency(order.total)}</p>
+            )}
           </div>
           <button
             onClick={onSubmit}
@@ -706,15 +713,32 @@ export function PaymentPage() {
 
           {/* Order summary */}
           {order && (
-            <div className="bg-pearl rounded-2xl border border-nude-100 p-5 flex items-center justify-between shadow-card-light">
-              <div>
-                <p className="text-2xs text-nude-500 uppercase tracking-wide mb-0.5">Pedido</p>
-                <p className="font-mono text-sm font-medium text-noir-950">#{order.id.slice(-8).toUpperCase()}</p>
+            <div className="bg-pearl rounded-2xl border border-nude-100 p-5 shadow-card-light">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xs text-nude-500 uppercase tracking-wide mb-0.5">Pedido</p>
+                  <p className="font-mono text-sm font-medium text-noir-950">#{order.id.slice(-8).toUpperCase()}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xs text-nude-500 uppercase tracking-wide mb-0.5">Total</p>
+                  {method === 'pix' ? (
+                    <>
+                      <p className="text-sm text-nude-400 line-through leading-none">{formatCurrency(order.total)}</p>
+                      <p className="font-display text-xl text-[#2a7e51]">{formatCurrency(getPixPrice(order.total))}</p>
+                    </>
+                  ) : (
+                    <p className="font-display text-xl text-noir-950">{formatCurrency(order.total)}</p>
+                  )}
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-2xs text-nude-500 uppercase tracking-wide mb-0.5">Total</p>
-                <p className="font-display text-xl text-noir-950">{formatCurrency(order.total)}</p>
-              </div>
+              {method === 'pix' && !payment && (
+                <div className="mt-3 flex items-center gap-2 bg-green-50 rounded-xl border border-green-100 px-3 py-2">
+                  <span className="text-[9px] font-black bg-[#2a7e51] text-white px-1.5 py-0.5 rounded uppercase tracking-wider">PIX</span>
+                  <span className="text-xs text-green-700 font-medium">
+                    5% de desconto — você economiza {formatCurrency(getPixSavings(order.total))}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
@@ -745,12 +769,19 @@ export function PaymentPage() {
                         className="accent-gold-500"
                       />
                       <span className="text-2xl">{m.icon}</span>
-                      <div>
+                      <div className="flex-1">
                         <p className="text-sm font-medium text-noir-950">{m.label}</p>
                         {m.id === 'credit_card' ? (
                           <PaymentBrandBadges />
                         ) : (
-                          <p className="text-xs text-nude-500">{m.sub}</p>
+                          <>
+                            <p className="text-xs text-nude-500">{m.sub}</p>
+                            {order && (
+                              <p className="text-xs font-semibold text-[#2a7e51] mt-0.5">
+                                Economize {formatCurrency(getPixSavings(order.total))} neste pedido
+                              </p>
+                            )}
+                          </>
                         )}
                       </div>
                     </label>
