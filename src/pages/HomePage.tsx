@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { productsApi, categoriesApi, homeTilesApi } from '../api/catalogApi'
 import { bannersApi } from '../api'
 import { ProductCarousel } from '../components/product/ProductCarousel'
-import { Button } from '../components/ui'
+import { Button, Skeleton } from '../components/ui'
 import { BestSellersHero } from '../components/ui/BestSellersHero'
 import { StoreTeaser } from '../components/store/StoreTeaser'
 import { useProductsReviewStats } from '../hooks/useProductsReviewStats'
@@ -303,7 +303,7 @@ function FlashSaleBanner() {
           ) : null}
           <div className="w-1/3 bg-gray-100 rounded-lg aspect-square flex items-center justify-center text-gray-300 font-bold text-2xl overflow-hidden">
             {productImage ? (
-              <img src={productImage} alt={product?.name || 'Flash Sale'} className="w-full h-full object-cover" />
+              <img src={productImage} alt={product?.name || 'Flash Sale'} className="w-full h-full object-cover" loading="lazy" width="120" height="120" />
             ) : (
               'L'
             )}
@@ -333,7 +333,7 @@ const TILE_CONFIG: { key: string; label: string; to: (catId?: string) => string 
   { key: 'lancamentos',   label: 'Lançamentos',   to: ()   => '/products?sort=newest' },
 ]
 
-function CategoryTiles({ categories, products, homeTiles }: { categories: Category[]; products: Product[]; homeTiles: HomeTile[] }) {
+function CategoryTiles({ categories, products, homeTiles, loading }: { categories: Category[]; products: Product[]; homeTiles: HomeTile[]; loading?: boolean }) {
   const normalize = (value: string) =>
     value
       .toLowerCase()
@@ -378,7 +378,11 @@ function CategoryTiles({ categories, products, homeTiles }: { categories: Catego
       <div className="container-page">
         <h3 className="text-center font-semibold text-[#1A1A1A] text-2xl mb-6 md:mb-8">Explore nossas categorias</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 justify-items-center">
-          {tiles.map((tile) => (
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-[3/4] w-full max-w-[200px] !rounded-2xl" />
+            ))
+          ) : tiles.map((tile) => (
             <Link
               key={tile.key}
               to={tile.to}
@@ -417,6 +421,7 @@ export function HomePage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [homeTiles, setHomeTiles] = useState<HomeTile[]>([])
   const [loading, setLoading] = useState(true)
+  const [tilesLoading, setTilesLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // SEO Meta Tags
@@ -438,7 +443,6 @@ export function HomePage() {
   }, [])
 
   // Fase 2: categorias e tiles — carregam em paralelo, independente dos produtos
-  // Falha silenciosa intencional: essas seções são secundárias e já têm fallback visual
   useEffect(() => {
     Promise.all([categoriesApi.list(), homeTilesApi.list()])
       .then(([cRes, tRes]) => {
@@ -446,6 +450,7 @@ export function HomePage() {
         setHomeTiles(tRes.tiles || [])
       })
       .catch(() => { /* tiles e categorias têm fallback visual — página segue funcional */ })
+      .finally(() => setTilesLoading(false))
   }, [])
 
   const sortedProducts = [...products].sort((a, b) => {
@@ -510,7 +515,7 @@ export function HomePage() {
       </section>
 
       {/* Categories quick nav */}
-      <CategoryTiles categories={categories} products={sortedProducts} homeTiles={homeTiles} />
+      <CategoryTiles categories={categories} products={sortedProducts} homeTiles={homeTiles} loading={tilesLoading} />
 
       {/* Mobile-only: produto em destaque no lugar das categorias */}
       <section className="md:hidden py-10 bg-white">

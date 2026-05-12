@@ -127,7 +127,8 @@ export function ProductDetailPage() {
   const [shippingError, setShippingError] = useState('')
   const [shippingQuotes, setShippingQuotes] = useState<ShippingQuote[]>([])
   const [floatingBarVisible, setFloatingBarVisible] = useState(false)
-  const [visibleReviewCount, setVisibleReviewCount] = useState(5)
+  const [reviewsPage, setReviewsPage] = useState(1)
+  const [reviewsHasMore, setReviewsHasMore] = useState(false)
 
   // SEO Meta Tags
   useSEO({
@@ -137,19 +138,21 @@ export function ProductDetailPage() {
     type: 'product',
   })
 
-const loadReviews = useCallback(async () => {
+const loadReviews = useCallback(async (page = 1) => {
     if (!id) return
     setReviewsLoading(true)
     try {
-      const response = await productsApi.listReviews(id)
-      setReviews(response.reviews)
+      const response = await productsApi.listReviews(id, page)
+      setReviews(prev => page === 1 ? response.reviews : [...prev, ...response.reviews])
       setReviewsStats(response.stats)
-      setVisibleReviewCount(5)
+      setReviewsPage(page)
+      setReviewsHasMore(response.pagination.hasMore)
     } catch (error) {
       const apiError = error as ApiError
       if (apiError.statusCode === 404 || apiError.statusCode === 500) {
         setReviews([])
         setReviewsStats({ total: 0, averageRating: 0 })
+        setReviewsHasMore(false)
       } else {
         toast('Não foi possível carregar as avaliações do produto', 'warning')
       }
@@ -647,48 +650,40 @@ const loadReviews = useCallback(async () => {
                     )}
 
                     <div className="space-y-3">
-                      {reviewsLoading ? (
-                        <>
-                          <ReviewSkeleton />
-                          <ReviewSkeleton />
-                        </>
-                      ) : reviews.length === 0 ? (
+                      {reviews.length === 0 && !reviewsLoading ? (
                         <div className="border border-gray-200 rounded p-4 bg-white text-sm text-gray-500">Este produto ainda não possui avaliações.</div>
-                      ) : (() => {
-                        const sorted = [...reviews].sort((a, b) => {
-                          const aHas = a.comment.trim().length > 0 ? 0 : 1
-                          const bHas = b.comment.trim().length > 0 ? 0 : 1
-                          if (aHas !== bHas) return aHas - bHas
-                          return b.rating - a.rating
-                        })
-                        const visible = sorted.slice(0, visibleReviewCount)
-                        return (
-                          <>
-                            {visible.map((review) => (
-                              <div key={review.id} className="border border-gray-200 rounded p-4 bg-white">
-                                <div className="flex flex-wrap justify-between gap-2 mb-2">
-                                  <div>
-                                    <p className="text-sm font-semibold text-gray-900">{review.user.name}</p>
-                                    <p className="text-xs text-gray-500">{formatReviewDate(review.createdAt)}</p>
-                                  </div>
-                                  <p className="text-[#fcb900] text-sm">{renderStars(review.rating)}</p>
+                      ) : (
+                        <>
+                          {reviews.map((review) => (
+                            <div key={review.id} className="border border-gray-200 rounded p-4 bg-white">
+                              <div className="flex flex-wrap justify-between gap-2 mb-2">
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-900">{review.user.name}</p>
+                                  <p className="text-xs text-gray-500">{formatReviewDate(review.createdAt)}</p>
                                 </div>
-                                {review.comment.trim().length > 0 && (
-                                  <p className="text-sm text-gray-700 whitespace-pre-line">{review.comment}</p>
-                                )}
+                                <p className="text-[#fcb900] text-sm">{renderStars(review.rating)}</p>
                               </div>
-                            ))}
-                            {visibleReviewCount < sorted.length && (
-                              <button
-                                onClick={() => setVisibleReviewCount(c => c + 5)}
-                                className="w-full border border-gray-300 rounded py-2.5 text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors"
-                              >
-                                Ver mais avaliações
-                              </button>
-                            )}
-                          </>
-                        )
-                      })()}
+                              {review.comment.trim().length > 0 && (
+                                <p className="text-sm text-gray-700 whitespace-pre-line">{review.comment}</p>
+                              )}
+                            </div>
+                          ))}
+                          {reviewsLoading && (
+                            <>
+                              <ReviewSkeleton />
+                              <ReviewSkeleton />
+                            </>
+                          )}
+                          {reviewsHasMore && !reviewsLoading && (
+                            <button
+                              onClick={() => void loadReviews(reviewsPage + 1)}
+                              className="w-full border border-gray-300 rounded py-2.5 text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors"
+                            >
+                              Ver mais avaliações
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
                   </>
                 )}

@@ -542,7 +542,7 @@ export function CheckoutPage() {
                   <div key={item.productId} className="flex items-center gap-4 px-6 py-4">
                     <div className="w-14 h-16 rounded-xl overflow-hidden bg-nude-50 flex-shrink-0">
                       {productImage?.url ? (
-                        <img src={productImage.url} alt={productImage.alt || item.product.name} className="w-full h-full object-cover" />
+                        <img src={productImage.url} alt={productImage.alt || item.product.name} className="w-full h-full object-cover" loading="lazy" width="56" height="64" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-nude-300 text-lg">⬟</div>
                       )}

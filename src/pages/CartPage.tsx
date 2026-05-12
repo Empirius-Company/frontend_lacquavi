@@ -17,7 +17,7 @@ function CartItem({ item }: { item: any }) {
       <Link to={`/products/${item.productId}`} className="flex-shrink-0">
         <div className="w-20 h-24 rounded-xl overflow-hidden bg-[#F5F5F5] border border-gray-100">
           {productImage?.url ? (
-            <img src={productImage.url} alt={productImage.alt || item.product.name} className="w-full h-full object-cover" />
+            <img src={productImage.url} alt={productImage.alt || item.product.name} className="w-full h-full object-cover" loading="lazy" width="80" height="96" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <span className="text-2xl text-gray-300">⬟</span>

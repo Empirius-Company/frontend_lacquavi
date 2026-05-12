@@ -50,7 +50,8 @@ export const subcategoriesApi = {
 interface ProductsResponse { total: number; products: Product[] }
 interface ProductResponse  { message?: string; product: Product }
 interface ProductImagesResponse { total?: number; images: ProductImage[] }
-interface ProductReviewsResponse { stats: ProductReviewStats; total: number; reviews: ProductReview[] }
+interface ReviewPagination { page: number; limit: number; total: number; hasMore: boolean }
+interface ProductReviewsResponse { stats: ProductReviewStats; reviews: ProductReview[]; pagination: ReviewPagination }
 interface CreateProductReviewInput { rating: number; comment: string }
 interface CreateProductReviewResponse { message: string; review: ProductReview }
 interface CreateProductImageInput { url: string; alt?: string; isPrimary?: boolean }
@@ -130,8 +131,8 @@ export const productsApi = {
   myProducts: (): Promise<ProductsResponse> =>
     httpClient.get<ProductsResponse>('/products/my/products'),
 
-  listReviews: (id: string): Promise<ProductReviewsResponse> =>
-    httpClient.get<ProductReviewsResponse>(`/products/${id}/reviews`),
+  listReviews: (id: string, page = 1, limit = 5): Promise<ProductReviewsResponse> =>
+    httpClient.get<ProductReviewsResponse>(`/products/${id}/reviews?page=${page}&limit=${limit}`),
 
   listReviewsBatch: (ids: string[]): Promise<{ stats: Record<string, ProductReviewStats> }> =>
     httpClient.get<{ stats: Record<string, ProductReviewStats> }>(`/products/reviews/batch?ids=${ids.join(',')}`),
