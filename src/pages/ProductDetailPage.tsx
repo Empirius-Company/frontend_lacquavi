@@ -449,9 +449,18 @@ const loadReviews = useCallback(async (page = 1) => {
                 <div className="space-y-2">
                   {/* Cartão — preço herói */}
                   <div className="flex items-center gap-2.5">
-                    <span className="text-3xl font-black text-[#000000] leading-none">
+                    <span className="text-4xl font-black text-[#000000] leading-none">
                       {formatCurrency(pricing.finalPrice)}
                     </span>
+                  </div>
+
+                  {/* PIX — destaque secundário */}
+                  <div className="flex items-center gap-2 pl-0.5">
+                    <span className="text-[10px] font-black bg-[#2a7e51] text-white px-2 py-1 rounded uppercase tracking-wider shrink-0">PIX</span>
+                    <span className="text-base font-semibold text-[#2a7e51]">
+                      {formatCurrency(getPixPrice(pricing.finalPrice))}
+                    </span>
+                    <span className="text-xs text-gray-400">(5% de desconto)</span>
                   </div>
 
                   {/* Parcelamento */}
@@ -464,15 +473,6 @@ const loadReviews = useCallback(async (page = 1) => {
                       sem juros
                     </p>
                   )}
-
-                  {/* PIX — destaque secundário */}
-                  <div className="flex items-center gap-2 pl-0.5">
-                    <span className="text-[10px] font-black bg-[#2a7e51] text-white px-2 py-1 rounded uppercase tracking-wider shrink-0">PIX</span>
-                    <span className="text-sm font-semibold text-[#2a7e51]">
-                      {formatCurrency(getPixPrice(pricing.finalPrice))}
-                    </span>
-                    <span className="text-xs text-gray-400">(5% de desconto)</span>
-                  </div>
                 </div>
               ) : (
                 <span className="text-xl font-bold text-[#000000]">Sob Consulta</span>
