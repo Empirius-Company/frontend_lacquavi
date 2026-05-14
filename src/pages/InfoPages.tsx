@@ -419,44 +419,115 @@ export function TrocasPage() {
   return (
     <InfoLayout
       breadcrumb="Trocas e Devoluções"
-      title="Trocas e Devoluções"
-      subtitle="Sua satisfação é nossa prioridade. Veja como funciona nosso processo."
+      title="Política de Trocas e Devoluções"
+      subtitle="Sua satisfação é nossa prioridade. Conheça seus direitos e como iniciar uma solicitação. Última atualização: maio de 2025."
     >
-      {/* Destaque prazo */}
+
+      {/* Cards de resumo rápido */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          {
+            icon: '◈',
+            title: '7 dias',
+            desc: 'Arrependimento sem justificativa (Art. 49 do CDC)',
+            color: 'border-[#2a7e51]/20 bg-[#2a7e51]/5',
+            textColor: 'text-[#2a7e51]',
+          },
+          {
+            icon: '◇',
+            title: '90 dias',
+            desc: 'Defeito de fabricação em produto durável (Art. 26 do CDC)',
+            color: 'border-gray-200 bg-[#F5F5F5]',
+            textColor: 'text-[#000000]',
+          },
+          {
+            icon: '✦',
+            title: 'WhatsApp',
+            desc: 'Todo o processo inicia pelo nosso atendimento — rápido e sem burocracia',
+            color: 'border-gray-200 bg-[#F5F5F5]',
+            textColor: 'text-[#000000]',
+          },
+        ].map(c => (
+          <div key={c.title} className={`rounded-2xl border p-5 ${c.color}`}>
+            <span className={`text-2xl mb-2 block ${c.textColor}`}>{c.icon}</span>
+            <p className={`font-display text-2xl font-black mb-1 ${c.textColor}`}>{c.title}</p>
+            <p className="text-xs text-gray-500 leading-relaxed">{c.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Destaque legal */}
       <div className="bg-[#000000] rounded-3xl p-7 text-white">
-        <p className="text-xs font-bold uppercase tracking-widest text-white/50 mb-1">Garantia legal</p>
-        <p className="font-display text-2xl font-black mb-1">7 dias para se arrepender</p>
-        <p className="text-sm text-white/70">
-          Direito garantido pelo Código de Defesa do Consumidor (Art. 49, Lei 8.078/90) para compras online.
-          Sem precisar de justificativa.
-        </p>
+        <p className="text-xs font-bold uppercase tracking-widest text-white/50 mb-2">Seus direitos garantidos por lei</p>
+        <p className="font-display text-xl font-black mb-3">Código de Defesa do Consumidor — Lei nº 8.078/90</p>
+        <div className="space-y-2.5 text-sm text-white/75 leading-relaxed">
+          <p>
+            <strong className="text-white font-semibold">Art. 49 — Direito de Arrependimento:</strong>{' '}
+            Para compras realizadas fora do estabelecimento comercial (internet, telefone), você tem{' '}
+            <strong className="text-white">7 dias corridos</strong> a partir do recebimento para desistir,
+            sem precisar de qualquer justificativa. O produto devolvido deve estar sem uso e na embalagem original.
+          </p>
+          <p>
+            <strong className="text-white font-semibold">Art. 26 — Vícios do Produto:</strong>{' '}
+            Produtos com defeito de fabricação têm prazo de reclamação de{' '}
+            <strong className="text-white">30 dias para bens não duráveis</strong> (ex.: cosméticos, itens descartáveis) e{' '}
+            <strong className="text-white">90 dias para bens duráveis</strong> (ex.: frascos, embalagens rígidas).
+          </p>
+          <p>
+            <strong className="text-white font-semibold">Art. 18 §1 — Solução de Vícios:</strong>{' '}
+            Se o defeito não for sanado em até 30 dias, você pode exigir a substituição do produto,
+            o reembolso integral do valor pago ou o abatimento proporcional no preço.
+          </p>
+        </div>
       </div>
 
       <Card title="Quando Posso Solicitar Troca ou Devolução?">
-        <Item icon="✦" title="Arrependimento (7 dias)">
-          Você pode devolver qualquer produto no prazo de 7 dias corridos a partir do recebimento, sem
-          precisar de justificativa. O produto deve estar lacrado, sem uso e na embalagem original.
+        <Item icon="✦" title="Arrependimento — 7 dias corridos (Art. 49, CDC)">
+          Você pode devolver qualquer produto no prazo de 7 dias corridos a contar da data de recebimento,
+          sem precisar de justificativa. O produto deve estar lacrado, sem uso e na embalagem original.
+          O frete de retorno é gratuito para você — a Lacquavi arca com o custo de postagem.
         </Item>
-        <Item icon="✦" title="Produto com defeito">
-          Se o produto chegou com algum defeito de fabricação, entre em contato em até 30 dias (produto
-          não durável) ou 90 dias (produto durável) após o recebimento.
+        <Item icon="✦" title="Produto com defeito — até 90 dias (Art. 26, CDC)">
+          Identificou algum defeito de fabricação? Entre em contato em até 30 dias para produtos não duráveis
+          ou 90 dias para produtos duráveis. Envie fotos do defeito pelo WhatsApp para agilizar a análise.
+          O frete de retorno é sempre por conta da Lacquavi neste caso.
         </Item>
-        <Item icon="✦" title="Produto errado ou avariado">
-          Recebeu um produto diferente do que pediu, ou que chegou danificado? Solicite a troca
-          imediatamente pelo WhatsApp com foto do produto.
+        <Item icon="✦" title="Produto errado ou avariado no transporte">
+          Recebeu um produto diferente do que pediu ou que chegou danificado pela transportadora?
+          Nos avise imediatamente — de preferência com foto do produto e da embalagem —
+          pelo WhatsApp. Resolvemos sem custo algum para você.
         </Item>
       </Card>
 
-      <Card title="Como Solicitar">
-        <div className="space-y-4">
+      <Card title="Como Iniciar uma Solicitação">
+        <p className="text-xs font-semibold text-[#2a7e51] uppercase tracking-widest mb-4">
+          Todo o processo começa entrando em contato conosco
+        </p>
+        <div className="space-y-5">
           {[
-            { step: '01', title: 'Entre em contato', desc: 'Fale conosco pelo WhatsApp ou e-mail informando o número do pedido e o motivo da troca/devolução.' },
-            { step: '02', title: 'Confirmação', desc: 'Nossa equipe analisará seu caso e enviará as instruções de devolução em até 1 dia útil.' },
-            { step: '03', title: 'Envie o produto', desc: 'Embale o produto na caixa original e encaminhe pelo Correios. Para devoluções por arrependimento, o frete de retorno é por sua conta.' },
-            { step: '04', title: 'Reembolso ou troca', desc: 'Após receber e conferir o produto, processamos o reembolso ou enviamos a troca em até 5 dias úteis.' },
+            {
+              step: '01',
+              title: 'Entre em contato pelo WhatsApp ou e-mail',
+              desc: 'Informe o número do pedido, o produto e o motivo (arrependimento, defeito, produto errado etc.). Tire uma foto do produto se houver avaria ou defeito visível.',
+            },
+            {
+              step: '02',
+              title: 'Análise pela nossa equipe',
+              desc: 'Em até 1 dia útil, nossa equipe confirmará se o pedido está dentro do prazo e das condições e enviará as instruções de devolução, incluindo a etiqueta de postagem quando aplicável.',
+            },
+            {
+              step: '03',
+              title: 'Envio do produto',
+              desc: 'Embale o produto com cuidado na embalagem original. Para arrependimento e defeito, a Lacquavi fornece a etiqueta de postagem — basta levar ao Correios mais próximo.',
+            },
+            {
+              step: '04',
+              title: 'Confirmação e reembolso ou troca',
+              desc: 'Assim que recebermos e conferirmos o produto, processamos o reembolso em até 5 dias úteis ou despachamos o produto substituto.',
+            },
           ].map(s => (
             <div key={s.step} className="flex gap-4">
-              <div className="w-8 h-8 rounded-full bg-[#2a7e51]/10 border border-[#2a7e51]/20 flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-full bg-[#2a7e51]/10 border border-[#2a7e51]/20 flex items-center justify-center flex-shrink-0">
                 <span className="text-[0.6rem] font-black text-[#2a7e51]">{s.step}</span>
               </div>
               <div>
@@ -466,25 +537,45 @@ export function TrocasPage() {
             </div>
           ))}
         </div>
+
+        {/* CTA de contato inline */}
+        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+          <a
+            href={getWhatsAppUrl('Olá! Preciso solicitar uma troca ou devolução. Número do pedido: ')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex items-center justify-center gap-2 bg-[#2a7e51] hover:bg-[#236843] text-white font-bold text-xs px-5 py-3 rounded-xl transition-colors shadow-md shadow-[#2a7e51]/20"
+          >
+            Iniciar pelo WhatsApp
+          </a>
+          <a
+            href="mailto:contato@lacquavi.com.br"
+            className="flex-1 flex items-center justify-center gap-2 border border-gray-200 hover:border-gray-400 text-[#000000] font-bold text-xs px-5 py-3 rounded-xl transition-colors"
+          >
+            Enviar por e-mail
+          </a>
+        </div>
+        <p className="text-xs text-gray-400 mt-3 text-center">
+          {CONTACT_CONFIG.businessHours.replace('\n', ' · ')}
+        </p>
       </Card>
 
       <Card title="Condições do Produto para Devolução">
+        <p className="mb-3">Para que a devolução seja aceita por arrependimento, o produto precisa atender às seguintes condições:</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
-            { ok: true,  label: 'Produto lacrado e sem uso' },
-            { ok: true,  label: 'Na embalagem original' },
-            { ok: true,  label: 'Com todos os itens inclusos' },
-            { ok: true,  label: 'Com nota fiscal' },
-            { ok: false, label: 'Produto aberto (exceto defeito)' },
-            { ok: false, label: 'Produto com sinais de uso' },
+            { ok: true,  label: 'Lacrado e sem uso' },
+            { ok: true,  label: 'Na embalagem original intacta' },
+            { ok: true,  label: 'Com todos os acessórios inclusos' },
+            { ok: true,  label: 'Acompanhado da nota fiscal' },
+            { ok: false, label: 'Produto aberto ou com lacre violado' },
+            { ok: false, label: 'Com sinais evidentes de uso' },
             { ok: false, label: 'Sem embalagem original' },
-            { ok: false, label: 'Fora do prazo de 7 dias' },
+            { ok: false, label: 'Fora do prazo de 7 dias corridos' },
           ].map(c => (
             <div key={c.label} className="flex items-center gap-2.5 text-sm">
               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[0.6rem] font-black flex-shrink-0 ${
-                c.ok
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-red-50 text-red-500'
+                c.ok ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-500'
               }`}>
                 {c.ok ? '✓' : '✕'}
               </span>
@@ -492,22 +583,123 @@ export function TrocasPage() {
             </div>
           ))}
         </div>
-      </Card>
-
-      <Card title="Reembolso">
-        <Item icon="◎" title="PIX (recomendado)">
-          Reembolso em até 2 dias úteis após a confirmação da devolução.
-        </Item>
-        <Item icon="◎" title="Cartão de crédito">
-          O estorno é solicitado à operadora, podendo aparecer em até 2 faturas seguintes.
-        </Item>
-        <p className="text-xs text-gray-400 mt-2 border-t border-gray-100 pt-3">
-          O prazo de reembolso começa a contar a partir da confirmação de recebimento e análise do
-          produto devolvido.
+        <p className="text-xs text-gray-400 mt-4 border-t border-gray-100 pt-3">
+          Para devoluções por defeito, produto errado ou avaria no transporte, as condições acima
+          não se aplicam — basta entrar em contato e enviar fotos.
         </p>
       </Card>
 
-      <ContactCTA message="Precisa iniciar uma troca ou devolução?" />
+      <Card title="Frete de Devolução">
+        <Item icon="◈" title="Arrependimento (Art. 49, CDC)">
+          A Lacquavi arca com o frete de retorno. Após a aprovação da solicitação, enviamos uma etiqueta
+          de postagem pré-paga para você entregar no Correios mais próximo, sem nenhum custo.
+        </Item>
+        <Item icon="◈" title="Defeito de fabricação (Art. 18/26, CDC)">
+          O frete de retorno é integralmente por conta da Lacquavi. A etiqueta de postagem é enviada
+          por WhatsApp após a confirmação do caso.
+        </Item>
+        <Item icon="◈" title="Produto errado ou danificado no transporte">
+          Frete de retorno por conta da Lacquavi. Resolução prioritária com postagem ainda no mesmo
+          dia útil da aprovação.
+        </Item>
+      </Card>
+
+      <Card title="Reembolso">
+        <Item icon="◎" title="PIX — até 2 dias úteis (recomendado)">
+          O reembolso é feito via PIX para a chave de sua preferência, em até 2 dias úteis após a
+          confirmação do recebimento e análise do produto devolvido.
+        </Item>
+        <Item icon="◎" title="Cartão de crédito — até 2 faturas">
+          O estorno é solicitado ao Mercado Pago, que o repassa à operadora do cartão. O valor pode
+          aparecer em até 2 faturas seguintes, conforme política da operadora.
+        </Item>
+        <p className="text-xs text-gray-400 mt-3 border-t border-gray-100 pt-3">
+          O prazo começa a contar após a confirmação de recebimento e avaliação do item devolvido.
+          Em casos de produto errado ou avaria, o reembolso ou reenvio pode ser processado sem
+          necessidade de devolução, a critério da Lacquavi.
+        </p>
+      </Card>
+
+      <Card title="Casos Especiais e Exceções">
+        <Item icon="◇" title="Perfumes e fragrâncias — higiene pessoal">
+          Perfumes são produtos de higiene pessoal. Uma vez abertos e utilizados, não há possibilidade
+          de troca por arrependimento, pois o produto perde suas condições originais. Contudo, o direito
+          de arrependimento se aplica normalmente enquanto o frasco estiver lacrado e sem uso.
+        </Item>
+        <Item icon="◇" title="Kits e produtos com brinde">
+          Para solicitar devolução de um kit, todos os itens que o compõem devem ser devolvidos
+          juntos — incluindo brindes e amostras, caso tenham sido enviados junto ao pedido.
+        </Item>
+        <Item icon="◇" title="Promoções e liquidações">
+          Produtos adquiridos em promoção têm os mesmos direitos legais garantidos pelo CDC. O valor
+          do reembolso é o efetivamente pago, não o preço original.
+        </Item>
+        <Item icon="◇" title="Produtos personalizados">
+          Produtos com personalização sob encomenda (ex.: gravação em frasco) não são elegíveis para
+          devolução por arrependimento, mas o direito por defeito permanece integralmente garantido.
+        </Item>
+      </Card>
+
+      <Card title="Canais de Atendimento">
+        <p className="mb-4">Para iniciar uma troca ou devolução, entre em contato por um dos canais abaixo:</p>
+        <div className="space-y-3">
+          <div className="flex items-start gap-3 p-3 rounded-2xl bg-[#F5F5F5] border border-gray-100">
+            <span className="text-[#2a7e51] text-sm mt-0.5">✦</span>
+            <div>
+              <p className="font-semibold text-[#000000] text-sm">WhatsApp — canal preferencial</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Mais rápido para resolver — envie fotos e receba a etiqueta de postagem na hora.
+                Respondemos durante o horário comercial.
+              </p>
+              <p className="text-xs font-semibold text-[#000000] mt-1">{CONTACT_CONFIG.displayPhone}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 p-3 rounded-2xl bg-[#F5F5F5] border border-gray-100">
+            <span className="text-[#000000] text-sm mt-0.5">◎</span>
+            <div>
+              <p className="font-semibold text-[#000000] text-sm">E-mail</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Ideal para documentar o caso. Resposta em até 1 dia útil.
+              </p>
+              <a
+                href="mailto:contato@lacquavi.com.br"
+                className="text-xs font-semibold text-[#2a7e51] hover:underline mt-1 block"
+              >
+                contato@lacquavi.com.br
+              </a>
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-gray-400 mt-4 border-t border-gray-100 pt-3">
+          Horário de atendimento: {CONTACT_CONFIG.businessHours.replace('\n', ' · ')}
+        </p>
+      </Card>
+
+      <Card title="Órgãos de Defesa do Consumidor">
+        <p>
+          Caso não consigamos resolver sua solicitação de forma satisfatória, você pode acionar os
+          órgãos de defesa do consumidor:
+        </p>
+        <div className="space-y-2 mt-3">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span className="text-[#2a7e51] text-xs">◎</span>
+            <span><strong className="text-[#000000]">PROCON</strong> — Programa de Proteção e Defesa do Consumidor do seu estado</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span className="text-[#2a7e51] text-xs">◎</span>
+            <span><strong className="text-[#000000]">consumidor.gov.br</strong> — Plataforma federal de resolução de conflitos (SENACON/MJ)</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span className="text-[#2a7e51] text-xs">◎</span>
+            <span><strong className="text-[#000000]">Juizado Especial Cível</strong> — Para causas de até 20 salários mínimos, sem necessidade de advogado</span>
+          </div>
+        </div>
+        <p className="text-xs text-gray-400 mt-3">
+          Fazemos de tudo para resolver internamente antes que isso seja necessário.
+        </p>
+      </Card>
+
+      <ContactCTA message="Precisa iniciar uma troca ou devolução? Fale com a gente." />
     </InfoLayout>
   )
 }

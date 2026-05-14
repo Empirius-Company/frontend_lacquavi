@@ -467,18 +467,15 @@ export function HomePage() {
   const { statsByProduct } = useProductsReviewStats(sortedProducts.map((product) => product.id))
 
   const fixedSections = useMemo(() => {
-    const perfumes   = sortedProducts.filter(p => !p.name.toLowerCase().startsWith('kit'))
-    const femininos  = sortedProducts.filter(p => p.gender?.toLowerCase().startsWith('feminin'))
-    const masculinos = sortedProducts.filter(p => p.gender?.toLowerCase().startsWith('masculin'))
-    const kits       = sortedProducts.filter(p => p.name.toLowerCase().startsWith('kit'))
-
-    return [
-      { key: 'perfumes',   title: 'Perfumes',   linkTo: '/products',                  products: perfumes   },
-      { key: 'femininos',  title: 'Femininos',  linkTo: '/products?gender=feminino',  products: femininos  },
-      { key: 'masculinos', title: 'Masculinos', linkTo: '/products?gender=masculino', products: masculinos },
-      { key: 'kits',       title: 'Kits',       linkTo: '/products',                  products: kits       },
-    ].filter(s => s.products.length > 0)
-  }, [sortedProducts])
+    return categories
+      .map(cat => ({
+        key: cat.slug,
+        title: cat.name,
+        linkTo: `/products?category=${cat.id}`,
+        products: sortedProducts.filter(p => p.categoryId === cat.id),
+      }))
+      .filter(s => s.products.length > 0)
+  }, [categories, sortedProducts])
 
   return (
     <div className="bg-[#F5F5F5] min-h-screen pb-16">
