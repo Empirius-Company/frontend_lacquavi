@@ -125,7 +125,7 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
                     </span>
                   )}
                   {/* Cartão — preço herói */}
-                  <span className="text-[18px] font-black text-[#000000] leading-none">
+                  <span className="text-[15px] md:text-[18px] font-black text-[#000000] leading-none">
                     {formatCurrency(pricing.finalPrice)}
                   </span>
                   {/* PIX — destaque secundário */}

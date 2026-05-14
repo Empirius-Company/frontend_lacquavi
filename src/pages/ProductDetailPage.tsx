@@ -449,7 +449,7 @@ const loadReviews = useCallback(async (page = 1) => {
                 <div className="space-y-2">
                   {/* Cartão — preço herói */}
                   <div className="flex items-center gap-2.5">
-                    <span className="text-4xl font-black text-[#000000] leading-none">
+                    <span className="text-3xl md:text-4xl font-black text-[#000000] leading-none">
                       {formatCurrency(pricing.finalPrice)}
                     </span>
                   </div>
