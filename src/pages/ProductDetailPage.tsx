@@ -51,14 +51,14 @@ function FloatingBuyBar({ product, onAdd, onVisibilityChange }: { product: Produ
               {pricing.hasDiscount && (
                 <p className="text-[10px] text-gray-400 line-through leading-none">{formatCurrency(pricing.basePrice)}</p>
               )}
-              {/* PIX herói */}
-              <p className="text-base font-black text-[#2a7e51] leading-none flex items-center justify-end gap-1">
-                <span className="text-[7px] font-black bg-[#2a7e51] text-white px-1 py-px rounded-sm uppercase tracking-wider">PIX</span>
-                {formatCurrency(getPixPrice(pricing.finalPrice))}
+              {/* Cartão — preço herói */}
+              <p className="text-base font-black text-[#000000] leading-none">
+                {formatCurrency(pricing.finalPrice)}
               </p>
-              {/* Cartão */}
-              <p className="text-[10px] text-gray-400 leading-none mt-0.5">
-                cartão: {formatCurrency(pricing.finalPrice)}
+              {/* PIX — destaque secundário */}
+              <p className="text-[10px] text-[#2a7e51] font-semibold leading-none mt-0.5 flex items-center justify-end gap-1">
+                <span className="text-[7px] font-black bg-[#2a7e51] text-white px-1 py-px rounded-sm uppercase tracking-wider">PIX</span>
+                {formatCurrency(getPixPrice(pricing.finalPrice))} <span className="text-gray-400 font-normal">(5% off)</span>
               </p>
             </div>
 
@@ -447,37 +447,35 @@ const loadReviews = useCallback(async (page = 1) => {
 
               {pricing.finalPrice > 0 ? (
                 <div className="space-y-2">
-                  {/* PIX — preço herói */}
+                  {/* Cartão — preço herói */}
                   <div className="flex items-center gap-2.5">
-                    <span className="text-[10px] font-black bg-[#2a7e51] text-white px-2 py-1 rounded uppercase tracking-wider shrink-0">PIX</span>
-                    <span className="text-3xl font-black text-[#2a7e51] leading-none">
-                      {formatCurrency(getPixPrice(pricing.finalPrice))}
-                    </span>
-                    <span className="text-xs font-bold text-white bg-[#2a7e51] px-2 py-0.5 rounded-full">
-                      5% OFF
+                    <span className="text-3xl font-black text-[#000000] leading-none">
+                      {formatCurrency(pricing.finalPrice)}
                     </span>
                   </div>
 
-                  {/* Cartão */}
-                  <div className="flex flex-col gap-0.5 pl-0.5">
-                    <span className="text-sm text-gray-500 flex items-center gap-1.5">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-gray-400"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                      no cartão:{' '}
-                      <span className="font-semibold text-gray-700">{formatCurrency(pricing.finalPrice)}</span>
+                  {/* Parcelamento */}
+                  {installment && (
+                    <p className="text-sm text-gray-500 pl-0.5">
+                      ou{' '}
+                      <span className="font-semibold text-gray-700">
+                        {installment.count}x de {formatCurrency(installment.amountPerInstallment)}
+                      </span>{' '}
+                      sem juros
+                    </p>
+                  )}
+
+                  {/* PIX — destaque secundário */}
+                  <div className="flex items-center gap-2 pl-0.5">
+                    <span className="text-[10px] font-black bg-[#2a7e51] text-white px-2 py-1 rounded uppercase tracking-wider shrink-0">PIX</span>
+                    <span className="text-sm font-semibold text-[#2a7e51]">
+                      {formatCurrency(getPixPrice(pricing.finalPrice))}
                     </span>
-                    {installment && (
-                      <span className="text-sm text-gray-500 pl-5">
-                        ou{' '}
-                        <span className="font-semibold text-gray-700">
-                          {installment.count}x de {formatCurrency(installment.amountPerInstallment)}
-                        </span>{' '}
-                        sem juros
-                      </span>
-                    )}
+                    <span className="text-xs text-gray-400">(5% de desconto)</span>
                   </div>
                 </div>
               ) : (
-                <span className="text-xl font-bold text-[#2a7e51]">Sob Consulta</span>
+                <span className="text-xl font-bold text-[#000000]">Sob Consulta</span>
               )}
 
               <p className="text-xs text-gray-500 mt-3">Vendido e entregue por <span className="text-[#2a7e51] font-bold">Lacqua Minas</span></p>

@@ -124,20 +124,20 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
                       {formatCurrency(pricing.basePrice)}
                     </span>
                   )}
-                  {/* PIX — preço herói */}
-                  <span className="text-[15px] font-black text-[#2a7e51] leading-none flex items-center gap-1">
-                    <span className="font-black bg-[#2a7e51] text-white px-1 py-px rounded-sm text-[7px] uppercase tracking-wider shrink-0">PIX</span>
-                    {formatCurrency(getPixPrice(pricing.finalPrice))}
-                  </span>
-                  {/* Cartão */}
-                  <span className="text-[9px] text-gray-500 leading-none mt-0.5">
-                    no cartão: {formatCurrency(pricing.finalPrice)}
+                  {/* Cartão — preço herói */}
+                  <span className="text-[15px] font-black text-[#000000] leading-none">
+                    {formatCurrency(pricing.finalPrice)}
                   </span>
                   {installment && (
                     <span className="text-[9px] text-gray-400 leading-none">
                       ou {installment.count}x de {formatCurrency(installment.amountPerInstallment)} s/ juros
                     </span>
                   )}
+                  {/* PIX — destaque secundário */}
+                  <span className="text-[9px] text-[#2a7e51] font-semibold leading-none mt-0.5 flex items-center gap-1">
+                    <span className="font-black bg-[#2a7e51] text-white px-1 py-px rounded-sm text-[7px] uppercase tracking-wider shrink-0">PIX</span>
+                    {formatCurrency(getPixPrice(pricing.finalPrice))} <span className="text-gray-400 font-normal">(5% off)</span>
+                  </span>
                 </>
               ) : (
                 <span className="text-[12px] text-[#2a7e51] font-bold leading-[1.2]">Sob Consulta</span>
