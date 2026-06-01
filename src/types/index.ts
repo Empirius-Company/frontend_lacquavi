@@ -106,7 +106,7 @@ export interface ProductReviewUser {
 export interface ProductReview {
   id: string
   rating: number
-  comment: string
+  comment: string | null
   createdAt: string
   updatedAt: string
   user: ProductReviewUser

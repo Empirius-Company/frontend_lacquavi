@@ -661,7 +661,7 @@ const loadReviews = useCallback(async (page = 1) => {
                                 </div>
                                 <p className="text-[#fcb900] text-sm">{renderStars(review.rating)}</p>
                               </div>
-                              {review.comment.trim().length > 0 && (
+                              {review.comment?.trim() && (
                                 <p className="text-sm text-gray-700 whitespace-pre-line">{review.comment}</p>
                               )}
                             </div>
