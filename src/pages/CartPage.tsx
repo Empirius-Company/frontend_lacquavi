@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
@@ -69,7 +69,24 @@ function CartItem({ item }: { item: any }) {
 
       {/* Remove */}
       <button
-        onClick={() => removeItem(item.productId)}
+        onClick={() => {
+          const price = getProductFinalPrice(item.product)
+          ;(window as any).dataLayer = (window as any).dataLayer || []
+          ;(window as any).dataLayer.push({
+            event: 'remove_from_cart',
+            ecommerce: {
+              currency: 'BRL',
+              value: price * item.quantity,
+              items: [{
+                item_id: item.productId,
+                item_name: item.product?.name ?? item.productId,
+                price,
+                quantity: item.quantity,
+              }],
+            },
+          })
+          removeItem(item.productId)
+        }}
         className="self-start p-1.5 text-gray-300 hover:text-red-700 opacity-40 group-hover:opacity-100 transition-all rounded-lg hover:bg-red-50"
         aria-label="Remover"
       >
@@ -87,6 +104,7 @@ export function CartPage() {
   const { openLoginModal } = useLoginModal()
   const navigate = useNavigate()
   const [confirmingClear, setConfirmingClear] = useState(false)
+  const viewCartFired = useRef(false)
 
   useEffect(() => {
     if (!confirmingClear) return
@@ -94,7 +112,40 @@ export function CartPage() {
     return () => clearTimeout(t)
   }, [confirmingClear])
 
+  useEffect(() => {
+    if (items.length === 0 || viewCartFired.current) return
+    viewCartFired.current = true
+    ;(window as any).dataLayer = (window as any).dataLayer || []
+    ;(window as any).dataLayer.push({
+      event: 'view_cart',
+      ecommerce: {
+        currency: 'BRL',
+        value: subtotal,
+        items: items.map(item => ({
+          item_id: item.productId,
+          item_name: item.product?.name ?? item.productId,
+          price: getProductFinalPrice(item.product),
+          quantity: item.quantity,
+        })),
+      },
+    })
+  }, [items, subtotal])
+
   const handleCheckout = () => {
+    ;(window as any).dataLayer = (window as any).dataLayer || []
+    ;(window as any).dataLayer.push({
+      event: 'begin_checkout',
+      ecommerce: {
+        currency: 'BRL',
+        value: subtotal,
+        items: items.map(item => ({
+          item_id: item.productId,
+          item_name: item.product?.name ?? item.productId,
+          price: getProductFinalPrice(item.product),
+          quantity: item.quantity,
+        })),
+      },
+    })
     if (!isAuthenticated) {
       openLoginModal({ onSuccess: () => navigate('/checkout') })
       return

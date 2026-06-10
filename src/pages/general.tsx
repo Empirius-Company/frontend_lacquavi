@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams, useNavigate, useLocation, type Location } from 'react-router-dom'
 import { ordersApi, paymentsApi } from '../api/index'
 import { authApi } from '../api/authApi'
@@ -234,6 +234,7 @@ export function PaymentResultPage() {
   const [order,   setOrder]   = useState<Order | null>(null)
   const [payment, setPayment] = useState<Payment | null>(null)
   const [loading, setLoading] = useState(true)
+  const purchaseEventFired = useRef(false)
 
   useEffect(() => {
     if (!orderId) return
@@ -243,9 +244,30 @@ export function PaymentResultPage() {
     ]).finally(() => setLoading(false))
   }, [orderId, paymentId])
 
+  const isPaid = payment?.status === 'paid' || payment?.status === 'authorized'
+
+  useEffect(() => {
+    if (loading || !order || !isPaid || purchaseEventFired.current) return
+    purchaseEventFired.current = true
+    ;(window as any).dataLayer = (window as any).dataLayer || []
+    ;(window as any).dataLayer.push({
+      event: 'purchase',
+      ecommerce: {
+        transaction_id: order.id,
+        value: order.total,
+        currency: 'BRL',
+        items: order.items.map(item => ({
+          item_id: item.productId,
+          item_name: item.product?.name ?? item.productId,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+      },
+    })
+  }, [loading, order, isPaid])
+
   if (loading) return <div className="min-h-screen bg-parchment pt-20 flex items-center justify-center"><Spinner size="lg" /></div>
 
-  const isPaid = payment?.status === 'paid' || payment?.status === 'authorized'
   const orderForDisplay = order
     ? { ...order, paymentStatus: order.paymentStatus ?? payment?.status ?? null }
     : null

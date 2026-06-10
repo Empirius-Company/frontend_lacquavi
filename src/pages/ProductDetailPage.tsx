@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { productsApi } from '../api/catalogApi'
 import { shippingApi } from '../api'
@@ -206,6 +206,28 @@ const loadReviews = useCallback(async (page = 1) => {
     }
   }, [zipCode])
 
+  const viewItemFired = useRef(false)
+  useEffect(() => {
+    if (!product || viewItemFired.current) return
+    viewItemFired.current = true
+    const price = getProductPriceSummary(product).finalPrice
+    ;(window as any).dataLayer = (window as any).dataLayer || []
+    ;(window as any).dataLayer.push({
+      event: 'view_item',
+      ecommerce: {
+        currency: 'BRL',
+        value: price,
+        items: [{
+          item_id: product.id,
+          item_name: product.name,
+          item_brand: product.brand ?? undefined,
+          price,
+          quantity: 1,
+        }],
+      },
+    })
+  }, [product])
+
   if (loading) return <ProductDetailSkeleton />
   if (!product) return null
 
@@ -224,6 +246,22 @@ const loadReviews = useCallback(async (page = 1) => {
     if (isOutOfStock) return
     addItem(product, 1)
     toast(`${product.name} adicionado à sacola`, 'success')
+    const price = getProductPriceSummary(product).finalPrice
+    ;(window as any).dataLayer = (window as any).dataLayer || []
+    ;(window as any).dataLayer.push({
+      event: 'add_to_cart',
+      ecommerce: {
+        currency: 'BRL',
+        value: price,
+        items: [{
+          item_id: product.id,
+          item_name: product.name,
+          item_brand: product.brand ?? undefined,
+          price,
+          quantity: 1,
+        }],
+      },
+    })
   }
 
   const handleCalculateShipping = async () => {
