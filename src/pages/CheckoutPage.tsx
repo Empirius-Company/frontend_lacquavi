@@ -189,6 +189,8 @@ export function CheckoutPage() {
   }, [items, subtotal])
 
   const discount = coupon?.discount ?? 0
+  const FREE_SHIPPING_THRESHOLD_CENTS = 20000 // R$200 — deve bater com FREE_SHIPPING_THRESHOLD_CENTS do backend
+  const willBeFreeShipping = Math.round((subtotal - discount) * 100) >= FREE_SHIPPING_THRESHOLD_CENTS
   const shippingAmount = shippingRequired && shippingConfirmed
     ? (shippingAmountCents - shippingDiscountCents) / 100
     : 0
@@ -837,7 +839,7 @@ export function CheckoutPage() {
                                 setShippingConfirmed(true)
                                 setShippingRequired(true)
                                 setShippingAmountCents(quote.priceCents)
-                                setShippingDiscountCents(orderDraft?.shippingDiscountCents ?? 0)
+                                setShippingDiscountCents(willBeFreeShipping ? quote.priceCents : (orderDraft?.shippingDiscountCents ?? 0))
                                 setError('')
                                 persistShippingSession({ selectedQuoteId: quote.quoteId })
                               }}
@@ -848,7 +850,10 @@ export function CheckoutPage() {
                               <p className="text-xs text-nude-500">Entrega em até {quote.deliveryDays} dias</p>
                             </div>
                           </div>
-                          <p className="text-sm font-medium text-noir-950">{formatCurrency(quote.priceCents / 100)}</p>
+                          {willBeFreeShipping
+                            ? <span className="text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">Grátis</span>
+                            : <p className="text-sm font-medium text-noir-950">{formatCurrency(quote.priceCents / 100)}</p>
+                          }
                         </label>
                       )
                     })}

@@ -4,17 +4,42 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Impede que scripts de terceiros (GTM/pixels) usem WebRTC para descobrir IPs
-         locais, o que dispararia o prompt "ver dispositivos na rede" do Chrome. -->
+    <!-- Substitui RTCPeerConnection por no-op para evitar coleta de candidatos ICE
+         locais (mDNS) que dispara o prompt "ver dispositivos na rede" do Chrome.
+         O SDK do Mercado Pago usa WebRTC apenas para fingerprint — não para chamadas. -->
     <script>
       (function () {
-        var _RTC = window.RTCPeerConnection;
-        if (!_RTC) return;
-        function SafeRTC(config) {
-          return new _RTC(config ? { iceServers: [] } : undefined);
-        }
-        SafeRTC.prototype = _RTC.prototype;
-        window.RTCPeerConnection = SafeRTC;
+        if (!window.RTCPeerConnection) return;
+        var noop = function () {};
+        var noopPromise = function () { return Promise.resolve({}); };
+        function NoopRTC() {}
+        NoopRTC.prototype = {
+          createDataChannel: function () {
+            return { label: '', readyState: 'closed', close: noop, send: noop,
+                     addEventListener: noop, removeEventListener: noop };
+          },
+          createOffer:          noopPromise,
+          createAnswer:         noopPromise,
+          setLocalDescription:  function () { return Promise.resolve(); },
+          setRemoteDescription: function () { return Promise.resolve(); },
+          addIceCandidate:      function () { return Promise.resolve(); },
+          getStats:             function () { return Promise.resolve(new Map()); },
+          getSenders:           function () { return []; },
+          getReceivers:         function () { return []; },
+          getTransceivers:      function () { return []; },
+          close:                noop,
+          addEventListener:     noop,
+          removeEventListener:  noop,
+          dispatchEvent:        noop,
+          iceGatheringState:    'complete',
+          iceConnectionState:   'closed',
+          signalingState:       'closed',
+          connectionState:      'closed',
+          localDescription:     null,
+          remoteDescription:    null,
+        };
+        window.RTCPeerConnection = NoopRTC;
+        if ('webkitRTCPeerConnection' in window) window.webkitRTCPeerConnection = NoopRTC;
       })();
     </script>
 

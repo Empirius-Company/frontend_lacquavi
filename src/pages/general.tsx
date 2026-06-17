@@ -345,7 +345,7 @@ export function MyOrdersPage() {
 
     const loadOrdersAndShipments = async () => {
       try {
-        const ordersResponse = await ordersApi.list()
+        const ordersResponse = await ordersApi.list({ mine: true })
         if (!active) return
 
         setOrders(ordersResponse.orders)

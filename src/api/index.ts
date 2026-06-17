@@ -35,8 +35,8 @@ export const ordersApi = {
       idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : {}
     ),
 
-  list: (): Promise<OrdersResponse> =>
-    httpClient.get<OrdersResponse>('/orders'),
+  list: (params?: { mine?: boolean }): Promise<OrdersResponse> =>
+    httpClient.get<OrdersResponse>('/orders', params ? { params } : {}),
 
   getById: (id: string): Promise<{ order: Order }> =>
     httpClient.get<{ order: Order }>(`/orders/${id}`),
