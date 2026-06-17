@@ -60,7 +60,7 @@ export function Header() {
             <rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle>
           </svg>
           <span className="text-[11px] text-white tracking-widest font-bold uppercase">
-            FRETE GRÁTIS a partir de R$ 259,00 <span>+ descontos exclusivos</span>
+            FRETE GRÁTIS a partir de R$ 200,00 <span>+ descontos exclusivos</span>
           </span>
         </div>
 

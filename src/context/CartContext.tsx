@@ -1,8 +1,10 @@
 import React, {
-  createContext, useContext, useEffect, useReducer, useCallback, ReactNode
+  createContext, useContext, useEffect, useReducer, useCallback, useRef, ReactNode
 } from 'react'
 import type { CartItem, Product } from '../types'
 import { getProductFinalPrice } from '../utils'
+import { cartApi } from '../api'
+import { useAuth } from './AuthContext'
 
 const CART_KEY = 'lacquavi_cart'
 const MAX_QUANTITY = 99
@@ -100,13 +102,27 @@ const CartContext = createContext<CartContextValue | null>(null)
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, getInitialCartState())
+  const { isAuthenticated } = useAuth()
 
   const [isCartOpen, setIsCartOpen] = React.useState(false)
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Persist to localStorage whenever items change
   useEffect(() => {
     localStorage.setItem(CART_KEY, JSON.stringify(state.items))
   }, [state.items])
+
+  // Sync cart to backend (debounced 2s) for abandonment email tracking
+  useEffect(() => {
+    if (!isAuthenticated) return
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
+    syncTimerRef.current = setTimeout(() => {
+      cartApi.sync(state.items).catch(() => {})
+    }, 2000)
+    return () => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
+    }
+  }, [state.items, isAuthenticated])
 
   const openCart = useCallback(() => setIsCartOpen(true), [])
   const closeCart = useCallback(() => setIsCartOpen(false), [])
@@ -126,7 +142,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => {
     dispatch({ type: 'CLEAR' })
-  }, [])
+    if (isAuthenticated) {
+      cartApi.clear().catch(() => {})
+    }
+  }, [isAuthenticated])
 
   const hasItem = useCallback(
     (productId: string) => state.items.some(i => i.productId === productId),

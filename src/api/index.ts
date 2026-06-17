@@ -54,6 +54,15 @@ export const ordersApi = {
     httpClient.get<{ pendingCount: number }>('/orders/ops-count'),
 }
 
+// ─── Cart API ─────────────────────────────────────────────────────────────────
+export const cartApi = {
+  sync: (items: unknown[]): Promise<{ success: boolean }> =>
+    httpClient.put<{ success: boolean }>('/cart', { items }),
+
+  clear: (): Promise<{ success: boolean }> =>
+    httpClient.delete<{ success: boolean }>('/cart'),
+}
+
 // ─── Payments API ─────────────────────────────────────────────────────────────
 interface CreatePaymentInput {
   orderId: string

@@ -497,7 +497,7 @@ export function HomePage() {
       <section className="py-12 bg-white">
         <div className="container-page">
           <SectionHeader
-            title="Lançamentos em Destaque"
+            title="Nossa Seleção"
             linkTo="/products"
           />
           {error ? (
@@ -513,20 +513,6 @@ export function HomePage() {
 
       {/* Categories quick nav */}
       <CategoryTiles categories={categories} products={sortedProducts} homeTiles={homeTiles} loading={tilesLoading} />
-
-      {/* Mobile-only: produto em destaque no lugar das categorias */}
-      <section className="md:hidden py-10 bg-white">
-        <div className="container-page">
-          <SectionHeader
-            eyebrow="Tendências"
-            title="Mais vendidos da semana"
-            linkTo="/products"
-          />
-          {!error && (
-            <ProductCarousel products={[...sortedProducts].reverse()} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
-          )}
-        </div>
-      </section>
 
       {/* Flash sale banner */}
       <FlashSaleBanner />

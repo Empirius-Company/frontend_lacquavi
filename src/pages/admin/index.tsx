@@ -110,7 +110,10 @@ export function AdminDashboardPage() {
   }, [])
 
   const totalRevenue = payments.filter(p => p.status === 'paid').reduce((s, p) => s + p.amount, 0)
-  const pendingOrders = orders.filter(o => getOrderDisplayStatus(o) === 'pending').length
+  const pendingOrders = orders.filter(o => {
+    const ds = getOrderDisplayStatus(o)
+    return ds === 'no_payment' || ds === 'payment_pending'
+  }).length
   const awaitingLabel = orders.filter(o =>
     o.paymentStatus === 'paid' &&
     o.status === 'processing' &&
@@ -1011,6 +1014,115 @@ export function AdminSubcategoriesPage() {
   )
 }
 
+// ─── Order Journey Timeline ───────────────────────────────────────────────────
+function OrderJourneyTimeline({ order }: { order: Order }) {
+  const payments = order.payments ?? []
+
+  type Step = { label: string; detail?: string; time?: string; color: string; dot: string }
+  const steps: Step[] = []
+
+  // Step 1: order created
+  steps.push({
+    label: 'Pedido criado',
+    detail: `${order.items.length} ${order.items.length === 1 ? 'item' : 'itens'} — ${formatCurrency(order.total)}`,
+    time: order.createdAt,
+    color: 'text-ink',
+    dot: 'bg-emerald-500',
+  })
+
+  if (payments.length === 0 && !order.paymentStatus) {
+    steps.push({
+      label: 'Aguardando início do pagamento',
+      detail: 'Cliente ainda não escolheu forma de pagamento',
+      color: 'text-amber-600',
+      dot: 'bg-amber-300',
+    })
+  }
+
+  for (const payment of payments) {
+    const methodLabel = payment.qr_code
+      ? 'PIX'
+      : payment.installments > 1
+        ? `Cartão (${payment.installments}×)`
+        : 'Cartão à vista'
+
+    steps.push({
+      label: `Pagamento iniciado — ${methodLabel}`,
+      detail: formatCurrency(payment.amount),
+      time: payment.createdAt,
+      color: 'text-ink',
+      dot: 'bg-blue-400',
+    })
+
+    for (const attempt of (payment.attempts ?? [])) {
+      const statusMap: Record<string, { label: string; dot: string; color: string }> = {
+        approved:          { label: 'Aprovado',           dot: 'bg-emerald-500', color: 'text-emerald-700' },
+        authorized:        { label: 'Autorizado',         dot: 'bg-emerald-400', color: 'text-emerald-700' },
+        rejected:          { label: 'Recusado',           dot: 'bg-red-400',     color: 'text-red-700'     },
+        cancelled:         { label: 'Cancelado',          dot: 'bg-obsidian-400',color: 'text-obsidian-600'},
+        pending:           { label: 'Pendente',           dot: 'bg-amber-400',   color: 'text-amber-700'   },
+        in_process:        { label: 'Em processamento',   dot: 'bg-blue-300',    color: 'text-blue-700'    },
+        in_mediation:      { label: 'Em mediação',        dot: 'bg-orange-400',  color: 'text-orange-700'  },
+        refunded:          { label: 'Estornado',          dot: 'bg-purple-400',  color: 'text-purple-700'  },
+        charged_back:      { label: 'Chargeback',         dot: 'bg-orange-500',  color: 'text-orange-800'  },
+      }
+      const s = statusMap[attempt.resultStatus] ?? { label: attempt.resultStatus, dot: 'bg-obsidian-300', color: 'text-obsidian-600' }
+      steps.push({
+        label: `Tentativa: ${s.label}`,
+        detail: attempt.statusDetail ?? undefined,
+        time: attempt.createdAt,
+        color: s.color,
+        dot: s.dot,
+      })
+    }
+
+    const finalMap: Record<string, { label: string; dot: string; color: string }> = {
+      paid:      { label: 'Pagamento confirmado',  dot: 'bg-emerald-500', color: 'text-emerald-700' },
+      authorized:{ label: 'Pagamento autorizado',  dot: 'bg-emerald-400', color: 'text-emerald-700' },
+      failed:    { label: 'Pagamento recusado',    dot: 'bg-red-500',     color: 'text-red-700'     },
+      cancelled: { label: 'Pagamento cancelado',   dot: 'bg-obsidian-400',color: 'text-obsidian-600'},
+      refunded:  { label: 'Pagamento estornado',   dot: 'bg-purple-500',  color: 'text-purple-700'  },
+      chargeback:{ label: 'Chargeback',            dot: 'bg-orange-500',  color: 'text-orange-800'  },
+    }
+    const f = finalMap[payment.status]
+    if (f && payment.status !== 'pending') {
+      steps.push({
+        label: f.label,
+        time: payment.updatedAt,
+        color: f.color,
+        dot: f.dot,
+      })
+    }
+  }
+
+  if (order.status === 'cancelled') {
+    steps.push({ label: 'Pedido cancelado', color: 'text-red-700', dot: 'bg-red-500' })
+  } else if (order.status === 'shipped') {
+    steps.push({ label: 'Pedido enviado', color: 'text-purple-700', dot: 'bg-purple-500' })
+  } else if (order.status === 'delivered') {
+    steps.push({ label: 'Pedido entregue', color: 'text-emerald-700', dot: 'bg-emerald-600' })
+  }
+
+  return (
+    <div className="relative pl-5">
+      {/* vertical line */}
+      <div className="absolute left-[7px] top-2 bottom-2 w-px bg-obsidian-100" />
+      <div className="space-y-4">
+        {steps.map((step, i) => (
+          <div key={i} className="relative flex gap-3">
+            <div className={`relative z-10 mt-0.5 w-3.5 h-3.5 rounded-full flex-shrink-0 ${step.dot}`} />
+            <div className="flex-1 min-w-0 pb-1">
+              <p className={`text-sm font-medium leading-tight ${step.color}`}>{step.label}</p>
+              {step.detail && <p className="text-xs text-obsidian-500 mt-0.5">{step.detail}</p>}
+              {step.time && <p className="text-2xs text-obsidian-400 mt-0.5">{formatDateTime(step.time)}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Admin Orders ─────────────────────────────────────────────────────────────
 export function AdminOrdersPage() {
   const navigate = useNavigate()
@@ -1191,10 +1303,10 @@ export function AdminOrdersPage() {
           <EmptyState title="Nenhum pedido encontrado" />
         ) : (
           <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px]">
+          <table className="w-full min-w-[780px]">
             <thead>
               <tr className="border-b border-obsidian-100 text-left bg-obsidian-50/40">
-                {['Pedido','Cliente','Data','Total','Status','Pagamento'].map(h => (
+                {['Pedido','Cliente','Data','Total','Situação'].map(h => (
                   <th key={h} className="px-5 py-3.5 text-xs font-medium text-obsidian-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -1217,12 +1329,6 @@ export function AdminOrdersPage() {
                     <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${getOrderDisplayStatusColor(order)}`}>
                       {getOrderDisplayStatusLabel(order)}
                     </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    {order.paymentStatus
-                      ? <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${paymentStatusColor[order.paymentStatus] ?? ''}`}>{paymentStatusLabel[order.paymentStatus]}</span>
-                      : <span className="text-xs text-obsidian-400">—</span>
-                    }
                   </td>
                 </tr>
               ))}
@@ -1369,6 +1475,12 @@ export function AdminOrderDetailPage() {
               <span>Total</span>
               <span className="font-display text-lg">{formatCurrency(order.total)}</span>
             </div>
+          </div>
+
+          {/* ── Jornada do cliente ─────────────────────────────── */}
+          <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card p-6">
+            <h2 className="font-display text-lg text-ink mb-4">Jornada do Cliente</h2>
+            <OrderJourneyTimeline order={order} />
           </div>
 
           <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card p-6 space-y-3">

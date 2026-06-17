@@ -162,6 +162,7 @@ export interface Order {
   pickupLocation?: string | null
   createdAt: string
   items: OrderItem[]
+  payments?: Payment[]
 }
 
 export interface ShippingDestination {

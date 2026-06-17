@@ -3,7 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
+
+    <!-- Impede que scripts de terceiros (GTM/pixels) usem WebRTC para descobrir IPs
+         locais, o que dispararia o prompt "ver dispositivos na rede" do Chrome. -->
+    <script>
+      (function () {
+        var _RTC = window.RTCPeerConnection;
+        if (!_RTC) return;
+        function SafeRTC(config) {
+          return new _RTC(config ? { iceServers: [] } : undefined);
+        }
+        SafeRTC.prototype = _RTC.prototype;
+        window.RTCPeerConnection = SafeRTC;
+      })();
+    </script>
+
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],

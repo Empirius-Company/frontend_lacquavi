@@ -323,7 +323,7 @@ export function EntregaPage() {
       {/* Destaque frete grátis */}
       <div className="bg-[#2a7e51] rounded-3xl p-7 text-white">
         <p className="text-xs font-bold uppercase tracking-widest text-white/70 mb-1">Benefício exclusivo</p>
-        <p className="font-display text-2xl font-black mb-1">Frete Grátis acima de R$ 259</p>
+        <p className="font-display text-2xl font-black mb-1">Frete Grátis acima de R$ 200</p>
         <p className="text-sm text-white/80">
           Para todo o Brasil. O benefício é aplicado automaticamente no checkout.
         </p>

@@ -952,16 +952,23 @@ export function CheckoutPage() {
                   value={
                     !shippingRequired ? 'Não aplicável'
                     : isPickupConfirmed ? 'Grátis (retirada)'
+                    : shippingConfirmed && shippingAmount === 0 ? 'Grátis'
                     : shippingConfirmed ? formatCurrency(shippingAmount)
                     : 'A calcular'
                   }
                   valueClass={
                     !shippingRequired ? 'text-green-700 text-xs'
                     : isPickupConfirmed ? 'text-green-600 text-sm'
+                    : shippingConfirmed && shippingAmount === 0 ? 'text-green-600 text-sm'
                     : shippingConfirmed ? 'text-noir-950'
                     : 'text-nude-500 text-xs'
                   }
                 />
+                {shippingConfirmed && shippingDiscountCents > 0 && shippingDiscountCents >= shippingAmountCents && (
+                  <p className="text-xs text-green-700 font-medium -mt-1">
+                    Frete grátis aplicado — pedido acima de R$ 200,00
+                  </p>
+                )}
                 <div className="h-px bg-nude-100 my-1" />
                 <div className="flex justify-between items-end">
                   <span className="font-medium text-noir-950">Total</span>

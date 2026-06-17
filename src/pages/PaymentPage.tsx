@@ -159,10 +159,12 @@ export function PaymentPage() {
   const [installmentError, setInstallmentError] = useState('')
   const lastInstallmentFetchRef = useRef<string>('')
 
-  // Carrega o script de segurança do Mercado Pago para gerar MP_DEVICE_SESSION_ID
-  // Esse fingerprint é crítico para reduzir falsos bloqueios de risco.
+  // Carrega o script de segurança do Mercado Pago apenas quando o usuário toca no
+  // campo do cartão — evita o prompt "ver dispositivos na rede" do Chrome ao entrar na página.
+  const [cardFieldFocused, setCardFieldFocused] = useState(false)
+
   useEffect(() => {
-    if (method !== 'credit_card') return
+    if (method !== 'credit_card' || !cardFieldFocused) return
 
     const setDeviceSession = () => {
       setDeviceId((window as any).MP_DEVICE_SESSION_ID || null)
@@ -201,7 +203,7 @@ export function PaymentPage() {
       script.removeEventListener('load', setDeviceSession)
       script.removeEventListener('error', handleError)
     }
-  }, [method])
+  }, [method, cardFieldFocused])
 
   useEffect(() => {
     if (!orderId) return
@@ -804,6 +806,7 @@ export function PaymentPage() {
                           className="w-full px-4 py-3 rounded-lg border border-nude-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] outline-none text-sm bg-white font-mono tracking-wider"
                           value={cardForm.cardNumber}
                           onChange={handleCardNumberChange}
+                          onFocus={() => setCardFieldFocused(true)}
                         />
                         <div className="mt-2">
                           <PaymentIconsCheckout detectedBrand={detectCardBrand(cardForm.cardNumber)} />

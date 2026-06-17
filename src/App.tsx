@@ -19,21 +19,33 @@ function ScrollToTop() {
   return null
 }
 
+// Precisa estar dentro do BrowserRouter para acessar useLocation
+function AppInner() {
+  const { pathname } = useLocation()
+  const hideWhatsApp = pathname.startsWith('/checkout')
+
+  return (
+    <>
+      <ScrollToTop />
+      <ErrorBoundary>
+        <AppRoutes />
+      </ErrorBoundary>
+      <LoginModal />
+      <ToastContainer />
+      {!hideWhatsApp && <WhatsAppFloatingButton />}
+    </>
+  )
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <ScrollToTop />
         <ToastProvider>
           <AuthProvider>
             <CartProvider>
               <LoginModalProvider>
-                <ErrorBoundary>
-                  <AppRoutes />
-                </ErrorBoundary>
-                <LoginModal />
-                <ToastContainer />
-                <WhatsAppFloatingButton />
+                <AppInner />
               </LoginModalProvider>
             </CartProvider>
           </AuthProvider>

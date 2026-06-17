@@ -142,33 +142,45 @@ export const paymentStatusColor: Record<string, string> = {
 
 export type OrderDisplayStatus =
   | Order['status']
+  | 'no_payment'
+  | 'payment_pending'
+  | 'payment_failed'
+  | 'payment_cancelled'
   | 'paid_waiting_shipment'
   | 'paid_label_purchased'
   | 'paid_posted'
   | 'paid_in_transit'
 
 const orderDisplayStatusLabel: Record<OrderDisplayStatus, string> = {
-  pending: 'Pendente',
-  processing: 'Em processamento',
-  shipped: 'Enviado',
-  delivered: 'Entregue',
-  cancelled: 'Cancelado',
-  paid_waiting_shipment: 'Pago · aguardando envio',
+  pending:              'Sem pagamento',
+  processing:           'Em processamento',
+  shipped:              'Enviado',
+  delivered:            'Entregue',
+  cancelled:            'Cancelado',
+  no_payment:           'Sem pagamento',
+  payment_pending:      'Aguardando pgto',
+  payment_failed:       'Pgto recusado',
+  payment_cancelled:    'Pgto cancelado',
+  paid_waiting_shipment:'Pago · aguardando envio',
   paid_label_purchased: 'Pago · etiqueta gerada',
-  paid_posted: 'Pago · postado',
-  paid_in_transit: 'Pago · em trânsito',
+  paid_posted:          'Pago · postado',
+  paid_in_transit:      'Pago · em trânsito',
 }
 
 const orderDisplayStatusColor: Record<OrderDisplayStatus, string> = {
-  pending: 'bg-amber-50 text-amber-700 border-amber-200',
-  processing: 'bg-blue-50 text-blue-700 border-blue-200',
-  shipped: 'bg-purple-50 text-purple-700 border-purple-200',
-  delivered: 'bg-green-50 text-green-700 border-green-200',
-  cancelled: 'bg-red-50 text-red-700 border-red-200',
-  paid_waiting_shipment: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  pending:              'bg-obsidian-50 text-obsidian-500 border-obsidian-200',
+  processing:           'bg-blue-50 text-blue-700 border-blue-200',
+  shipped:              'bg-purple-50 text-purple-700 border-purple-200',
+  delivered:            'bg-green-50 text-green-700 border-green-200',
+  cancelled:            'bg-red-50 text-red-700 border-red-200',
+  no_payment:           'bg-obsidian-50 text-obsidian-500 border-obsidian-200',
+  payment_pending:      'bg-amber-50 text-amber-700 border-amber-200',
+  payment_failed:       'bg-red-50 text-red-700 border-red-200',
+  payment_cancelled:    'bg-obsidian-50 text-obsidian-600 border-obsidian-200',
+  paid_waiting_shipment:'bg-emerald-50 text-emerald-700 border-emerald-200',
   paid_label_purchased: 'bg-teal-50 text-teal-700 border-teal-200',
-  paid_posted: 'bg-sky-50 text-sky-700 border-sky-200',
-  paid_in_transit: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  paid_posted:          'bg-sky-50 text-sky-700 border-sky-200',
+  paid_in_transit:      'bg-indigo-50 text-indigo-700 border-indigo-200',
 }
 
 const isPaidOrder = (order: Pick<Order, 'paymentStatus'>): boolean =>
@@ -182,6 +194,10 @@ export const getOrderDisplayStatus = (
   if (order.status === 'delivered' || shipment?.status === 'delivered') return 'delivered'
 
   if (!isPaidOrder(order)) {
+    if (order.paymentStatus === 'failed')    return 'payment_failed'
+    if (order.paymentStatus === 'cancelled') return 'payment_cancelled'
+    if (order.paymentStatus === 'pending')   return 'payment_pending'
+    if (!order.paymentStatus)                return 'no_payment'
     return order.status
   }
 
