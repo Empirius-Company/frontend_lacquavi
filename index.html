@@ -4,42 +4,57 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Substitui RTCPeerConnection por no-op para evitar coleta de candidatos ICE
-         locais (mDNS) que dispara o prompt "ver dispositivos na rede" do Chrome.
-         O SDK do Mercado Pago usa WebRTC apenas para fingerprint — não para chamadas. -->
+    <!-- Bloqueia acesso à rede local por scripts de terceiros (GTM, pixels, MP security.js):
+         1. RTCPeerConnection → no-op (impede coleta de candidatos ICE/mDNS)
+         2. fetch / XHR → bloqueados para IPs privados (impede fingerprint via rota/gateway) -->
     <script>
       (function () {
-        if (!window.RTCPeerConnection) return;
-        var noop = function () {};
-        var noopPromise = function () { return Promise.resolve({}); };
-        function NoopRTC() {}
-        NoopRTC.prototype = {
-          createDataChannel: function () {
-            return { label: '', readyState: 'closed', close: noop, send: noop,
-                     addEventListener: noop, removeEventListener: noop };
-          },
-          createOffer:          noopPromise,
-          createAnswer:         noopPromise,
-          setLocalDescription:  function () { return Promise.resolve(); },
-          setRemoteDescription: function () { return Promise.resolve(); },
-          addIceCandidate:      function () { return Promise.resolve(); },
-          getStats:             function () { return Promise.resolve(new Map()); },
-          getSenders:           function () { return []; },
-          getReceivers:         function () { return []; },
-          getTransceivers:      function () { return []; },
-          close:                noop,
-          addEventListener:     noop,
-          removeEventListener:  noop,
-          dispatchEvent:        noop,
-          iceGatheringState:    'complete',
-          iceConnectionState:   'closed',
-          signalingState:       'closed',
-          connectionState:      'closed',
-          localDescription:     null,
-          remoteDescription:    null,
+        /* --- 1. RTCPeerConnection no-op --- */
+        if (window.RTCPeerConnection) {
+          var noop = function () {};
+          var noopP = function () { return Promise.resolve({}); };
+          function NoopRTC() {}
+          NoopRTC.prototype = {
+            createDataChannel: function () {
+              return { label: '', readyState: 'closed', close: noop, send: noop,
+                       addEventListener: noop, removeEventListener: noop };
+            },
+            createOffer: noopP, createAnswer: noopP,
+            setLocalDescription:  function () { return Promise.resolve(); },
+            setRemoteDescription: function () { return Promise.resolve(); },
+            addIceCandidate:      function () { return Promise.resolve(); },
+            getStats:    function () { return Promise.resolve(new Map()); },
+            getSenders:  function () { return []; },
+            getReceivers: function () { return []; },
+            getTransceivers: function () { return []; },
+            close: noop, addEventListener: noop, removeEventListener: noop, dispatchEvent: noop,
+            iceGatheringState: 'complete', iceConnectionState: 'closed',
+            signalingState: 'closed', connectionState: 'closed',
+            localDescription: null, remoteDescription: null,
+          };
+          window.RTCPeerConnection = NoopRTC;
+          if ('webkitRTCPeerConnection' in window) window.webkitRTCPeerConnection = NoopRTC;
+        }
+
+        /* --- 2. Bloqueia fetch/XHR para IPs privados --- */
+        var PRIVATE = /^https?:\/\/(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|127\.|localhost[:/])/i;
+
+        var _fetch = window.fetch;
+        window.fetch = function (input, init) {
+          var url = input && typeof input === 'object' && input.url ? input.url : String(input || '');
+          if (PRIVATE.test(url)) return Promise.reject(new TypeError('blocked: private network'));
+          return _fetch.apply(this, arguments);
         };
-        window.RTCPeerConnection = NoopRTC;
-        if ('webkitRTCPeerConnection' in window) window.webkitRTCPeerConnection = NoopRTC;
+
+        var _open = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function (method, url) {
+          this._pvtBlocked = PRIVATE.test(String(url || ''));
+          if (!this._pvtBlocked) _open.apply(this, arguments);
+        };
+        var _send = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.send = function () {
+          if (!this._pvtBlocked) _send.apply(this, arguments);
+        };
       })();
     </script>
 
