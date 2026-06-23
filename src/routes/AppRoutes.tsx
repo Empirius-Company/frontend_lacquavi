@@ -90,11 +90,15 @@ export function AppRoutes() {
         <Route path="/login"    element={<AuthModalRedirect mode="login" />} />
         <Route path="/register" element={<AuthModalRedirect mode="register" />} />
 
-        {/* ── Protected customer routes ──────────────────────────── */}
+        {/* ── Protected customer routes (conta — requer login) ───── */}
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/account/profile"                    element={<AccountProfilePage />} />
           <Route path="/account/orders"                     element={<MyOrdersPage />} />
           <Route path="/account/orders/:id"                 element={<OrderDetailPage />} />
+        </Route>
+
+        {/* ── Checkout — acessível para guests e usuários logados ── */}
+        <Route element={<MainLayout />}>
           <Route path="/checkout"                           element={<CheckoutPage />} />
           <Route path="/checkout/payment/:orderId"          element={<PaymentPage />} />
           <Route path="/checkout/payment/:orderId/result"   element={<PaymentResultPage />} />

@@ -545,7 +545,32 @@ export function HomePage() {
         </section>
       ))}
 
-     
+      {/* Depoimentos de clientes */}
+      <section className="py-16 bg-white">
+        <div className="container-page">
+          <p className="text-xs font-bold text-[#2a7e51] uppercase tracking-widest text-center mb-3">Depoimentos</p>
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-center text-[#000000] mb-10">
+            O que nossos clientes dizem
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {[
+              { name: 'Mariana S.', city: 'Belo Horizonte — MG', stars: 5, text: 'Amei o perfume! Chegou rápido e muito bem embalado. Cheiro incrível, igual ao da loja física. Com certeza vou comprar de novo.' },
+              { name: 'Carlos A.', city: 'Lagoa Santa — MG', stars: 5, text: 'Produto original, entrega rápida e atendimento excelente pelo WhatsApp. Tirou todas as minhas dúvidas antes de comprar. Recomendo!' },
+              { name: 'Fernanda R.', city: 'São Paulo — SP', stars: 5, text: 'Já comprei três vezes. Qualidade garantida e sempre chega antes do prazo. Site fácil de usar e pagamento sem complicação.' },
+            ].map((d, i) => (
+              <div key={i} className="bg-[#F5F5F5] rounded-2xl p-6 border border-gray-100 shadow-sm">
+                <p className="text-amber-400 text-lg mb-3">{'★'.repeat(d.stars)}</p>
+                <p className="text-sm text-gray-700 leading-relaxed mb-4">"{d.text}"</p>
+                <div>
+                  <p className="text-sm font-semibold text-[#111111]">{d.name}</p>
+                  <p className="text-xs text-gray-400">{d.city}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Physical Store Teaser */}
       <StoreTeaser />
 

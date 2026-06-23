@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { ordersApi, couponsApi, shippingApi } from '../api/index'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
+import { useLoginModal } from '../context/LoginModalContext'
 import { useToast } from '../context/ToastContext'
 import { Button } from '../components/ui'
 import { formatCurrency, generateIdempotencyKey, getProductFinalPrice, getPixPrice, getPixSavings } from '../utils'
@@ -146,8 +148,13 @@ function FloatingTotalBar({ total, onSubmit, loading }: { total: number; onSubmi
 
 export function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart()
+  const { isAuthenticated } = useAuth()
+  const { openLoginModal } = useLoginModal()
   const { toast } = useToast()
   const navigate = useNavigate()
+
+  const [guestData, setGuestData] = useState({ email: '', name: '' })
+  const [guestErrors, setGuestErrors] = useState({ email: '', name: '' })
 
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState<CouponValidation | null>(null)
@@ -180,6 +187,7 @@ export function CheckoutPage() {
   const orderIdempotencyKeyRef = useRef(generateIdempotencyKey())
   const orderDraftPromiseRef = useRef<Promise<Order> | null>(null)
   const shippingRef = useRef<HTMLDivElement>(null)
+  const autoQuoteTriggeredRef = useRef(false)
 
   const cartSignature = useMemo(() => {
     const compact = items
@@ -200,6 +208,21 @@ export function CheckoutPage() {
   const [showCouponInput, setShowCouponInput] = useState(false)
 
   const lastZipLookupRef = useRef<string>('')
+
+  useEffect(() => {
+    autoQuoteTriggeredRef.current = false
+  }, [destination.zip])
+
+  useEffect(() => {
+    if (!isDestinationComplete(destination)) return
+    if (shippingConfirmed) return
+    if (shippingLoading) return
+    if (autoQuoteTriggeredRef.current) return
+    if (deliveryMethod !== 'delivery') return
+    autoQuoteTriggeredRef.current = true
+    void handleQuoteShipping()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [destination.street, destination.city, destination.district])
 
   useEffect(() => {
     localStorage.setItem(SHIPPING_DESTINATION_KEY, JSON.stringify(destination))
@@ -315,16 +338,19 @@ export function CheckoutPage() {
     sessionStorage.setItem(SHIPPING_SESSION_KEY, JSON.stringify(payload))
   }
 
+  const buildOrderPayload = () => ({
+    items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
+    couponCode: coupon?.coupon.code,
+    idempotencyKey: orderIdempotencyKeyRef.current,
+    ...(!isAuthenticated && guestData.email ? { guestEmail: guestData.email, guestName: guestData.name } : {}),
+  })
+
   const ensureOrderDraft = async (): Promise<Order> => {
     if (orderDraft) return orderDraft
     if (orderDraftPromiseRef.current) return orderDraftPromiseRef.current
 
     const promise = (async () => {
-      const { order } = await ordersApi.create({
-        items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
-        couponCode: coupon?.coupon.code,
-        idempotencyKey: orderIdempotencyKeyRef.current,
-      })
+      const { order } = await ordersApi.create(buildOrderPayload())
       setOrderDraft(order)
       persistShippingSession({ orderId: order.id, quotes: [], selectedQuoteId: null })
       return order
@@ -339,11 +365,7 @@ export function CheckoutPage() {
       const apiError = err as { message?: string; statusCode?: number }
       if (apiError.message?.includes('idempotente') || apiError.message?.includes('processamento')) {
         orderIdempotencyKeyRef.current = generateIdempotencyKey()
-        const { order } = await ordersApi.create({
-          items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
-          couponCode: coupon?.coupon.code,
-          idempotencyKey: orderIdempotencyKeyRef.current,
-        })
+        const { order } = await ordersApi.create(buildOrderPayload())
         setOrderDraft(order)
         persistShippingSession({ orderId: order.id, quotes: [], selectedQuoteId: null })
         return order
@@ -394,7 +416,9 @@ export function CheckoutPage() {
         setShippingConfirmed(false)
         setSelectedQuoteId('')
         setShippingQuotes([])
-        setShippingError('A cotação expirou. Calcule novamente e escolha um novo frete.')
+        autoQuoteTriggeredRef.current = false
+        toast('Recalculando frete...', 'info')
+        void handleQuoteShipping()
         break
       case 'SHIPPING_QUOTE_CART_CHANGED':
         setShippingConfirmed(false)
@@ -448,18 +472,19 @@ export function CheckoutPage() {
       const validQuotes = response.quotes.filter(q => new Date(q.expiresAt).getTime() > Date.now())
       setShippingQuotes(validQuotes)
 
-      setSelectedQuoteId('')
-      setShippingConfirmed(false)
-      persistShippingSession({
-        orderId: draftOrder.id,
-        quotes: validQuotes,
-        selectedQuoteId: null,
-      })
-
-      if (!validQuotes.length) {
+      if (validQuotes.length === 0) {
+        setSelectedQuoteId('')
+        setShippingConfirmed(false)
+        persistShippingSession({ orderId: draftOrder.id, quotes: [], selectedQuoteId: null })
         setShippingError('Nenhuma opção de frete disponível para este endereço no momento.')
       } else {
-        toast('Frete calculado! Clique na opção desejada para confirmar.', 'success')
+        const cheapest = validQuotes.reduce((a, b) => a.priceCents < b.priceCents ? a : b)
+        setSelectedQuoteId(cheapest.quoteId)
+        setShippingConfirmed(true)
+        setShippingAmountCents(cheapest.priceCents)
+        setShippingDiscountCents(willBeFreeShipping ? cheapest.priceCents : 0)
+        persistShippingSession({ orderId: draftOrder.id, quotes: validQuotes, selectedQuoteId: cheapest.quoteId })
+        toast(`Frete calculado: ${cheapest.serviceName} — ${willBeFreeShipping ? 'Grátis' : formatCurrency(cheapest.priceCents / 100)}`, 'success')
       }
     } catch (err) {
       handleShippingBusinessError(err as ApiError)
@@ -501,6 +526,14 @@ export function CheckoutPage() {
 
   const handleSubmit = async () => {
     if (items.length === 0) return
+
+    if (!isAuthenticated) {
+      const errs = { email: '', name: '' }
+      if (!guestData.name.trim()) errs.name = 'Nome obrigatório'
+      if (!guestData.email.trim() || !/\S+@\S+\.\S+/.test(guestData.email)) errs.email = 'E-mail válido obrigatório'
+      if (errs.name || errs.email) { setGuestErrors(errs); return }
+    }
+
     const draftOrder = orderDraft ?? await ensureOrderDraft()
     if (shippingRequired && (!shippingConfirmed || !selectedQuoteId)) {
       setError('Selecione uma opção de frete para continuar.')
@@ -541,6 +574,50 @@ export function CheckoutPage() {
 
           {/* Left — itens do pedido + frete */}
           <div className="lg:col-span-7 space-y-4">
+
+            {/* Dados do visitante (apenas para não autenticados) */}
+            {!isAuthenticated && (
+              <div className="bg-pearl rounded-3xl border border-nude-100 overflow-hidden shadow-card-light">
+                <div className="px-6 py-4 border-b border-nude-50 flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-[#2a7e51] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">0</span>
+                  <h2 className="font-display text-lg text-noir-950">Seus Dados</h2>
+                </div>
+                <div className="px-6 py-5 space-y-4">
+                  <div>
+                    <label className="block text-xs text-nude-500 uppercase tracking-wide font-medium mb-1.5">Nome completo *</label>
+                    <input
+                      type="text"
+                      value={guestData.name}
+                      onChange={e => { setGuestData(d => ({ ...d, name: e.target.value })); setGuestErrors(er => ({ ...er, name: '' })) }}
+                      placeholder="Seu nome completo"
+                      className="input-luxury w-full text-sm"
+                    />
+                    {guestErrors.name && <p className="text-xs text-red-500 mt-1">{guestErrors.name}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-xs text-nude-500 uppercase tracking-wide font-medium mb-1.5">E-mail *</label>
+                    <input
+                      type="email"
+                      value={guestData.email}
+                      onChange={e => { setGuestData(d => ({ ...d, email: e.target.value })); setGuestErrors(er => ({ ...er, email: '' })) }}
+                      placeholder="para@receber.confirmacao.com"
+                      className="input-luxury w-full text-sm"
+                    />
+                    {guestErrors.email && <p className="text-xs text-red-500 mt-1">{guestErrors.email}</p>}
+                  </div>
+                  <p className="text-xs text-nude-400">
+                    Já tem conta?{' '}
+                    <button
+                      type="button"
+                      onClick={() => openLoginModal({ onSuccess: () => {} })}
+                      className="text-[#2a7e51] font-semibold underline"
+                    >
+                      Entrar
+                    </button>
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Itens */}
             <div className="bg-pearl rounded-3xl border border-nude-100 overflow-hidden shadow-card-light">

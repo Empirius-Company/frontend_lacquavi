@@ -239,6 +239,26 @@ export function CartPage() {
                 <h2 className="font-display text-lg text-[#000000] font-bold">Resumo do Pedido</h2>
               </div>
               <div className="px-6 py-5 space-y-3">
+                {/* Barra de progresso frete grátis */}
+                {(() => {
+                  const FREE_THRESHOLD = 200
+                  const remaining = Math.max(0, FREE_THRESHOLD - subtotal)
+                  const progress = Math.min(100, (subtotal / FREE_THRESHOLD) * 100)
+                  return remaining > 0 ? (
+                    <div className="bg-[#f5faf7] rounded-xl p-3 space-y-2 border border-[#2a7e51]/20">
+                      <p className="text-xs text-gray-600">
+                        Faltam <span className="font-bold text-[#111111]">{formatCurrency(remaining)}</span> para frete grátis
+                      </p>
+                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-[#2a7e51] rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-green-50 rounded-xl p-3 border border-green-200">
+                      <p className="text-xs text-green-700 font-semibold">Você ganhou frete grátis!</p>
+                    </div>
+                  )
+                })()}
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Subtotal</span>
                   <span className="text-[#111111] font-medium">{formatCurrency(subtotal)}</span>
