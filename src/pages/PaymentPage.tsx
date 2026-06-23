@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { useLoginModal } from '../context/LoginModalContext'
-import { Button, Spinner, ErrorMessage } from '../components/ui'
+import { Button, Spinner, ErrorMessage, OrderDetailSkeleton } from '../components/ui'
 import { PaymentBrandBadges, PaymentIconsCheckout, detectCardBrand } from '../components/ui/PaymentMethodIcons'
 import { formatCurrency, generateIdempotencyKey, getPixPrice, getPixSavings } from '../utils'
 import type { Order, Payment, InstallmentOption, ApiError } from '../types'
@@ -142,6 +142,8 @@ export function PaymentPage() {
   const isCreatingRef = useRef(false)
   const lastAttemptKeyRef = useRef<string | null>(null)
   const canReuseLastAttemptKeyRef = useRef(false)
+  const pixPollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pixPollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Form states for credit card
   const [cardForm, setCardForm] = useState({
@@ -243,6 +245,44 @@ export function PaymentPage() {
     window.addEventListener('message', handle3dsMessage)
     return () => window.removeEventListener('message', handle3dsMessage)
   }, [payment, orderId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Polling automático de confirmação do PIX — ativo enquanto QR visível e status pending
+  useEffect(() => {
+    const stopPolling = () => {
+      if (pixPollingIntervalRef.current) { clearInterval(pixPollingIntervalRef.current); pixPollingIntervalRef.current = null }
+      if (pixPollingTimeoutRef.current) { clearTimeout(pixPollingTimeoutRef.current); pixPollingTimeoutRef.current = null }
+    }
+
+    const shouldPoll =
+      payment &&
+      hasPixPayload(payment) &&
+      payment.status === 'pending' &&
+      !pixExpired &&
+      !payment.isExpired
+
+    if (!shouldPoll) { stopPolling(); return }
+
+    pixPollingIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await paymentsApi.getById(payment.id)
+        if (!res.payment) return
+        setPayment(res.payment)
+        const s = res.payment.status
+        if (s === 'paid' || s === 'authorized') {
+          stopPolling()
+          toast('Pagamento confirmado! Redirecionando...', 'success')
+          navigate(`/checkout/payment/${orderId}/result?paymentId=${payment.id}`)
+        } else if (s === 'failed' || s === 'cancelled') {
+          stopPolling()
+        }
+      } catch { /* transient — continua na próxima iteração */ }
+    }, 5000)
+
+    // Para o polling após 30 minutos (TTL do PIX)
+    pixPollingTimeoutRef.current = setTimeout(stopPolling, 30 * 60 * 1000)
+
+    return stopPolling
+  }, [payment?.id, payment?.status, pixExpired, payment?.isExpired]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Derive card brand and BIN from card number for installment lookup
   const cardBrand = detectCardBrand(cardForm.cardNumber)
@@ -638,8 +678,10 @@ export function PaymentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-parchment pt-20 flex items-center justify-center">
-        <Spinner size="lg" />
+      <div className="min-h-screen bg-parchment pt-20 pb-16">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <OrderDetailSkeleton />
+        </div>
       </div>
     )
   }
@@ -1072,6 +1114,11 @@ export function PaymentPage() {
                               {step}
                             </div>
                           ))}
+                        </div>
+
+                        <div className="flex items-center justify-center gap-2 text-xs text-[#2a7e51] font-medium mb-3">
+                          <span className="w-2 h-2 rounded-full bg-[#2a7e51] animate-pulse" />
+                          Aguardando confirmação do pagamento...
                         </div>
 
                         <Button variant="outline" fullWidth onClick={checkStatus} loading={checking}>

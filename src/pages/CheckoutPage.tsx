@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { useLoginModal } from '../context/LoginModalContext'
 import { useToast } from '../context/ToastContext'
-import { Button } from '../components/ui'
+import { Button, Skeleton } from '../components/ui'
 import { formatCurrency, generateIdempotencyKey, getProductFinalPrice, getPixPrice, getPixSavings } from '../utils'
 import { getProductPrimaryImage } from '../utils/productImages'
 import type { CouponValidation, ApiError, Order, ShippingDestination, ShippingQuote } from '../types'
@@ -901,6 +901,23 @@ export function CheckoutPage() {
                         })}
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Skeleton enquanto cotação de frete carrega */}
+                {!isPickupMode && shippingLoading && (
+                  <div className="space-y-2 mt-2">
+                    <p className="text-xs text-nude-500 animate-pulse">Calculando melhores opções de frete...</p>
+                    {[0, 1, 2].map(i => (
+                      <div key={i} className="flex items-center gap-3 rounded-xl border border-nude-100 p-3">
+                        <Skeleton className="w-5 h-5 rounded-full flex-shrink-0" />
+                        <div className="flex-1 space-y-1.5">
+                          <Skeleton className="h-3 w-2/3" />
+                          <Skeleton className="h-2.5 w-1/3" />
+                        </div>
+                        <Skeleton className="h-4 w-16 flex-shrink-0" />
+                      </div>
+                    ))}
                   </div>
                 )}
 
