@@ -536,18 +536,24 @@ export function OrderDetailPage() {
                 <h2 className="font-display text-lg text-[#000000] font-bold">Itens do Pedido</h2>
               </div>
               <div className="divide-y divide-gray-100">
-                {order.items.map(item => (
-                  <div key={item.id} className="flex items-center gap-4 px-6 py-4">
-                    <div className="w-12 h-14 rounded-xl bg-[#F5F5F5] flex items-center justify-center text-gray-300 flex-shrink-0 border border-gray-100">
-                      <span className="text-xl">⬟</span>
+                {order.items.map(item => {
+                  const imageUrl = item.product?.images?.[0]?.url ?? null
+                  return (
+                    <div key={item.id} className="flex items-center gap-4 px-6 py-4">
+                      <div className="w-12 h-14 rounded-xl bg-[#F5F5F5] flex-shrink-0 border border-gray-100 overflow-hidden">
+                        {imageUrl
+                          ? <img src={imageUrl} alt={item.product?.name ?? ''} className="w-full h-full object-cover" />
+                          : <div className="w-full h-full bg-[#F5F5F5]" />
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-[#000000] font-medium truncate">{item.product?.name ?? item.productId}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Qtd: {item.quantity}</p>
+                      </div>
+                      <p className="text-sm font-medium text-[#000000]">{formatCurrency(item.price * item.quantity)}</p>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-[#000000] font-medium">{item.productId}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Qtd: {item.quantity}</p>
-                    </div>
-                    <p className="text-sm font-medium text-[#000000]">{formatCurrency(item.price * item.quantity)}</p>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>

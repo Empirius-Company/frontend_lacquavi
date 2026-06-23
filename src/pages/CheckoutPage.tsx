@@ -178,6 +178,7 @@ export function CheckoutPage() {
   const [shippingDiscountCents, setShippingDiscountCents] = useState(0)
 
   const orderIdempotencyKeyRef = useRef(generateIdempotencyKey())
+  const orderDraftPromiseRef = useRef<Promise<Order> | null>(null)
   const shippingRef = useRef<HTMLDivElement>(null)
 
   const cartSignature = useMemo(() => {
@@ -258,6 +259,7 @@ export function CheckoutPage() {
       setShippingDiscountCents(0)
       sessionStorage.removeItem(SHIPPING_SESSION_KEY)
       orderIdempotencyKeyRef.current = generateIdempotencyKey()
+      orderDraftPromiseRef.current = null
     }
     sessionStorage.setItem('lacquavi_checkout_cart_signature', cartSignature)
   }, [cartSignature])
@@ -315,7 +317,9 @@ export function CheckoutPage() {
 
   const ensureOrderDraft = async (): Promise<Order> => {
     if (orderDraft) return orderDraft
-    try {
+    if (orderDraftPromiseRef.current) return orderDraftPromiseRef.current
+
+    const promise = (async () => {
       const { order } = await ordersApi.create({
         items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
         couponCode: coupon?.coupon.code,
@@ -324,6 +328,13 @@ export function CheckoutPage() {
       setOrderDraft(order)
       persistShippingSession({ orderId: order.id, quotes: [], selectedQuoteId: null })
       return order
+    })()
+
+    orderDraftPromiseRef.current = promise
+    promise.catch(() => { orderDraftPromiseRef.current = null })
+
+    try {
+      return await promise
     } catch (err) {
       const apiError = err as { message?: string; statusCode?: number }
       if (apiError.message?.includes('idempotente') || apiError.message?.includes('processamento')) {

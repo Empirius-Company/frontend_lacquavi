@@ -131,6 +131,7 @@ export interface OrderItem {
     name: string
     slug?: string | null
     brand?: string | null
+    images?: { url: string }[]
   }
 }
 
