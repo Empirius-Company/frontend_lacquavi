@@ -131,6 +131,9 @@ export const productsApi = {
   myProducts: (): Promise<ProductsResponse> =>
     httpClient.get<ProductsResponse>('/products/my/products'),
 
+  adminList: (params?: { page?: number; limit?: number }): Promise<ProductsResponse> =>
+    httpClient.get<ProductsResponse>('/products/admin/all', { params }),
+
   listReviews: (id: string, page = 1, limit = 5): Promise<ProductReviewsResponse> =>
     httpClient.get<ProductReviewsResponse>(`/products/${id}/reviews?page=${page}&limit=${limit}`),
 

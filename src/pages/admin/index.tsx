@@ -101,7 +101,7 @@ export function AdminDashboardPage() {
     Promise.all([
       ordersApi.list(),
       paymentsApi.list(),
-      productsApi.myProducts(),
+      productsApi.adminList(),
     ]).then(([o, pay, p]) => {
       setOrders(o.orders)
       setPayments(pay.payments)
@@ -188,7 +188,7 @@ export function AdminProductsPage() {
 
   const load = () => {
     setLoading(true)
-    productsApi.myProducts().then(r => setProducts(r.products)).finally(() => setLoading(false))
+    productsApi.adminList().then(r => setProducts(r.products)).finally(() => setLoading(false))
   }
 
   useEffect(load, [])
