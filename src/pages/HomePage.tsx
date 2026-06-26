@@ -525,16 +525,25 @@ export function HomePage() {
       .catch(() => {})
   }, [])
 
-  const sortedProducts = [...products].sort((a, b) => {
+  const sortedProducts = useMemo(() => [...products].sort((a, b) => {
     const aImage = getProductPrimaryImageUrl(a)
     const bImage = getProductPrimaryImageUrl(b)
     if (aImage && !bImage) return -1
     if (!aImage && bImage) return 1
     return 0
-  })
+  }), [products])
 
-  // Find a hit product to show in the Hero Section. 
-  // Top 4 best selling products logic (just grabbing some top products based on id or arbitrary logic if real best-sellers aren't strictly known from API, or we can use sortedProducts sliced to 4)
+  const nossaSelecaoProducts = useMemo(() => [...products].sort((a, b) => {
+    const aDiscount = (a.discount ?? 0) > 0 ? 1 : 0
+    const bDiscount = (b.discount ?? 0) > 0 ? 1 : 0
+    if (bDiscount !== aDiscount) return bDiscount - aDiscount
+    const aImage = getProductPrimaryImageUrl(a)
+    const bImage = getProductPrimaryImageUrl(b)
+    if (aImage && !bImage) return -1
+    if (!aImage && bImage) return 1
+    return 0
+  }), [products])
+
   const topProducts = sortedProducts.slice(0, 4);
   const { statsByProduct } = useProductsReviewStats(sortedProducts.map((product) => product.id))
 
@@ -584,7 +593,7 @@ export function HomePage() {
               <Button variant="outline" onClick={() => window.location.reload()}>Tentar novamente</Button>
             </div>
           ) : (
-            <ProductCarousel products={sortedProducts} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
+            <ProductCarousel products={nossaSelecaoProducts} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
           )}
         </div>
       </section>

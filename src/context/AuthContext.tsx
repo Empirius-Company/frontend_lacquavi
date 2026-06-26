@@ -215,11 +215,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const res = await authApi.login({ email, password })
     saveSession(res.accessToken, res.user, res.expiresIn)
+    ;(window as any).dataLayer = (window as any).dataLayer || []
+    ;(window as any).dataLayer.push({
+      event: 'login',
+      method: 'email',
+      user_id: res.user.id,
+    })
   }, [saveSession])
 
   const register = useCallback(async (fullName: string, email: string, password: string, phone?: string) => {
     const res = await authApi.register({ fullName, email, password, ...(phone ? { phone } : {}) })
     saveSession(res.accessToken, res.user, res.expiresIn)
+    ;(window as any).dataLayer = (window as any).dataLayer || []
+    ;(window as any).dataLayer.push({
+      event: 'sign_up',
+      method: 'email',
+      user_id: res.user.id,
+    })
   }, [saveSession])
 
   const logout = useCallback(async () => {
