@@ -210,7 +210,24 @@ export function PaymentPage() {
   useEffect(() => {
     if (!orderId) return
     ordersApi.getById(orderId)
-      .then(r => setOrder(r.order))
+      .then(r => {
+        setOrder(r.order)
+        const o = r.order
+        ;(window as any).dataLayer = (window as any).dataLayer || []
+        ;(window as any).dataLayer.push({
+          event: 'begin_checkout',
+          ecommerce: {
+            currency: 'BRL',
+            value: o.total,
+            items: o.items.map(item => ({
+              item_id: item.productId,
+              item_name: item.product?.name ?? item.productId,
+              price: item.price,
+              quantity: item.quantity,
+            })),
+          },
+        })
+      })
       .catch(() => navigate('/account/orders'))
       .finally(() => setLoading(false))
   }, [orderId])

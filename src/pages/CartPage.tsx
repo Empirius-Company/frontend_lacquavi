@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
-import { useAuth } from '../context/AuthContext'
-import { useLoginModal } from '../context/LoginModalContext'
 import { Button, EmptyState } from '../components/ui'
 import { formatCurrency, getProductFinalPrice } from '../utils'
 import { getProductPrimaryImage } from '../utils/productImages'
@@ -100,8 +98,6 @@ function CartItem({ item }: { item: any }) {
 
 export function CartPage() {
   const { items, subtotal, clearCart } = useCart()
-  const { isAuthenticated } = useAuth()
-  const { openLoginModal } = useLoginModal()
   const navigate = useNavigate()
   const [confirmingClear, setConfirmingClear] = useState(false)
   const viewCartFired = useRef(false)
@@ -132,24 +128,6 @@ export function CartPage() {
   }, [items, subtotal])
 
   const handleCheckout = () => {
-    ;(window as any).dataLayer = (window as any).dataLayer || []
-    ;(window as any).dataLayer.push({
-      event: 'begin_checkout',
-      ecommerce: {
-        currency: 'BRL',
-        value: subtotal,
-        items: items.map(item => ({
-          item_id: item.productId,
-          item_name: item.product?.name ?? item.productId,
-          price: getProductFinalPrice(item.product),
-          quantity: item.quantity,
-        })),
-      },
-    })
-    if (!isAuthenticated) {
-      openLoginModal({ onSuccess: () => navigate('/checkout') })
-      return
-    }
     navigate('/checkout')
   }
 

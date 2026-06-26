@@ -3,9 +3,8 @@ import { useNavigate, Link } from 'react-router-dom'
 import { ordersApi, couponsApi, shippingApi } from '../api/index'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
-import { useLoginModal } from '../context/LoginModalContext'
 import { useToast } from '../context/ToastContext'
-import { Button, Skeleton, StepBar } from '../components/ui'
+import { Button, Skeleton, StepBar, Input, ErrorMessage } from '../components/ui'
 import { formatCurrency, generateIdempotencyKey, getProductFinalPrice, getPixPrice, getPixSavings } from '../utils'
 import { getProductPrimaryImage } from '../utils/productImages'
 import type { CouponValidation, ApiError, Order, ShippingDestination, ShippingQuote } from '../types'
@@ -116,13 +115,14 @@ function FloatingTotalBar({ total, onSubmit, loading }: { total: number; onSubmi
 
 export function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart()
-  const { isAuthenticated } = useAuth()
-  const { openLoginModal } = useLoginModal()
+  const { isAuthenticated, login, register } = useAuth()
   const { toast } = useToast()
   const navigate = useNavigate()
 
-  const [guestData, setGuestData] = useState({ email: '', name: '' })
-  const [guestErrors, setGuestErrors] = useState({ email: '', name: '' })
+  const [authTab, setAuthTab] = useState<'login' | 'register'>('login')
+  const [authForm, setAuthForm] = useState({ fullName: '', email: '', password: '', phone: '' })
+  const [authError, setAuthError] = useState('')
+  const [authLoading, setAuthLoading] = useState(false)
 
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState<CouponValidation | null>(null)
@@ -309,7 +309,6 @@ export function CheckoutPage() {
     items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
     couponCode: coupon?.coupon.code,
     idempotencyKey: orderIdempotencyKeyRef.current,
-    ...(!isAuthenticated && guestData.email ? { guestEmail: guestData.email, guestName: guestData.name } : {}),
   })
 
   const ensureOrderDraft = async (): Promise<Order> => {
@@ -493,13 +492,7 @@ export function CheckoutPage() {
 
   const handleSubmit = async () => {
     if (items.length === 0) return
-
-    if (!isAuthenticated) {
-      const errs = { email: '', name: '' }
-      if (!guestData.name.trim()) errs.name = 'Nome obrigatório'
-      if (!guestData.email.trim() || !/\S+@\S+\.\S+/.test(guestData.email)) errs.email = 'E-mail válido obrigatório'
-      if (errs.name || errs.email) { setGuestErrors(errs); return }
-    }
+    if (!isAuthenticated) return
 
     const draftOrder = orderDraft ?? await ensureOrderDraft()
     if (shippingRequired && (!shippingConfirmed || !selectedQuoteId)) {
@@ -542,46 +535,133 @@ export function CheckoutPage() {
           {/* Left — itens do pedido + frete */}
           <div className="lg:col-span-7 space-y-4">
 
-            {/* Dados do visitante (apenas para não autenticados) */}
+            {/* Auth inline (apenas para não autenticados) */}
             {!isAuthenticated && (
               <div className="bg-pearl rounded-3xl border border-nude-100 overflow-hidden shadow-card-light">
                 <div className="px-6 py-4 border-b border-nude-50 flex items-center gap-3">
                   <span className="w-6 h-6 rounded-full bg-[#2a7e51] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">0</span>
-                  <h2 className="font-display text-lg text-noir-950">Seus Dados</h2>
+                  <h2 className="font-display text-lg text-noir-950">Identificação</h2>
                 </div>
-                <div className="px-6 py-5 space-y-4">
-                  <div>
-                    <label className="block text-xs text-nude-500 uppercase tracking-wide font-medium mb-1.5">Nome completo *</label>
-                    <input
-                      type="text"
-                      value={guestData.name}
-                      onChange={e => { setGuestData(d => ({ ...d, name: e.target.value })); setGuestErrors(er => ({ ...er, name: '' })) }}
-                      placeholder="Seu nome completo"
-                      className="input-luxury w-full text-sm"
-                    />
-                    {guestErrors.name && <p className="text-xs text-red-500 mt-1">{guestErrors.name}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-xs text-nude-500 uppercase tracking-wide font-medium mb-1.5">E-mail *</label>
-                    <input
-                      type="email"
-                      value={guestData.email}
-                      onChange={e => { setGuestData(d => ({ ...d, email: e.target.value })); setGuestErrors(er => ({ ...er, email: '' })) }}
-                      placeholder="para@receber.confirmacao.com"
-                      className="input-luxury w-full text-sm"
-                    />
-                    {guestErrors.email && <p className="text-xs text-red-500 mt-1">{guestErrors.email}</p>}
-                  </div>
-                  <p className="text-xs text-nude-400">
-                    Já tem conta?{' '}
-                    <button
-                      type="button"
-                      onClick={() => openLoginModal({ onSuccess: () => {} })}
-                      className="text-[#2a7e51] font-semibold underline"
+
+                {/* Tabs */}
+                <div className="flex border-b border-nude-50">
+                  <button
+                    type="button"
+                    onClick={() => { setAuthTab('login'); setAuthError('') }}
+                    className={`flex-1 py-3 text-sm font-semibold transition-colors ${authTab === 'login' ? 'text-[#2a7e51] border-b-2 border-[#2a7e51]' : 'text-nude-400 hover:text-noir-950'}`}
+                  >
+                    Já tenho conta
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAuthTab('register'); setAuthError('') }}
+                    className={`flex-1 py-3 text-sm font-semibold transition-colors ${authTab === 'register' ? 'text-[#2a7e51] border-b-2 border-[#2a7e51]' : 'text-nude-400 hover:text-noir-950'}`}
+                  >
+                    Criar conta
+                  </button>
+                </div>
+
+                <div className="px-6 py-5">
+                  {authTab === 'login' ? (
+                    <form
+                      onSubmit={async e => {
+                        e.preventDefault()
+                        if (!authForm.email || !authForm.password) { setAuthError('Preencha todos os campos.'); return }
+                        setAuthLoading(true); setAuthError('')
+                        try {
+                          await login(authForm.email, authForm.password)
+                        } catch (err: any) {
+                          setAuthError(err?.message ?? 'E-mail ou senha incorretos.')
+                        } finally { setAuthLoading(false) }
+                      }}
+                      className="space-y-3"
                     >
-                      Entrar
-                    </button>
-                  </p>
+                      <Input
+                        label="E-mail"
+                        type="email"
+                        value={authForm.email}
+                        onChange={e => { setAuthForm(f => ({ ...f, email: e.target.value })); setAuthError('') }}
+                        placeholder="seu@email.com"
+                        autoComplete="email"
+                        required
+                      />
+                      <Input
+                        label="Senha"
+                        type="password"
+                        value={authForm.password}
+                        onChange={e => { setAuthForm(f => ({ ...f, password: e.target.value })); setAuthError('') }}
+                        placeholder="••••••••"
+                        autoComplete="current-password"
+                        required
+                      />
+                      {authError && <ErrorMessage message={authError} />}
+                      <Button variant="primary" size="lg" fullWidth type="submit" loading={authLoading}>
+                        Entrar e continuar
+                      </Button>
+                    </form>
+                  ) : (
+                    <form
+                      onSubmit={async e => {
+                        e.preventDefault()
+                        if (!authForm.fullName || !authForm.email || !authForm.password) { setAuthError('Preencha todos os campos obrigatórios.'); return }
+                        if (authForm.password.length < 8) { setAuthError('Senha deve ter pelo menos 8 caracteres.'); return }
+                        setAuthLoading(true); setAuthError('')
+                        try {
+                          const rawPhone = authForm.phone ? authForm.phone.replace(/\D/g, '') : undefined
+                          await register(authForm.fullName, authForm.email, authForm.password, rawPhone)
+                        } catch (err: any) {
+                          setAuthError(err?.message ?? 'Não foi possível criar sua conta.')
+                        } finally { setAuthLoading(false) }
+                      }}
+                      className="space-y-3"
+                    >
+                      <Input
+                        label="Nome completo"
+                        type="text"
+                        value={authForm.fullName}
+                        onChange={e => { setAuthForm(f => ({ ...f, fullName: e.target.value })); setAuthError('') }}
+                        placeholder="Seu nome"
+                        autoComplete="name"
+                        required
+                      />
+                      <Input
+                        label="E-mail"
+                        type="email"
+                        value={authForm.email}
+                        onChange={e => { setAuthForm(f => ({ ...f, email: e.target.value })); setAuthError('') }}
+                        placeholder="seu@email.com"
+                        autoComplete="email"
+                        required
+                      />
+                      <Input
+                        label="Telefone (opcional)"
+                        type="tel"
+                        value={authForm.phone}
+                        onChange={e => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 11)
+                          let fmt = digits
+                          if (digits.length > 2) fmt = `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+                          if (digits.length > 7) fmt = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+                          setAuthForm(f => ({ ...f, phone: fmt })); setAuthError('')
+                        }}
+                        placeholder="(11) 99999-9999"
+                        inputMode="numeric"
+                      />
+                      <Input
+                        label="Senha"
+                        type="password"
+                        value={authForm.password}
+                        onChange={e => { setAuthForm(f => ({ ...f, password: e.target.value })); setAuthError('') }}
+                        placeholder="Mínimo 8 caracteres"
+                        autoComplete="new-password"
+                        required
+                      />
+                      {authError && <ErrorMessage message={authError} />}
+                      <Button variant="primary" size="lg" fullWidth type="submit" loading={authLoading}>
+                        Criar conta e continuar
+                      </Button>
+                    </form>
+                  )}
                 </div>
               </div>
             )}
