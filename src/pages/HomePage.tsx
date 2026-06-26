@@ -545,6 +545,15 @@ export function HomePage() {
   }), [products])
 
   const topProducts = sortedProducts.slice(0, 4);
+
+  const bestsellersDisplay = useMemo(() => {
+    const limit = 12
+    if (bestsellers.length >= limit) return bestsellers
+    const ids = new Set(bestsellers.map(p => p.id))
+    const pad = nossaSelecaoProducts.filter(p => !ids.has(p.id)).slice(0, limit - bestsellers.length)
+    return [...bestsellers, ...pad]
+  }, [bestsellers, nossaSelecaoProducts])
+
   const { statsByProduct } = useProductsReviewStats(sortedProducts.map((product) => product.id))
 
   const fixedSections = useMemo(() => {
@@ -610,7 +619,7 @@ export function HomePage() {
             linkTo="/products"
           />
           {error ? null : (
-            <ProductCarousel products={bestsellers.length > 0 ? bestsellers : [...sortedProducts].reverse()} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
+            <ProductCarousel products={bestsellersDisplay} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
           )}
         </div>
       </section>
