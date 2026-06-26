@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { useLoginModal } from '../context/LoginModalContext'
 import { useToast } from '../context/ToastContext'
-import { Button, Skeleton } from '../components/ui'
+import { Button, Skeleton, StepBar } from '../components/ui'
 import { formatCurrency, generateIdempotencyKey, getProductFinalPrice, getPixPrice, getPixSavings } from '../utils'
 import { getProductPrimaryImage } from '../utils/productImages'
 import type { CouponValidation, ApiError, Order, ShippingDestination, ShippingQuote } from '../types'
@@ -73,38 +73,6 @@ function isDestinationComplete(destination: ShippingDestination): boolean {
     normalized.district &&
     normalized.city &&
     normalized.state.length === 2
-  )
-}
-
-/* Step indicator */
-function StepBar({ current }: { current: 1 | 2 | 3 }) {
-  const steps = ['Carrinho', 'Revisão', 'Pagamento']
-  return (
-    <div className="flex items-center justify-center gap-0">
-      {steps.map((s, i) => {
-        const n = i + 1
-        const done = n < current
-        const active = n === current
-        return (
-          <React.Fragment key={s}>
-            <div className="flex items-center gap-2">
-              <div className={`
-                w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all
-                ${done ? 'bg-[#2a7e51] text-white' : ''}
-                ${active ? 'bg-[#2a7e51] text-white shadow-[0_0_0_4px_rgba(42,126,81,0.2)]' : ''}
-                ${!done && !active ? 'bg-nude-100 text-nude-400' : ''}
-              `}>
-                {done ? '✓' : n}
-              </div>
-              <span className={`text-xs hidden sm:block ${active ? 'text-[#2a7e51] font-bold tracking-wide' : 'text-nude-500'}`}>{s}</span>
-            </div>
-            {i < 2 && (
-              <div className={`w-12 md:w-20 h-px mx-2 ${done ? 'bg-[#2a7e51]/50' : 'bg-nude-200'}`} />
-            )}
-          </React.Fragment>
-        )
-      })}
-    </div>
   )
 }
 
@@ -205,7 +173,6 @@ export function CheckoutPage() {
     : 0
   const total = subtotal - discount + shippingAmount
   const displayTotal = total
-  const [showCouponInput, setShowCouponInput] = useState(false)
 
   const lastZipLookupRef = useRef<string>('')
 
@@ -832,7 +799,7 @@ export function CheckoutPage() {
                     )}
 
                     <Button variant="outline" onClick={handleQuoteShipping} loading={shippingLoading} fullWidth>
-                      Calcular frete
+                      {shippingLoading ? 'Calculando frete...' : shippingQuotes.length > 0 ? 'Recalcular frete' : 'Calcular frete'}
                     </Button>
                   </>
                 )}
@@ -993,58 +960,43 @@ export function CheckoutPage() {
 
             {/* Cupom */}
             <div className="bg-pearl rounded-2xl border border-nude-100 p-5 shadow-sm">
-              {!showCouponInput && !coupon ? (
-                <button
-                  onClick={() => setShowCouponInput(true)}
-                  className="text-sm font-medium text-[#D4AF37] hover:text-[#C5A028] transition-colors flex items-center gap-2 w-full text-left"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                  Tem um cupom de desconto?
-                </button>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-display text-base text-noir-950">Cupom de Desconto</h3>
-                    {!coupon && (
-                      <button onClick={() => setShowCouponInput(false)} className="text-xs text-nude-500 hover:text-noir-950">Cancelar</button>
-                    )}
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-display text-base text-noir-950">Cupom de Desconto</h3>
+              </div>
+              {coupon ? (
+                <div className="flex items-center justify-between p-4 bg-green-50 rounded-2xl border border-green-200">
+                  <div>
+                    <p className="text-sm font-medium text-green-800 font-mono">{coupon.coupon.code}</p>
+                    <p className="text-xs text-green-700 mt-0.5">Desconto: {formatCurrency(coupon.discount)}</p>
                   </div>
-                  {coupon ? (
-                    <div className="flex items-center justify-between p-4 bg-green-50 rounded-2xl border border-green-200">
-                      <div>
-                        <p className="text-sm font-medium text-green-800 font-mono">{coupon.coupon.code}</p>
-                        <p className="text-xs text-green-700 mt-0.5">Desconto: {formatCurrency(coupon.discount)}</p>
-                      </div>
-                      <button
-                        onClick={() => { setCoupon(null); setCouponCode(''); toast('Cupom removido.', 'info') }}
-                        className="text-xs text-green-700 hover:text-red-600 transition-colors"
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        id="coupon-code-input"
-                        value={couponCode}
-                        onChange={e => {
-                          setCouponCode(e.target.value.toUpperCase())
-                          setCouponError('')
-                        }}
-                        onKeyDown={e => e.key === 'Enter' && validateCoupon()}
-                        placeholder="CÓDIGO DO CUPOM"
-                        className="input-luxury font-mono uppercase text-sm flex-1 tracking-wider"
-                        aria-describedby={couponError ? 'coupon-error' : undefined}
-                      />
-                      <Button variant="outline" onClick={validateCoupon} loading={validating} className="flex-shrink-0">
-                        Aplicar
-                      </Button>
-                    </div>
-                  )}
-                  {couponError && <p id="coupon-error" role="alert" className="text-xs text-red-500 mt-2">{couponError}</p>}
-                </>
+                  <button
+                    onClick={() => { setCoupon(null); setCouponCode(''); toast('Cupom removido.', 'info') }}
+                    className="text-xs text-green-700 hover:text-red-600 transition-colors"
+                  >
+                    Remover
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    id="coupon-code-input"
+                    value={couponCode}
+                    onChange={e => {
+                      setCouponCode(e.target.value.toUpperCase())
+                      setCouponError('')
+                    }}
+                    onKeyDown={e => e.key === 'Enter' && validateCoupon()}
+                    placeholder="CÓDIGO DO CUPOM"
+                    className="input-luxury font-mono uppercase text-sm flex-1 tracking-wider"
+                    aria-describedby={couponError ? 'coupon-error' : undefined}
+                  />
+                  <Button variant="outline" onClick={validateCoupon} loading={validating} className="flex-shrink-0">
+                    Aplicar
+                  </Button>
+                </div>
               )}
+              {couponError && <p id="coupon-error" role="alert" className="text-xs text-red-500 mt-2">{couponError}</p>}
             </div>
 
             {/* Resumo */}

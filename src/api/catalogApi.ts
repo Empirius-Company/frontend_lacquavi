@@ -56,6 +56,17 @@ interface CreateProductReviewInput { rating: number; comment: string }
 interface CreateProductReviewResponse { message: string; review: ProductReview }
 interface CreateProductImageInput { url: string; alt?: string; isPrimary?: boolean }
 interface ReorderProductImagesInput { imageIds: string[] }
+interface BestsellersResponse { products: Product[] }
+export interface FeaturedReview {
+  id: string
+  rating: number
+  comment: string | null
+  createdAt: string
+  user: { fullName: string; city?: string }
+  product: { name: string }
+}
+interface FeaturedReviewsResponse { reviews: FeaturedReview[] }
+interface RelatedProductsResponse { products: Product[] }
 type CreateProductInput = {
   name: string
   description?: string
@@ -142,6 +153,18 @@ export const productsApi = {
 
   createReview: (id: string, data: CreateProductReviewInput): Promise<CreateProductReviewResponse> =>
     httpClient.post<CreateProductReviewResponse>(`/products/${id}/reviews`, data),
+
+  getBestsellers: (limit = 12): Promise<BestsellersResponse> =>
+    httpClient.get<BestsellersResponse>('/products/bestsellers', { params: { limit } }),
+
+  getFeaturedReviews: (limit = 3): Promise<FeaturedReviewsResponse> =>
+    httpClient.get<FeaturedReviewsResponse>('/products/reviews/featured', { params: { limit } }),
+
+  getRelated: (id: string, limit = 4): Promise<RelatedProductsResponse> =>
+    httpClient.get<RelatedProductsResponse>(`/products/${id}/related`, { params: { limit } }),
+
+  requestStockNotification: (id: string, email: string): Promise<{ message: string }> =>
+    httpClient.post<{ message: string }>(`/products/${id}/notify-stock`, { email }),
 }
 
 // ─── Home Tiles ───────────────────────────────────────────────────────────────

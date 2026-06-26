@@ -4,6 +4,7 @@ import { Header } from './Header'
 import { Footer } from './Footer'
 import { ToastContainer } from '../ui'
 import { useAuth } from '../../context/AuthContext'
+import { WishlistProvider } from '../../context/WishlistContext'
 import { ordersApi } from '../../api'
 
 /* ════════════════════════════════════════════════════════
@@ -11,14 +12,16 @@ import { ordersApi } from '../../api'
    ════════════════════════════════════════════════════ */
 export function MainLayout({ children }: { children?: ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-1 pt-32">
-        {children ?? <Outlet />}
-      </main>
-      <Footer />
-      <ToastContainer />
-    </div>
+    <WishlistProvider>
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 pt-32">
+          {children ?? <Outlet />}
+        </main>
+        <Footer />
+        <ToastContainer />
+      </div>
+    </WishlistProvider>
   )
 }
 

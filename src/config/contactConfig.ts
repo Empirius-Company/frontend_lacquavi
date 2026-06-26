@@ -9,8 +9,16 @@ export const CONTACT_CONFIG = {
   // WhatsApp number (raw format: country code + area + number, no symbols)
   whatsappNumber: WHATSAPP_NUMBER,
 
-  // Display phone (formatted for UI)
+  // Display phone (formatted for UI) — WhatsApp
   displayPhone: formatPhone(WHATSAPP_NUMBER),
+
+  // Business landline (for tel: href and footer display)
+  businessPhone: '553134518902',
+  businessPhoneDisplay: '(31) 3451-8902',
+
+  // CNPJ and address
+  cnpj: '42.313.427/0001-90',
+  address: 'Minas Shopping — Piso 1, Loja 610 · Belo Horizonte/MG · CEP 31160-551',
 
   // Business hours (hardcoded)
   businessHours: 'Seg. a Sex. das 8h às 22h\nSáb. das 9h às 14h',

@@ -29,8 +29,10 @@ export function Header() {
   const [categoryOpen, setCategoryOpen] = useState(false)
   const [categoriesLoading, setCategoriesLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const categoryTriggerRef = useRef<HTMLDivElement>(null)
+  const mobileSearchRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     categoriesApi.list()
@@ -79,7 +81,7 @@ export function Header() {
           <div className="hidden md:flex flex-1 max-w-2xl relative">
             <input
               type="text"
-              placeholder="Oi, o que você procura hoje? :)"
+              placeholder="Buscar por produto, marca ou categoria..."
               className="w-full bg-[#F5F5F5] border border-gray-200 hover:border-gray-300 rounded-full py-2 px-5 pr-12 text-sm text-[#333] placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#2a7e51] focus:border-[#2a7e51] transition-all shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -103,9 +105,9 @@ export function Header() {
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-bold text-[#333]">{isAuthenticated ? `Oie, ${user?.fullName?.split(' ')[0]}!` : 'Oie!'}</span>
+                <span className="text-sm font-bold text-[#333]">{isAuthenticated ? `Olá, ${user?.fullName?.split(' ')[0]}` : 'Minha Conta'}</span>
                 <span className="text-[11px] text-gray-500 flex items-center gap-1">
-                  {isAuthenticated ? 'Sua conta' : 'Vem fazer seu login :)'}
+                  {isAuthenticated ? 'Sua conta' : 'Entrar ou cadastrar'}
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </span>
               </div>
@@ -140,6 +142,20 @@ export function Header() {
               )}
             </button>
 
+            {/* Mobile Search Toggle */}
+            <button
+              aria-label="Buscar"
+              className="md:hidden text-[#333] hover:text-[#2a7e51] transition-colors"
+              onClick={() => {
+                setSearchOpen(v => {
+                  if (!v) setTimeout(() => mobileSearchRef.current?.focus(), 50)
+                  return !v
+                })
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </button>
+
             {/* Mobile Menu Toggle */}
             <button aria-label="Abrir menu" className="md:hidden text-[#333]" onClick={() => setMenuOpen(!menuOpen)}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
@@ -147,19 +163,32 @@ export function Header() {
           </div>
         </div>
 
-        {/* Mobile Search Bar */}
-        <div className="md:hidden px-4 pb-2">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar produtos..."
-              className="w-full bg-[#F5F5F5] border border-gray-200 hover:border-gray-300 rounded-full py-1.5 px-4 pr-10 text-sm text-[#333] placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#2a7e51] focus:border-[#2a7e51] transition-all shadow-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={handleSearch}
-            />
+        {/* Mobile Search Bar — collapses via toggle */}
+        {searchOpen && (
+          <div className="md:hidden px-4 pb-2">
+            <div className="relative">
+              <input
+                ref={mobileSearchRef}
+                type="text"
+                placeholder="Buscar por produto, marca ou categoria..."
+                className="w-full bg-[#F5F5F5] border border-gray-200 hover:border-gray-300 rounded-full py-1.5 px-4 pr-10 text-sm text-[#333] placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#2a7e51] focus:border-[#2a7e51] transition-all shadow-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setSearchOpen(false)
+                  handleSearch(e)
+                }}
+              />
+              <button
+                aria-label="Fechar busca"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center text-gray-400 hover:text-[#333]"
+                onClick={() => setSearchOpen(false)}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Tier 3: Category Nav Bar — hidden on checkout/payment */}
         <div className={`hidden border-t border-gray-100 ${isCheckoutFlow ? '' : 'md:flex'}`}>
@@ -286,6 +315,12 @@ export function Header() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                 Todos os Produtos
               </Link>
+              {categories.slice(0, 8).map(cat => (
+                <Link key={cat.id} to={`/products?category=${cat.id}`} onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors text-sm">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                  {cat.name}
+                </Link>
+              ))}
               <Link to="/products?gender=feminino" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="5"/><line x1="12" y1="13" x2="12" y2="21"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
                 Femininos

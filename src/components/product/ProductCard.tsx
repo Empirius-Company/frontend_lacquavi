@@ -97,15 +97,17 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
 
           {/* Tags / Brand / Rating */}
           <div className="flex justify-between items-center mb-1.5 gap-2">
-            <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest truncate max-w-[60%]">
+            <p className="text-[11px] font-bold text-gray-600 uppercase tracking-widest truncate max-w-[60%]">
               {product.brand || 'DIVERSOS'}
             </p>
-            <div className="flex items-center gap-0.5 text-[#fcb900] text-[10px] shrink-0 font-medium">
-              {renderStars(averageRating)}
-              <span className="text-[9px] text-gray-600 ml-0.5 font-normal">
-                ({reviewsTotal})
-              </span>
-            </div>
+            {reviewsTotal > 0 && (
+              <div className="flex items-center gap-0.5 text-[#fcb900] text-[10px] shrink-0 font-medium">
+                {renderStars(averageRating)}
+                <span className="text-[10px] text-gray-600 ml-0.5 font-normal">
+                  ({reviewsTotal})
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Product Name */}
@@ -120,7 +122,7 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
               {pricing.finalPrice > 0 ? (
                 <>
                   {pricing.hasDiscount && (
-                    <span className="text-[9px] text-gray-400 line-through leading-none mb-0.5">
+                    <span className="text-[10px] text-gray-400 line-through leading-none mb-0.5">
                       {formatCurrency(pricing.basePrice)}
                     </span>
                   )}
@@ -130,11 +132,11 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
                   </span>
                   {/* PIX — destaque secundário */}
                   <span className="text-[10px] text-[#2a7e51] font-semibold leading-none mt-0.5 flex items-center gap-1">
-                    <span className="font-black bg-[#2a7e51] text-white px-1 py-px rounded-sm text-[7px] uppercase tracking-wider shrink-0">PIX</span>
+                    <span className="font-black bg-[#2a7e51] text-white px-1 py-px rounded-sm text-[8px] uppercase tracking-wider shrink-0">PIX</span>
                     {formatCurrency(getPixPrice(pricing.finalPrice))} <span className="text-gray-400 font-normal">(5% off)</span>
                   </span>
                   {installment && (
-                    <span className="text-[9px] text-gray-400 leading-none mt-0.5">
+                    <span className="text-[10px] text-gray-400 leading-none mt-0.5">
                       ou {installment.count}x de {formatCurrency(installment.amountPerInstallment)} s/ juros
                     </span>
                   )}
@@ -147,7 +149,7 @@ export function ProductCard({ product, reviewStats }: ProductCardProps) {
             <button
               onClick={handleAddClick}
               disabled={isOutOfStock}
-              className="w-full py-2.5 font-bold text-[10px] uppercase tracking-wide rounded transition-colors text-white bg-[#2a7e51] hover:bg-[#236843] disabled:opacity-50 flex items-center justify-center"
+              className="w-full py-2.5 font-bold text-[11px] uppercase tracking-wide rounded transition-colors text-white bg-[#2a7e51] hover:bg-[#236843] disabled:opacity-50 flex items-center justify-center"
             >
               {isOutOfStock ? 'Esgotado' : 'COMPRAR'}
             </button>

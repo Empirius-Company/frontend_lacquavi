@@ -68,7 +68,7 @@ export function Footer() {
                       <strong className="text-white">{email}</strong> já está na nossa lista.
                     </p>
                     <p className="text-gray-400 text-xs mt-1">
-                      Verifique sua caixa de entrada em <strong className="text-gray-300">lacqua.noreply@gmail.com</strong>.
+                      Verifique sua caixa de entrada em <strong className="text-gray-300">noreply@lacquaminas.com.br</strong>.
                     </p>
                   </div>
                 </div>
@@ -81,7 +81,7 @@ export function Footer() {
                       Enviamos seu cupom de boas-vindas para <strong className="text-white">{email}</strong>.
                     </p>
                     <p className="text-gray-400 text-xs mt-1">
-                      Verifique sua caixa de entrada em <strong className="text-gray-300">lacqua.noreply@gmail.com</strong>.
+                      Verifique sua caixa de entrada em <strong className="text-gray-300">noreply@lacquaminas.com.br</strong>.
                     </p>
                   </div>
                 </div>
@@ -185,8 +185,13 @@ export function Footer() {
             </div>
 
             <h4 className="font-bold text-[#333] mb-2 uppercase text-sm">Atendimento</h4>
-            <p className="text-2xl font-black text-[#000000] mb-1">{CONTACT_CONFIG.displayPhone}</p>
-            <p className="text-xs text-gray-500">{CONTACT_CONFIG.businessHours}</p>
+            <a
+              href={`tel:+${CONTACT_CONFIG.businessPhone}`}
+              className="text-2xl font-black text-[#000000] mb-1 hover:text-[#2a7e51] transition-colors"
+            >
+              {CONTACT_CONFIG.businessPhoneDisplay}
+            </a>
+            <p className="text-xs text-gray-500 mt-1">{CONTACT_CONFIG.businessHours}</p>
           </div>
 
         </div>
@@ -207,11 +212,12 @@ export function Footer() {
       {/* Bottom bar */}
       <div className="bg-gray-100 py-6">
         <div className="container-page flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-700 text-center md:text-left">
-          <p>
-            © {new Date().getFullYear()} Lacquavi. Todos os direitos reservados.
-            <br />
-            Preços e condições de pagamento exclusivos para compras via internet.
-          </p>
+          <div className="space-y-1 text-xs text-gray-700 text-center md:text-left">
+            <p>© {new Date().getFullYear()} Lacquavi Perfumaria LTDA. Todos os direitos reservados.</p>
+            <p>CNPJ: {CONTACT_CONFIG.cnpj}</p>
+            <p>{CONTACT_CONFIG.address}</p>
+            <p className="text-[10px] text-gray-500 mt-1">Preços e condições exclusivos para compras via internet.</p>
+          </div>
           <div className="flex items-center gap-1 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
             <picture>
               <source srcSet="/logo.webp" type="image/webp" />

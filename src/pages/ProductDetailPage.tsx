@@ -5,7 +5,9 @@ import { shippingApi } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
+import { useWishlist } from '../context/WishlistContext'
 import { Button, ProductDetailSkeleton, ReviewSkeleton } from '../components/ui'
+import { ProductCard } from '../components/product/ProductCard'
 import { useSEO, ProductSchema, BreadcrumbSchema } from '../components/seo'
 import { formatCurrency, getInstallmentDisplay, getProductPriceSummary, getPixPrice } from '../utils'
 import { getOptimizedCloudinaryUrl, getOrderedGallery, getProductPrimaryImage } from '../utils/productImages'
@@ -19,6 +21,7 @@ function FloatingBuyBar({ product, onAdd, onVisibilityChange }: { product: Produ
   const [isVisible, setIsVisible] = useState(false)
   const pricing = getProductPriceSummary(product)
   const primaryImage = getProductPrimaryImage(product)
+  const { isWishlisted, toggleWishlist } = useWishlist()
 
   useEffect(() => {
     const toggleVisibility = () => {
@@ -66,8 +69,12 @@ function FloatingBuyBar({ product, onAdd, onVisibilityChange }: { product: Produ
               <button onClick={onAdd} className="bg-[#2a7e51] hover:bg-[#236843] text-white px-8 py-2.5 rounded text-sm font-bold uppercase tracking-wide transition-colors">
                 Comprar
               </button>
-              <button className="text-gray-400 hover:text-[#2a7e51]">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
+              <button
+                aria-label={isWishlisted(product.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                onClick={() => toggleWishlist(product.id)}
+                className={`transition-colors ${isWishlisted(product.id) ? 'text-red-500' : 'text-gray-400 hover:text-[#2a7e51]'}`}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill={isWishlisted(product.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
               </button>
             </div>
           </div>
@@ -95,6 +102,7 @@ export function ProductDetailPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth()
   const { addItem } = useCart()
   const { toast } = useToast()
+  const { isWishlisted, toggleWishlist } = useWishlist()
 
   const [product, setProduct] = useState<Product | null>(null)
   const [productImages, setProductImages] = useState<ProductImage[]>([])
@@ -109,8 +117,10 @@ export function ProductDetailPage() {
   const [reviews, setReviews] = useState<ProductReview[]>([])
   const [reviewsStats, setReviewsStats] = useState<ProductReviewStats>({ total: 0, averageRating: 0 })
   const [reviewsLoading, setReviewsLoading] = useState(false)
-  const [reviewsExpanded, setReviewsExpanded] = useState(false)
   const [submittingReview, setSubmittingReview] = useState(false)
+  const [notifyEmail, setNotifyEmail] = useState('')
+  const [notifyLoading, setNotifyLoading] = useState(false)
+  const [notifyDone, setNotifyDone] = useState(false)
   const [reviewForm, setReviewForm] = useState(() => {
     // Restaura review pendente salva antes de redirect para login
     try {
@@ -129,6 +139,7 @@ export function ProductDetailPage() {
   const [floatingBarVisible, setFloatingBarVisible] = useState(false)
   const [reviewsPage, setReviewsPage] = useState(1)
   const [reviewsHasMore, setReviewsHasMore] = useState(false)
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
 
   // SEO Meta Tags
   useSEO({
@@ -191,6 +202,19 @@ const loadReviews = useCallback(async (page = 1) => {
   }, [id])
 
   useEffect(() => {
+    if (!id) return
+    productsApi.getRelated(id, 4)
+      .then((res) => setRelatedProducts(res.products))
+      .catch(() => {})
+  }, [id])
+
+  useEffect(() => {
+    if (!id) return
+    void loadReviews(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+
+  useEffect(() => {
     setSelectedImageIndex(0)
   }, [product?.id])
 
@@ -241,6 +265,23 @@ const loadReviews = useCallback(async (page = 1) => {
   const isOutOfStock = product.stock === 0
   const pricing = getProductPriceSummary(product)
   const installment = pricing.finalPrice > 0 ? getInstallmentDisplay(pricing.finalPrice) : null
+
+  const handleNotifyMe = async () => {
+    if (!notifyEmail || !/\S+@\S+\.\S+/.test(notifyEmail)) {
+      toast('Insira um e-mail válido.', 'warning')
+      return
+    }
+    setNotifyLoading(true)
+    try {
+      await productsApi.requestStockNotification(product.id, notifyEmail)
+      setNotifyDone(true)
+      toast('Você será avisado quando o produto estiver disponível!', 'success')
+    } catch {
+      toast('Não foi possível registrar. Tente novamente.', 'error')
+    } finally {
+      setNotifyLoading(false)
+    }
+  }
 
   const handleAdd = () => {
     if (isOutOfStock) return
@@ -406,23 +447,13 @@ const loadReviews = useCallback(async (page = 1) => {
         <div className="flex flex-col md:flex-row gap-12 lg:gap-16 items-start max-w-6xl mx-auto">
 
           {/* ── Left: Images ────────────────────────────────── */}
-          <div className="w-full md:w-[45%] flex gap-4 sticky top-24">
+          <div className="w-full md:w-[45%] sticky top-24">
 
-            {/* Thumbnails */}
-            {galleryImages.length > 1 && (
-              <div className="flex flex-col gap-2 w-16 md:w-20 shrink-0">
-                {galleryImages.map((img, idx) => (
-                  <div key={img.id} className={`aspect-square border-2 rounded ${idx === selectedImageIndex ? 'border-[#2a7e51]' : 'border-transparent hover:border-gray-200'} cursor-pointer overflow-hidden p-1 bg-white shadow-sm`}>
-                    <button type="button" onClick={() => setSelectedImageIndex(idx)} className="w-full h-full">
-                      <img src={getOptimizedCloudinaryUrl(img.url, 160, 160)} alt={img.alt || `${product.name} ${idx + 1}`} className="w-full h-full object-contain" width={160} height={160} loading="lazy" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Desktop: thumbnails left + main right; Mobile: main top + thumbnails bottom */}
+            <div className="flex flex-col md:flex-row gap-3 md:gap-4">
 
             {/* Main Image */}
-            <div className="flex-1 relative h-[250px] sm:h-[300px] md:h-[340px] lg:h-[365px] flex items-center justify-center bg-white p-4">
+            <div className="flex-1 order-1 md:order-2 relative h-[250px] sm:h-[300px] md:h-[340px] lg:h-[365px] flex items-center justify-center bg-white p-4">
               {pricing.hasDiscount && (
                 <div className="absolute top-2 right-2 w-14 h-14 bg-[#0B1B3D] rounded-full flex flex-col items-center justify-center text-white z-10 font-bold leading-tight shadow-md">
                   <span className="text-sm">{pricing.discountPercent}%</span>
@@ -454,6 +485,20 @@ const loadReviews = useCallback(async (page = 1) => {
                 </>
               )}
             </div>
+
+            {/* Thumbnails — left column on desktop, horizontal row below on mobile */}
+            {galleryImages.length > 1 && (
+              <div className="order-2 md:order-1 flex flex-row md:flex-col gap-2 md:w-16 lg:w-20 shrink-0 overflow-x-auto pb-1 md:pb-0">
+                {galleryImages.map((img, idx) => (
+                  <div key={img.id} className={`aspect-square border-2 rounded shrink-0 w-14 md:w-full ${idx === selectedImageIndex ? 'border-[#2a7e51]' : 'border-transparent hover:border-gray-200'} cursor-pointer overflow-hidden p-1 bg-white shadow-sm`}>
+                    <button type="button" onClick={() => setSelectedImageIndex(idx)} className="w-full h-full">
+                      <img src={getOptimizedCloudinaryUrl(img.url, 160, 160)} alt={img.alt || `${product.name} ${idx + 1}`} className="w-full h-full object-contain" width={160} height={160} loading="lazy" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            </div>
           </div>
 
           {/* ── Right: Info ────────────────────────────────── */}
@@ -465,7 +510,16 @@ const loadReviews = useCallback(async (page = 1) => {
               <span className="text-xs text-gray-400">Ref: {product.id.split('-')[0].toUpperCase()}</span>
             </div>
 
-            <h1 className="text-2xl font-bold text-gray-900 mb-1 leading-tight">{product.name}</h1>
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <h1 className="text-2xl font-bold text-gray-900 leading-tight">{product.name}</h1>
+              <button
+                aria-label={isWishlisted(product.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+                onClick={() => toggleWishlist(product.id)}
+                className={`flex-shrink-0 mt-0.5 transition-colors ${isWishlisted(product.id) ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}`}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill={isWishlisted(product.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>
+              </button>
+            </div>
             <h2 className="text-sm text-gray-500 uppercase tracking-widest mb-4">{product.brand || 'LACQUAVI'} {product.volume && `— ${product.volume}`}</h2>
 
             <button
@@ -529,13 +583,42 @@ const loadReviews = useCallback(async (page = 1) => {
                   <span>⚠</span> Apenas {product.stock} {product.stock === 1 ? 'unidade' : 'unidades'} em estoque
                 </p>
               )}
-              <button
-                onClick={handleAdd}
-                disabled={isOutOfStock}
-                className="w-full bg-[#2a7e51] hover:bg-[#236843] transition-colors text-white font-bold text-sm tracking-wide uppercase py-4 rounded shadow-[0_4px_12px_rgba(42,126,81,0.3)] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Comprar
-              </button>
+              {isOutOfStock ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-500 text-center">Este produto está temporariamente indisponível.</p>
+                  {notifyDone ? (
+                    <div className="bg-green-50 border border-green-200 rounded p-3 text-sm text-green-700 text-center">
+                      ✓ Você será avisado quando o produto estiver disponível.
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        placeholder="Seu e-mail para notificação"
+                        value={notifyEmail}
+                        onChange={e => setNotifyEmail(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && void handleNotifyMe()}
+                        className="flex-1 border border-gray-300 rounded-l px-3 text-sm h-11 focus:outline-none focus:border-gray-400"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => void handleNotifyMe()}
+                        loading={notifyLoading}
+                        className="flex-shrink-0 !rounded-l-none !rounded-r !h-11 !px-4 !text-xs"
+                      >
+                        Avise-me
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={handleAdd}
+                  className="w-full bg-[#2a7e51] hover:bg-[#236843] transition-colors text-white font-bold text-sm tracking-wide uppercase py-4 rounded shadow-[0_4px_12px_rgba(42,126,81,0.3)] flex items-center justify-center"
+                >
+                  Comprar
+                </button>
+              )}
             </div>
 
             {/* CTA secundário WhatsApp */}
@@ -638,10 +721,10 @@ const loadReviews = useCallback(async (page = 1) => {
 
               {/* Specs */}
               <div className="mb-12">
-                <div className="flex border-b border-pink-200 mb-4">
+                <div className="flex border-b border-gray-200 mb-4">
                   <h3 className="uppercase text-sm font-bold text-gray-800 tracking-widest border-b-2 border-[#2a7e51] pb-2 -mb-px">Especificações</h3>
                 </div>
-                <div className="border border-pink-100 rounded p-4 text-sm text-gray-600 bg-white shadow-sm space-y-1">
+                <div className="border border-gray-100 rounded p-4 text-sm text-gray-600 bg-white shadow-sm space-y-1">
                   {product.volume && <p><span className="font-medium">Tamanho:</span> {product.volume}</p>}
                   {product.olfactoryFamily && <p><span className="font-medium">Família Olfativa:</span> {product.olfactoryFamily}</p>}
                   {product.gender && <p><span className="font-medium">Gênero:</span> {product.gender.charAt(0).toUpperCase() + product.gender.slice(1)}</p>}
@@ -650,7 +733,7 @@ const loadReviews = useCallback(async (page = 1) => {
               </div>
 
               <div id="reviews-section" className="mb-12">
-                <div className="flex border-b border-pink-200 mb-4">
+                <div className="flex border-b border-gray-200 mb-4">
                   <h3 className="uppercase text-sm font-bold text-gray-800 tracking-widest border-b-2 border-[#2a7e51] pb-2 -mb-px">Avaliações</h3>
                 </div>
 
@@ -667,16 +750,8 @@ const loadReviews = useCallback(async (page = 1) => {
                   </div>
                 </div>
 
-                {!reviewsExpanded ? (
-                  <button
-                    onClick={() => { setReviewsExpanded(true); void loadReviews() }}
-                    className="w-full border border-gray-300 rounded py-2.5 text-sm text-gray-600 font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    Ver avaliações{reviewsStats.total > 0 ? ` (${reviewsStats.total})` : ''}
-                  </button>
-                ) : (
-                  <>
-                    {isAuthenticated ? (
+                <>
+                  {isAuthenticated ? (
                       <form onSubmit={handleReviewSubmit} className="border border-gray-200 rounded p-4 bg-white mb-4 space-y-4">
                         <div>
                           <p className="text-sm font-semibold text-gray-800 mb-2">Deixe sua avaliação</p>
@@ -758,13 +833,29 @@ const loadReviews = useCallback(async (page = 1) => {
                         </>
                       )}
                     </div>
-                  </>
-                )}
+                </>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {relatedProducts.length > 0 && (
+        <div className="container-page pb-12">
+          <div className="mt-12">
+            <div className="flex border-b border-gray-200 mb-6">
+              <h3 className="uppercase text-sm font-bold text-gray-800 tracking-widest border-b-2 border-[#2a7e51] pb-2 -mb-px">
+                Você também pode gostar
+              </h3>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {relatedProducts.map(p => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <FloatingBuyBar product={product} onAdd={handleAdd} onVisibilityChange={setFloatingBarVisible} />
     </div>

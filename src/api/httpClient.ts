@@ -7,8 +7,9 @@ const API_BASE_URL: string = (() => {
     if (import.meta.env.PROD) {
       throw new Error('VITE_API_URL não está configurada. Defina a variável de ambiente antes do build.')
     }
-    // Em desenvolvimento, usar localhost como fallback conveniente
-    return 'http://localhost:3000'
+    // Em dev, baseURL vazio → requests são relativas à origem do Vite (localhost:5173)
+    // e passam pelo proxy configurado em vite.config.ts → localhost:3000
+    return ''
   }
   return url
 })()

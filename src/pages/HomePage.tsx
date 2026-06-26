@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { productsApi, categoriesApi, homeTilesApi } from '../api/catalogApi'
+import type { FeaturedReview } from '../api/catalogApi'
 import { bannersApi } from '../api'
 import { ProductCarousel } from '../components/product/ProductCarousel'
 import { Button, Skeleton } from '../components/ui'
@@ -76,7 +77,6 @@ function HomeTopBanner() {
                 src="/banner-home-top.png"
                 alt="Banner Lacquavi"
                 className="absolute inset-0 w-full h-full object-cover object-top"
-                fetchPriority="high"
                 loading="eager"
                 width="1396"
                 height="642"
@@ -98,9 +98,73 @@ function HomeTopBanner() {
             Destaques da semana
             <span className="text-base leading-none">↓</span>
           </button>
+
+          {/* Value proposition badges */}
+          <div className="absolute top-3 right-3 md:top-5 md:right-5 flex flex-col items-end gap-1.5 z-10">
+            {(['100% Originais', 'Frete Grátis R$200+', 'Entrega Rápida'] as const).map(text => (
+              <span key={text} className="bg-white/85 backdrop-blur-sm text-[#111] text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wide">
+                {text}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </section>
+  )
+}
+
+function TrustBar() {
+  const items = [
+    {
+      label: 'Parcele em até 10x',
+      desc: 'Sem juros no cartão',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+        </svg>
+      ),
+    },
+    {
+      label: 'Compra 100% Segura',
+      desc: 'Seus dados protegidos',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      ),
+    },
+    {
+      label: 'Entrega Rápida',
+      desc: 'Para todo o Brasil',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+        </svg>
+      ),
+    },
+    {
+      label: 'Produtos Originais',
+      desc: 'Com garantia',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          <polyline points="9 12 11 14 15 10"/>
+        </svg>
+      ),
+    },
+  ]
+  return (
+    <div className="bg-white border-y border-gray-200 py-6">
+      <div className="container-page grid grid-cols-2 md:grid-cols-4 gap-5 text-center">
+        {items.map(item => (
+          <div key={item.label} className="flex flex-col items-center gap-2">
+            <span className="text-[#2a7e51]">{item.icon}</span>
+            <h4 className="font-bold text-sm text-[#333]">{item.label}</h4>
+            <p className="text-xs text-gray-500">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -423,6 +487,8 @@ export function HomePage() {
   const [loading, setLoading] = useState(true)
   const [tilesLoading, setTilesLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [bestsellers, setBestsellers] = useState<Product[]>([])
+  const [featuredReviews, setFeaturedReviews] = useState<FeaturedReview[]>([])
 
   // SEO Meta Tags
   useSEO({
@@ -440,6 +506,9 @@ export function HomePage() {
       .then((pRes) => setProducts(pRes.products))
       .catch(() => setError('Não foi possível carregar os produtos.'))
       .finally(() => setLoading(false))
+    productsApi.getBestsellers(12)
+      .then((bRes) => setBestsellers(bRes.products))
+      .catch(() => {})
   }, [])
 
   // Fase 2: categorias e tiles — carregam em paralelo, independente dos produtos
@@ -451,6 +520,9 @@ export function HomePage() {
       })
       .catch(() => { /* tiles e categorias têm fallback visual — página segue funcional */ })
       .finally(() => setTilesLoading(false))
+    productsApi.getFeaturedReviews(3)
+      .then((rRes) => setFeaturedReviews(rRes.reviews))
+      .catch(() => {})
   }, [])
 
   const sortedProducts = [...products].sort((a, b) => {
@@ -490,6 +562,12 @@ export function HomePage() {
       {/* Banner principal logo abaixo do menu */}
       <HomeTopBanner />
 
+      {/* Flash sale banner — posição 2, alto impacto */}
+      <FlashSaleBanner />
+
+      {/* Trust bar — benefícios da loja */}
+      <TrustBar />
+
       {/* Hero Section at the top */}
       <BestSellersHero products={topProducts} reviewStatsByProduct={statsByProduct} loading={loading} />
 
@@ -514,9 +592,6 @@ export function HomePage() {
       {/* Categories quick nav */}
       <CategoryTiles categories={categories} products={sortedProducts} homeTiles={homeTiles} loading={tilesLoading} />
 
-      {/* Flash sale banner */}
-      <FlashSaleBanner />
-
       {/* Mais vendidos da semana */}
       <section id="mais-vendidos-semana" className="py-12 bg-[#F5F5F5]">
         <div className="container-page">
@@ -526,7 +601,7 @@ export function HomePage() {
             linkTo="/products"
           />
           {error ? null : (
-            <ProductCarousel products={[...sortedProducts].reverse()} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
+            <ProductCarousel products={bestsellers.length > 0 ? bestsellers : [...sortedProducts].reverse()} loading={loading} count={12} reviewStatsByProduct={statsByProduct} />
           )}
         </div>
       </section>
@@ -545,60 +620,38 @@ export function HomePage() {
         </section>
       ))}
 
-      {/* Depoimentos de clientes */}
-      <section className="py-16 bg-white">
-        <div className="container-page">
-          <p className="text-xs font-bold text-[#2a7e51] uppercase tracking-widest text-center mb-3">Depoimentos</p>
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-center text-[#000000] mb-10">
-            O que nossos clientes dizem
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {[
-              { name: 'Mariana S.', city: 'Belo Horizonte — MG', stars: 5, text: 'Amei o perfume! Chegou rápido e muito bem embalado. Cheiro incrível, igual ao da loja física. Com certeza vou comprar de novo.' },
-              { name: 'Carlos A.', city: 'Lagoa Santa — MG', stars: 5, text: 'Produto original, entrega rápida e atendimento excelente pelo WhatsApp. Tirou todas as minhas dúvidas antes de comprar. Recomendo!' },
-              { name: 'Fernanda R.', city: 'São Paulo — SP', stars: 5, text: 'Já comprei três vezes. Qualidade garantida e sempre chega antes do prazo. Site fácil de usar e pagamento sem complicação.' },
-            ].map((d, i) => (
-              <div key={i} className="bg-[#F5F5F5] rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <p className="text-amber-400 text-lg mb-3">{'★'.repeat(d.stars)}</p>
-                <p className="text-sm text-gray-700 leading-relaxed mb-4">"{d.text}"</p>
-                <div>
-                  <p className="text-sm font-semibold text-[#111111]">{d.name}</p>
-                  <p className="text-xs text-gray-400">{d.city}</p>
+      {/* Depoimentos de clientes — carregados da API, some quando vazio */}
+      {featuredReviews.length > 0 && (
+        <section className="py-16 bg-white">
+          <div className="container-page">
+            <p className="text-xs font-bold text-[#2a7e51] uppercase tracking-widest text-center mb-3">Depoimentos</p>
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-center text-[#000000] mb-10">
+              O que nossos clientes dizem
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {featuredReviews.map((review) => (
+                <div key={review.id} className="bg-[#F5F5F5] rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <p className="text-amber-400 text-lg mb-3">{'★'.repeat(review.rating)}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed mb-4">"{review.comment}"</p>
+                  <div>
+                    <p className="text-sm font-semibold text-[#111111]">
+                      {review.user.fullName.split(' ')[0]} {review.user.fullName.split(' ').slice(-1)[0]?.charAt(0)}.
+                    </p>
+                    {review.user.city && <p className="text-xs text-gray-400">{review.user.city}</p>}
+                    <p className="text-xs text-gray-400 mt-0.5">via {review.product.name}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Physical Store Teaser */}
       <StoreTeaser />
 
-      {/* Trust bar simple */}
-      <div className="bg-white border-y border-gray-200 py-8 mt-8">
-        <div className="container-page grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          <div>
-            <span className="text-2xl mb-1 block">💳</span>
-            <h4 className="font-bold text-sm text-[#333]">Parcele em até 10x</h4>
-            <p className="text-xs text-gray-500">Sem juros no cartão</p>
-          </div>
-          <div>
-            <span className="text-2xl mb-1 block">🔐</span>
-            <h4 className="font-bold text-sm text-[#333]">Compra 100% Segura</h4>
-            <p className="text-xs text-gray-500">Seus dados protegidos</p>
-          </div>
-          <div>
-            <span className="text-2xl mb-1 block">📦</span>
-            <h4 className="font-bold text-sm text-[#333]">Entrega Rápida</h4>
-            <p className="text-xs text-gray-500">Para todo o Brasil</p>
-          </div>
-          <div>
-            <span className="text-2xl mb-1 block">⭐</span>
-            <h4 className="font-bold text-sm text-[#333]">Produtos Originais</h4>
-            <p className="text-xs text-gray-500">Com garantia</p>
-          </div>
-        </div>
-      </div>
+      {/* Trust bar — benefícios repetidos no footer da home */}
+      <TrustBar />
 
     </div>
   )

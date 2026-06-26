@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, ReactNode, useEffect, Component, ErrorInfo } from 'react'
+import { ButtonHTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, ReactNode, useEffect, Component, ErrorInfo, Fragment } from 'react'
 import { useToast } from '../../context/ToastContext'
 import type { ToastType } from '../../context/ToastContext'
 
@@ -415,6 +415,38 @@ export function ErrorMessage({ message, dark = false }: { message: string; dark?
     }`}>
       <span className="flex-shrink-0">⚠</span>
       <span>{message}</span>
+    </div>
+  )
+}
+
+// ─── StepBar ──────────────────────────────────────────────────────────────────
+export function StepBar({ current }: { current: 1 | 2 | 3 }) {
+  const steps = ['Carrinho', 'Revisão', 'Pagamento']
+  return (
+    <div className="flex items-center justify-center gap-0">
+      {steps.map((s, i) => {
+        const n = i + 1
+        const done = n < current
+        const active = n === current
+        return (
+          <Fragment key={s}>
+            <div className="flex items-center gap-2">
+              <div className={`
+                w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all
+                ${done ? 'bg-[#2a7e51] text-white' : ''}
+                ${active ? 'bg-[#2a7e51] text-white shadow-[0_0_0_4px_rgba(42,126,81,0.2)]' : ''}
+                ${!done && !active ? 'bg-nude-100 text-nude-400' : ''}
+              `}>
+                {done ? '✓' : n}
+              </div>
+              <span className={`text-xs hidden sm:block ${active ? 'text-[#2a7e51] font-bold tracking-wide' : 'text-nude-500'}`}>{s}</span>
+            </div>
+            {i < 2 && (
+              <div className={`w-12 md:w-20 h-px mx-2 ${done ? 'bg-[#2a7e51]/50' : 'bg-nude-200'}`} />
+            )}
+          </Fragment>
+        )
+      })}
     </div>
   )
 }

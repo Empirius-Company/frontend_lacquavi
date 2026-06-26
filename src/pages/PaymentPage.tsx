@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
 import { useLoginModal } from '../context/LoginModalContext'
-import { Button, Spinner, ErrorMessage, OrderDetailSkeleton } from '../components/ui'
+import { Button, Spinner, ErrorMessage, OrderDetailSkeleton, StepBar } from '../components/ui'
 import { PaymentBrandBadges, PaymentIconsCheckout, detectCardBrand } from '../components/ui/PaymentMethodIcons'
 import { formatCurrency, generateIdempotencyKey, getPixPrice, getPixSavings } from '../utils'
 import type { Order, Payment, InstallmentOption, ApiError } from '../types'
@@ -723,33 +723,7 @@ export function PaymentPage() {
   return (
     <div className="min-h-screen bg-white pt-6 pb-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 mt-2">
-        {/* Stepper Copied and updated from Checkout */}
-        <div className="flex items-center justify-center gap-0">
-          {['Carrinho', 'Revisão', 'Pagamento'].map((s, i) => {
-            const n = i + 1
-            const current = 3
-            const done = n < current
-            const active = n === current
-            return (
-              <React.Fragment key={s}>
-                <div className="flex items-center gap-2">
-                  <div className={`
-                    w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all
-                    ${done ? 'bg-[#2a7e51] text-white' : ''}
-                    ${active ? 'bg-[#2a7e51] text-white shadow-[0_0_0_4px_rgba(42,126,81,0.2)]' : ''}
-                    ${!done && !active ? 'bg-nude-100 text-nude-400' : ''}
-                  `}>
-                    {done ? '✓' : n}
-                  </div>
-                  <span className={`text-xs hidden sm:block ${active ? 'text-[#2a7e51] font-bold tracking-wide' : 'text-nude-500'}`}>{s}</span>
-                </div>
-                {i < 2 && (
-                  <div className={`w-12 md:w-20 h-px mx-2 ${done ? 'bg-[#2a7e51]/50' : 'bg-nude-200'}`} />
-                )}
-              </React.Fragment>
-            )
-          })}
-        </div>
+        <StepBar current={3} />
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
