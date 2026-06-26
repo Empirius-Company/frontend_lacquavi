@@ -533,10 +533,11 @@ export function CheckoutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
           {/* Left — itens do pedido + frete */}
-          <div className="lg:col-span-7 space-y-4">
+          <div className={isAuthenticated ? 'lg:col-span-7 space-y-4' : 'lg:col-span-12 flex justify-center'}>
 
             {/* Auth inline (apenas para não autenticados) */}
             {!isAuthenticated && (
+              <div className="w-full max-w-md">
               <div className="bg-pearl rounded-3xl border border-nude-100 overflow-hidden shadow-card-light">
                 <div className="px-6 py-4 border-b border-nude-50 flex items-center gap-3">
                   <span className="w-6 h-6 rounded-full bg-[#2a7e51] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">0</span>
@@ -664,8 +665,10 @@ export function CheckoutPage() {
                   )}
                 </div>
               </div>
+              </div>
             )}
 
+            {isAuthenticated && <>
             {/* Itens */}
             <div className="bg-pearl rounded-3xl border border-nude-100 overflow-hidden shadow-card-light">
               <div className="px-6 py-4 border-b border-nude-50 flex items-center gap-3">
@@ -1033,9 +1036,10 @@ export function CheckoutPage() {
                 <p className="text-sm text-green-700">Este pedido não possui itens físicos. Frete não aplicável.</p>
               </div>
             )}
+            </>}
           </div>
 
-          {/* Right — cupom + resumo + CTA */}
+          {isAuthenticated && (
           <div className="lg:col-span-5 lg:sticky lg:top-6 space-y-4">
 
             {/* Cupom */}
@@ -1177,11 +1181,12 @@ export function CheckoutPage() {
               </div>
             </div>
           </div>
+          )}
         </div>
       </div>
 
       {/* Floating Total Bar */}
-      {items.length > 0 && (
+      {isAuthenticated && items.length > 0 && (
         <FloatingTotalBar
           total={displayTotal}
           onSubmit={handleSubmit}
