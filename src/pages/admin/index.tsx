@@ -1355,6 +1355,8 @@ export function AdminOrderDetailPage() {
   const [updating, setUpdating] = useState(false)
   const [processingLabel, setProcessingLabel] = useState(false)
   const [markingPickupReady, setMarkingPickupReady] = useState(false)
+  const [refreshingStatus, setRefreshingStatus] = useState(false)
+  const [manualTrackingCode, setManualTrackingCode] = useState('')
 
   useEffect(() => {
     if (!id) return
@@ -1423,6 +1425,21 @@ export function AdminOrderDetailPage() {
       await reloadShipment()
     } finally {
       setProcessingLabel(false)
+    }
+  }
+
+  const handleRefreshShipmentStatus = async () => {
+    if (!id) return
+    setRefreshingStatus(true)
+    try {
+      await shippingApi.refreshStatus(id, manualTrackingCode || undefined)
+      toast('Status de rastreio atualizado!', 'success')
+      setManualTrackingCode('')
+      await reloadShipment()
+    } catch (err) {
+      toast((err as ApiError).message || 'Não foi possível atualizar o status de rastreio.', 'error')
+    } finally {
+      setRefreshingStatus(false)
     }
   }
 
@@ -1583,9 +1600,23 @@ export function AdminOrderDetailPage() {
                 {shipment?.status === 'ready_for_pickup' ? 'Já marcado como pronto' : 'Marcar pronto para retirada'}
               </Button>
             ) : (
-              <Button variant="outline" onClick={handleProcessLabel} loading={processingLabel} fullWidth>
-                Processar Etiqueta
-              </Button>
+              <>
+                <Button variant="outline" onClick={handleProcessLabel} loading={processingLabel} fullWidth>
+                  Processar Etiqueta
+                </Button>
+                <div className="space-y-2 pt-1">
+                  <input
+                    type="text"
+                    className="input-luxury text-sm"
+                    placeholder="Código de rastreio (opcional)"
+                    value={manualTrackingCode}
+                    onChange={e => setManualTrackingCode(e.target.value)}
+                  />
+                  <Button variant="outline" onClick={handleRefreshShipmentStatus} loading={refreshingStatus} fullWidth>
+                    Sincronizar Rastreio
+                  </Button>
+                </div>
+              </>
             )}
           </div>
 

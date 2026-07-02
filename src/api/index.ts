@@ -222,6 +222,9 @@ export const shippingApi = {
   getOrderShipment: (orderId: string): Promise<OrderShipmentResponse> =>
     httpClient.get<OrderShipmentResponse>(`/shipping/orders/${orderId}/shipment`),
 
+  refreshStatus: (orderId: string, trackingCode?: string): Promise<{ message: string; shipment: Shipment }> =>
+    httpClient.post<{ message: string; shipment: Shipment }>(`/shipping/orders/${orderId}/refresh-status`, trackingCode ? { trackingCode } : {}),
+
   markPickupReady: (orderId: string): Promise<{ message: string; shipment: Shipment }> =>
     httpClient.post<{ message: string; shipment: Shipment }>(`/shipping/orders/${orderId}/pickup-ready`),
 
