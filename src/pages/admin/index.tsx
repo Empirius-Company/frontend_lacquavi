@@ -1354,6 +1354,7 @@ export function AdminOrderDetailPage() {
   const [status, setStatus]     = useState<OrderStatus>('pending')
   const [updating, setUpdating] = useState(false)
   const [processingLabel, setProcessingLabel] = useState(false)
+  const [retryingDlq, setRetryingDlq] = useState(false)
   const [markingPickupReady, setMarkingPickupReady] = useState(false)
   const [refreshingStatus, setRefreshingStatus] = useState(false)
   const [manualTrackingCode, setManualTrackingCode] = useState('')
@@ -1425,6 +1426,23 @@ export function AdminOrderDetailPage() {
       await reloadShipment()
     } finally {
       setProcessingLabel(false)
+    }
+  }
+
+  const handleRetryDlq = async () => {
+    if (!id) return
+    setRetryingDlq(true)
+    try {
+      await shippingApi.retryDlq(id)
+      toast('Envio removido da DLQ e reprocessado', 'success')
+      await reloadShipment()
+    } catch (err) {
+      const mapped = mapShippingLabelError(err)
+      toast(`${mapped.title}: ${mapped.message}`, 'error')
+      console.error('shipping-label-dlq-retry-error', mapped)
+      await reloadShipment()
+    } finally {
+      setRetryingDlq(false)
     }
   }
 
@@ -1552,7 +1570,12 @@ export function AdminOrderDetailPage() {
                       <p className="text-xs text-red-600">Próxima tentativa: {formatDateTime(shipment.nextRetryAt)}</p>
                     )}
                     {shipment.dlqAt && (
-                      <p className="text-xs font-semibold text-red-800">Falha definitiva em {formatDateTime(shipment.dlqAt)} — requer intervenção manual</p>
+                      <>
+                        <p className="text-xs font-semibold text-red-800">Falha definitiva em {formatDateTime(shipment.dlqAt)} — requer intervenção manual</p>
+                        <Button variant="outline" onClick={handleRetryDlq} loading={retryingDlq} fullWidth>
+                          Reprocessar envio (saiu da DLQ)
+                        </Button>
+                      </>
                     )}
                   </div>
                 )}

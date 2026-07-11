@@ -219,6 +219,9 @@ export const shippingApi = {
   createLabel: (orderId: string): Promise<{ message?: string; shipment?: Shipment }> =>
     httpClient.post<{ message?: string; shipment?: Shipment }>(`/shipping/orders/${orderId}/label`),
 
+  retryDlq: (orderId: string): Promise<{ message?: string; shipment?: Shipment }> =>
+    httpClient.post<{ message?: string; shipment?: Shipment }>(`/shipping/orders/${orderId}/label/retry-dlq`),
+
   getOrderShipment: (orderId: string): Promise<OrderShipmentResponse> =>
     httpClient.get<OrderShipmentResponse>(`/shipping/orders/${orderId}/shipment`),
 
