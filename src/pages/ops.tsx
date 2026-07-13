@@ -81,13 +81,13 @@ export function OpsDashboardPage() {
 
   useEffect(() => {
     loadOrders().then((loaded) => {
-      const pickupCandidates = loaded.filter(
-        (o) => o.shippingProvider === 'STORE_PICKUP' && o.paymentStatus === 'paid' && o.status === 'processing'
+      const shipmentCandidates = loaded.filter(
+        (o) => o.shippingProvider != null && o.paymentStatus === 'paid' && o.status === 'processing'
       )
-      if (pickupCandidates.length === 0) return
+      if (shipmentCandidates.length === 0) return
 
       Promise.allSettled(
-        pickupCandidates.map((o) =>
+        shipmentCandidates.map((o) =>
           shippingApi.getOrderShipment(o.id).then((r) => ({ orderId: o.id, status: r.shipment?.status ?? null }))
         )
       ).then((results) => {
@@ -110,8 +110,25 @@ export function OpsDashboardPage() {
   )
 
   const awaitingLabel = useMemo(
-    () => shippingOrders.filter((o) => o.paymentStatus === 'paid' && o.status === 'processing'),
-    [shippingOrders]
+    () =>
+      shippingOrders.filter(
+        (o) =>
+          o.paymentStatus === 'paid' &&
+          o.status === 'processing' &&
+          shipmentMap[o.id] !== 'label_purchased' &&
+          shipmentMap[o.id] !== 'posted'
+      ),
+    [shippingOrders, shipmentMap]
+  )
+  const awaitingDispatch = useMemo(
+    () =>
+      shippingOrders.filter(
+        (o) =>
+          o.paymentStatus === 'paid' &&
+          o.status === 'processing' &&
+          (shipmentMap[o.id] === 'label_purchased' || shipmentMap[o.id] === 'posted')
+      ),
+    [shippingOrders, shipmentMap]
   )
   const inTransit = useMemo(
     () => shippingOrders.filter((o) => o.status === 'shipped'),
@@ -226,9 +243,10 @@ export function OpsDashboardPage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: 'Aguard. Etiqueta',  value: awaitingLabel.length,   color: 'text-red-600',   anchor: 'section-label'    },
+          { label: 'Aguard. Envio',      value: awaitingDispatch.length, color: 'text-orange-600', anchor: 'section-dispatch' },
           { label: 'Pronto p/ Retirada', value: readyForPickup.length, color: 'text-amber-600', anchor: 'section-pickup'   },
           { label: 'Em Trânsito',        value: inTransit.length,      color: 'text-blue-600',  anchor: 'section-transit'  },
           { label: 'Entregues Hoje',     value: deliveredToday.length,  color: 'text-green-600', anchor: 'section-delivered'},
@@ -339,6 +357,47 @@ export function OpsDashboardPage() {
                       )
                     })}
                   </>
+                )}
+              </div>
+            </div>
+
+            {/* Aguardando envio */}
+            <div id="section-dispatch" className="bg-white rounded-2xl border border-obsidian-100 shadow-card">
+              <div className="flex items-center gap-2 px-5 py-4 border-b border-obsidian-100">
+                <h3 className="font-display text-base text-ink">Aguardando Envio</h3>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
+                  {loading ? '…' : awaitingDispatch.length}
+                </span>
+              </div>
+              <div className="p-2">
+                {loading ? (
+                  [1, 2].map((i) => <Skeleton key={i} className="h-12 m-3 rounded-xl" />)
+                ) : awaitingDispatch.length === 0 ? (
+                  <p className="text-sm text-obsidian-400 px-4 py-4">Nenhuma etiqueta aguardando postagem.</p>
+                ) : (
+                  awaitingDispatch.map((order) => (
+                    <Link
+                      key={order.id}
+                      to={`/ops/orders/${order.id}`}
+                      className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-obsidian-50 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-ink font-mono">
+                          #{order.id.slice(-8).toUpperCase()}
+                        </p>
+                        <p className="text-xs text-obsidian-400 mt-0.5">
+                          {order.user?.fullName || `ID ${order.userId.slice(-8).toUpperCase()}`}
+                          {order.shippingServiceName ? ` · ${order.shippingServiceName}` : ''}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-orange-50 text-orange-600">
+                          {shipmentStatusLabel[shipmentMap[order.id] as ShipmentStatus] ?? 'Etiqueta gerada'}
+                        </span>
+                        <span className="text-xs text-obsidian-400">{formatDateTime(order.createdAt)}</span>
+                      </div>
+                    </Link>
+                  ))
                 )}
               </div>
             </div>
