@@ -163,8 +163,8 @@ export function AdminDashboardPage() {
                     <p className="text-xs text-obsidian-400">{formatDateTime(order.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${getOrderDisplayStatusColor(order)}`}>
-                      {getOrderDisplayStatusLabel(order)}
+                    <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${getOrderDisplayStatusColor(order, order.shipment)}`}>
+                      {getOrderDisplayStatusLabel(order, order.shipment)}
                     </span>
                     <span className="text-sm font-medium">{formatCurrency(order.total)}</span>
                   </div>
@@ -1326,8 +1326,8 @@ export function AdminOrdersPage() {
                   <td className="px-5 py-4 text-xs text-obsidian-500 whitespace-nowrap">{formatDateTime(order.createdAt)}</td>
                   <td className="px-5 py-4 text-sm font-medium text-ink">{formatCurrency(order.total)}</td>
                   <td className="px-5 py-4">
-                    <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${getOrderDisplayStatusColor(order)}`}>
-                      {getOrderDisplayStatusLabel(order)}
+                    <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${getOrderDisplayStatusColor(order, order.shipment)}`}>
+                      {getOrderDisplayStatusLabel(order, order.shipment)}
                     </span>
                   </td>
                 </tr>

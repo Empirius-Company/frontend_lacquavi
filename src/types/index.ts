@@ -164,6 +164,7 @@ export interface Order {
   createdAt: string
   items: OrderItem[]
   payments?: Payment[]
+  shipment?: { status: ShipmentStatus } | null
 }
 
 export interface ShippingDestination {
