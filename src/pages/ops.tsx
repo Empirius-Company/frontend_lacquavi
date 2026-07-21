@@ -135,7 +135,7 @@ export function OpsDashboardPage() {
     [shippingOrders]
   )
   const deliveredToday = useMemo(
-    () => orders.filter((o) => o.status === 'delivered' && new Date(o.updatedAt).toDateString() === todayStr()),
+    () => orders.filter((o) => o.status === 'delivered' && new Date(o.createdAt).toDateString() === todayStr()),
     [orders]
   )
   const readyForPickup = useMemo(
