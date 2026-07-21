@@ -135,7 +135,7 @@ export function OpsDashboardPage() {
     [shippingOrders]
   )
   const deliveredToday = useMemo(
-    () => orders.filter((o) => o.status === 'delivered' && new Date(o.createdAt).toDateString() === todayStr()),
+    () => orders.filter((o) => o.status === 'delivered' && new Date(o.updatedAt).toDateString() === todayStr()),
     [orders]
   )
   const readyForPickup = useMemo(
@@ -626,8 +626,8 @@ export function OpsOrdersPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full border ${getOrderDisplayStatusColor(order, null)}`}>
-                      {getOrderDisplayStatusLabel(order, null)}
+                    <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full border ${getOrderDisplayStatusColor(order, order.shipment ?? null)}`}>
+                      {getOrderDisplayStatusLabel(order, order.shipment ?? null)}
                     </span>
                     <span className="text-xs text-obsidian-400">{formatDateTime(order.createdAt)}</span>
                     <span className="text-sm font-medium text-ink">{formatCurrency(order.total)}</span>
@@ -657,6 +657,9 @@ export function OpsOrderDetailPage() {
   const [processingLabel, setProcessingLabel]   = useState(false)
   const [markingReady, setMarkingReady]         = useState(false)
   const [confirmingCollection, setConfirmingCollection] = useState(false)
+  const [retryingDlq, setRetryingDlq]           = useState(false)
+  const [refreshingStatus, setRefreshingStatus] = useState(false)
+  const [manualTrackingCode, setManualTrackingCode] = useState('')
 
   useEffect(() => {
     if (!id) return
@@ -725,6 +728,37 @@ export function OpsOrderDetailPage() {
       toast((err as ApiError).message || 'Erro ao confirmar retirada', 'error')
     } finally {
       setConfirmingCollection(false)
+    }
+  }
+
+  const handleRetryDlq = async () => {
+    if (!id) return
+    setRetryingDlq(true)
+    try {
+      await shippingApi.retryDlq(id)
+      toast('Envio removido da DLQ e reprocessado', 'success')
+      await reloadShipment()
+    } catch (err) {
+      const mapped = mapShippingLabelError(err)
+      toast(`${mapped.title}: ${mapped.message}`, 'error')
+      await reloadShipment()
+    } finally {
+      setRetryingDlq(false)
+    }
+  }
+
+  const handleRefreshShipmentStatus = async () => {
+    if (!id) return
+    setRefreshingStatus(true)
+    try {
+      await shippingApi.refreshStatus(id, manualTrackingCode || undefined)
+      toast('Status de rastreio atualizado!', 'success')
+      setManualTrackingCode('')
+      await reloadShipment()
+    } catch (err) {
+      toast((err as ApiError).message || 'Não foi possível atualizar o status de rastreio.', 'error')
+    } finally {
+      setRefreshingStatus(false)
     }
   }
 
@@ -860,9 +894,14 @@ export function OpsOrderDetailPage() {
                       </p>
                     )}
                     {shipment.dlqAt && (
-                      <p className="text-xs font-semibold text-red-800">
-                        Falha definitiva — requer intervenção manual
-                      </p>
+                      <>
+                        <p className="text-xs font-semibold text-red-800">
+                          Falha definitiva em {formatDateTime(shipment.dlqAt)} — requer intervenção manual
+                        </p>
+                        <Button variant="outline" onClick={handleRetryDlq} loading={retryingDlq} fullWidth>
+                          Reprocessar envio (saiu da DLQ)
+                        </Button>
+                      </>
                     )}
                   </div>
                 )}
@@ -920,15 +959,29 @@ export function OpsOrderDetailPage() {
                 </Button>
               </>
             ) : (
-              <Button
-                variant="outline"
-                onClick={handleProcessLabel}
-                loading={processingLabel}
-                fullWidth
-                disabled={shipment?.status === 'label_purchased' || shipment?.status === 'delivered'}
-              >
-                {shipment?.status === 'label_purchased' ? 'Etiqueta já gerada' : 'Processar Etiqueta'}
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleProcessLabel}
+                  loading={processingLabel}
+                  fullWidth
+                  disabled={shipment?.status === 'label_purchased' || shipment?.status === 'delivered'}
+                >
+                  {shipment?.status === 'label_purchased' ? 'Etiqueta já gerada' : 'Processar Etiqueta'}
+                </Button>
+                <div className="space-y-2 pt-1">
+                  <input
+                    type="text"
+                    className="input-luxury text-sm"
+                    placeholder="Código de rastreio (opcional)"
+                    value={manualTrackingCode}
+                    onChange={(e) => setManualTrackingCode(e.target.value)}
+                  />
+                  <Button variant="outline" onClick={handleRefreshShipmentStatus} loading={refreshingStatus} fullWidth>
+                    Sincronizar Rastreio
+                  </Button>
+                </div>
+              </>
             )}
           </div>
 
