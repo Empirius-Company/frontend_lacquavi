@@ -161,6 +161,10 @@ export interface Order {
   shippingDestinationZip?: string | null
   shippingAddressHash?: string | null
   pickupLocation?: string | null
+  guestEmail?: string | null
+  guestName?: string | null
+  cpf?: string | null
+  confirmationEmailSentAt?: string | null
   createdAt: string
   items: OrderItem[]
   payments?: Payment[]

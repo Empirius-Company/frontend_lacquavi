@@ -47,6 +47,9 @@ export const ordersApi = {
   cancel: (id: string): Promise<OrderResponse> =>
     httpClient.delete<OrderResponse>(`/orders/${id}`),
 
+  resendConfirmation: (id: string): Promise<{ message: string; emailTo: string }> =>
+    httpClient.post<{ message: string; emailTo: string }>(`/orders/${id}/resend-confirmation`, {}),
+
   getShipment: (id: string): Promise<OrderShipmentResponse> =>
     httpClient.get<OrderShipmentResponse>(`/orders/${id}/shipment`),
 
@@ -196,6 +199,7 @@ interface ShippingSelectionInput {
   orderId: string
   quoteId: string
   destination?: ShippingDestination
+  cpf?: string
 }
 
 interface PublicQuoteInput {

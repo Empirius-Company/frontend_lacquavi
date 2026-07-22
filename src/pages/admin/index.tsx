@@ -1134,6 +1134,7 @@ export function AdminOrdersPage() {
   const [dateRange, setDateRange] = useState<DateRangeFilter>('30d')
   const [minTotal, setMinTotal] = useState('')
   const [maxTotal, setMaxTotal] = useState('')
+  const [emailFilter, setEmailFilter] = useState<'all' | 'pending'>('all')
   const [filtersOpen, setFiltersOpen] = useState(false)
 
   useEffect(() => {
@@ -1152,6 +1153,7 @@ export function AdminOrdersPage() {
           if (paymentFilter === 'none' && order.paymentStatus !== null) return false
           if (paymentFilter !== 'none' && order.paymentStatus !== paymentFilter) return false
         }
+        if (emailFilter === 'pending' && !(order.paymentStatus === 'paid' && !order.confirmationEmailSentAt)) return false
         if (!isWithinDateRange(order.createdAt, dateRange)) return false
         if (min !== null && order.total < min) return false
         if (max !== null && order.total > max) return false
@@ -1166,7 +1168,7 @@ export function AdminOrdersPage() {
         return true
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  }, [orders, search, statusFilter, paymentFilter, dateRange, minTotal, maxTotal])
+  }, [orders, search, statusFilter, paymentFilter, emailFilter, dateRange, minTotal, maxTotal])
 
   const kpis = useMemo(() => {
     const base = filteredOrders
@@ -1187,6 +1189,7 @@ export function AdminOrdersPage() {
     search !== '',
     statusFilter !== 'all',
     paymentFilter !== 'all',
+    emailFilter !== 'all',
     dateRange !== '30d',
     minTotal !== '',
     maxTotal !== '',
@@ -1196,6 +1199,7 @@ export function AdminOrdersPage() {
     setSearch('')
     setStatusFilter('all')
     setPaymentFilter('all')
+    setEmailFilter('all')
     setDateRange('30d')
     setMinTotal('')
     setMaxTotal('')
@@ -1291,6 +1295,15 @@ export function AdminOrdersPage() {
               />
               <Input label="Mín (R$)" type="number" min="0" value={minTotal} onChange={e => setMinTotal(e.target.value)} />
               <Input label="Máx (R$)" type="number" min="0" value={maxTotal} onChange={e => setMaxTotal(e.target.value)} />
+              <Select
+                label="Email confirm."
+                value={emailFilter}
+                onChange={e => setEmailFilter(e.target.value as 'all' | 'pending')}
+                options={[
+                  { value: 'all', label: 'Todos' },
+                  { value: 'pending', label: 'Não enviado' },
+                ]}
+              />
             </div>
           </div>
         )}
@@ -1312,7 +1325,9 @@ export function AdminOrdersPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map(order => (
+              {filteredOrders.map(order => {
+                const emailPending = order.paymentStatus === 'paid' && !order.confirmationEmailSentAt
+                return (
                 <tr
                   key={order.id}
                   onClick={() => navigate(`/admin/orders/${order.id}`)}
@@ -1320,18 +1335,26 @@ export function AdminOrdersPage() {
                 >
                   <td className="px-5 py-4 font-mono text-sm text-ink">#{order.id.slice(-8).toUpperCase()}</td>
                   <td className="px-5 py-4 text-sm text-ink">
-                    <p className="font-medium">{order.user?.fullName || 'Cliente não identificado'}</p>
-                    <p className="text-xs text-obsidian-400">{order.user?.email || `ID: ${order.userId.slice(-8).toUpperCase()}`}</p>
+                    <p className="font-medium">{order.user?.fullName || order.guestName || 'Cliente não identificado'}</p>
+                    <p className="text-xs text-obsidian-400">{order.user?.email || order.guestEmail || `ID: ${order.userId.slice(-8).toUpperCase()}`}</p>
                   </td>
                   <td className="px-5 py-4 text-xs text-obsidian-500 whitespace-nowrap">{formatDateTime(order.createdAt)}</td>
                   <td className="px-5 py-4 text-sm font-medium text-ink">{formatCurrency(order.total)}</td>
                   <td className="px-5 py-4">
-                    <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${getOrderDisplayStatusColor(order, order.shipment)}`}>
-                      {getOrderDisplayStatusLabel(order, order.shipment)}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className={`badge-status border rounded-full text-xs px-2.5 py-0.5 ${getOrderDisplayStatusColor(order, order.shipment)}`}>
+                        {getOrderDisplayStatusLabel(order, order.shipment)}
+                      </span>
+                      {emailPending && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                          ✉ Email pendente
+                        </span>
+                      )}
+                    </div>
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
           </div>
@@ -1358,6 +1381,7 @@ export function AdminOrderDetailPage() {
   const [markingPickupReady, setMarkingPickupReady] = useState(false)
   const [refreshingStatus, setRefreshingStatus] = useState(false)
   const [manualTrackingCode, setManualTrackingCode] = useState('')
+  const [resendingEmail, setResendingEmail] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -1472,6 +1496,21 @@ export function AdminOrderDetailPage() {
       toast((err as ApiError).message || 'Não foi possível marcar o pedido como pronto para retirada.', 'error')
     } finally {
       setMarkingPickupReady(false)
+    }
+  }
+
+  const handleResendEmail = async () => {
+    if (!id) return
+    setResendingEmail(true)
+    try {
+      const r = await ordersApi.resendConfirmation(id)
+      toast(`Email enviado para ${r.emailTo}`, 'success')
+      const updated = await ordersApi.getById(id)
+      setOrder(updated.order)
+    } catch (err) {
+      toast((err as ApiError).message || 'Não foi possível reenviar o email.', 'error')
+    } finally {
+      setResendingEmail(false)
     }
   }
 
@@ -1650,12 +1689,24 @@ export function AdminOrderDetailPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-obsidian-500">Cliente</span>
-              <span className="text-right">{order.user?.fullName || `ID ${order.userId.slice(-8).toUpperCase()}`}</span>
+              <span className="text-right">{order.user?.fullName || order.guestName || `ID ${order.userId.slice(-8).toUpperCase()}`}</span>
             </div>
-            {order.user?.email && (
+            {(order.user?.email || order.guestEmail) && (
               <div className="flex justify-between gap-2">
                 <span className="text-obsidian-500">E-mail</span>
-                <span className="text-right break-all">{order.user.email}</span>
+                <span className="text-right break-all">{order.user?.email || order.guestEmail}</span>
+              </div>
+            )}
+            {order.paymentStatus === 'paid' && (
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-obsidian-500">Confirmação</span>
+                {order.confirmationEmailSentAt ? (
+                  <span className="text-right text-emerald-700 font-medium">
+                    ✓ Enviado {formatDateTime(order.confirmationEmailSentAt)}
+                  </span>
+                ) : (
+                  <span className="text-amber-600 font-medium">⚠ Não enviado</span>
+                )}
               </div>
             )}
             <div className="flex justify-between">
@@ -1702,6 +1753,30 @@ export function AdminOrderDetailPage() {
               </div>
             )}
           </div>
+
+          {order.paymentStatus === 'paid' && (
+            <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card p-5 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-obsidian-400">Email de Confirmação</p>
+              {order.confirmationEmailSentAt ? (
+                <p className="text-xs text-obsidian-500">
+                  Enviado em {formatDateTime(order.confirmationEmailSentAt)} para{' '}
+                  <span className="font-medium text-ink">{order.user?.email || order.guestEmail}</span>.
+                </p>
+              ) : (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  O email de confirmação ainda não foi enviado para este pedido.
+                </p>
+              )}
+              <Button
+                variant="outline"
+                fullWidth
+                loading={resendingEmail}
+                onClick={handleResendEmail}
+              >
+                {order.confirmationEmailSentAt ? 'Reenviar Email' : 'Enviar Email Agora'}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
