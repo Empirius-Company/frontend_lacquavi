@@ -1153,7 +1153,7 @@ export function AdminOrdersPage() {
           if (paymentFilter === 'none' && order.paymentStatus !== null) return false
           if (paymentFilter !== 'none' && order.paymentStatus !== paymentFilter) return false
         }
-        if (emailFilter === 'pending' && !(order.paymentStatus === 'paid' && !order.confirmationEmailSentAt)) return false
+        if (emailFilter === 'pending' && !(order.paymentStatus === 'paid' && !order.confirmationEmailSentAt && order.status !== 'shipped' && order.status !== 'delivered')) return false
         if (!isWithinDateRange(order.createdAt, dateRange)) return false
         if (min !== null && order.total < min) return false
         if (max !== null && order.total > max) return false
@@ -1326,7 +1326,8 @@ export function AdminOrdersPage() {
             </thead>
             <tbody>
               {filteredOrders.map(order => {
-                const emailPending = order.paymentStatus === 'paid' && !order.confirmationEmailSentAt
+                const emailPending = order.paymentStatus === 'paid' && !order.confirmationEmailSentAt &&
+                  order.status !== 'shipped' && order.status !== 'delivered'
                 return (
                 <tr
                   key={order.id}
@@ -1704,6 +1705,8 @@ export function AdminOrderDetailPage() {
                   <span className="text-right text-emerald-700 font-medium">
                     ✓ Enviado {formatDateTime(order.confirmationEmailSentAt)}
                   </span>
+                ) : order.status === 'shipped' || order.status === 'delivered' ? (
+                  <span className="text-right text-obsidian-400 text-xs">Email posterior enviado</span>
                 ) : (
                   <span className="text-amber-600 font-medium">⚠ Não enviado</span>
                 )}
@@ -1754,7 +1757,7 @@ export function AdminOrderDetailPage() {
             )}
           </div>
 
-          {order.paymentStatus === 'paid' && (
+          {order.paymentStatus === 'paid' && order.status !== 'shipped' && order.status !== 'delivered' && (
             <div className="bg-white rounded-2xl border border-obsidian-100 shadow-card p-5 space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-obsidian-400">Email de Confirmação</p>
               {order.confirmationEmailSentAt ? (
