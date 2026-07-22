@@ -124,6 +124,8 @@ export function CheckoutPage() {
   const [authError, setAuthError] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
 
+  const [cpf, setCpf] = useState('')
+  const [cpfError, setCpfError] = useState('')
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState<CouponValidation | null>(null)
   const [couponError, setCouponError] = useState('')
@@ -490,6 +492,22 @@ export function CheckoutPage() {
     shippingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [])
 
+  const validateCpf = (raw: string): boolean => {
+    const digits = raw.replace(/\D/g, '')
+    if (digits.length !== 11) return false
+    if (/^(\d)\1+$/.test(digits)) return false
+    let sum = 0
+    for (let i = 0; i < 9; i++) sum += Number(digits[i]) * (10 - i)
+    let check = 11 - (sum % 11)
+    if (check >= 10) check = 0
+    if (check !== Number(digits[9])) return false
+    sum = 0
+    for (let i = 0; i < 10; i++) sum += Number(digits[i]) * (11 - i)
+    check = 11 - (sum % 11)
+    if (check >= 10) check = 0
+    return check === Number(digits[10])
+  }
+
   const handleSubmit = async () => {
     if (items.length === 0) return
     if (!isAuthenticated) return
@@ -500,6 +518,18 @@ export function CheckoutPage() {
       scrollToShipping()
       return
     }
+    if (shippingRequired && deliveryMethod === 'delivery') {
+      if (!cpf.trim()) {
+        setCpfError('Informe seu CPF para emissão da etiqueta de envio.')
+        shippingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        return
+      }
+      if (!validateCpf(cpf)) {
+        setCpfError('CPF inválido. Verifique os números informados.')
+        shippingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        return
+      }
+    }
     setSubmitting(true)
     setError('')
     try {
@@ -509,6 +539,14 @@ export function CheckoutPage() {
           orderId: draftOrder.id,
           quoteId: selectedQuoteId,
           ...(isPickup ? {} : { destination: normalizeDestination(destination) }),
+          ...(isPickup ? {} : { cpf: cpf.replace(/\D/g, '') }),
+        })
+      } else if (shippingRequired && selectedQuoteId && draftOrder.shippingQuoteId === selectedQuoteId && deliveryMethod === 'delivery' && cpf) {
+        await shippingApi.select({
+          orderId: draftOrder.id,
+          quoteId: selectedQuoteId,
+          ...(deliveryMethod === 'delivery' ? { destination: normalizeDestination(destination) } : {}),
+          cpf: cpf.replace(/\D/g, ''),
         })
       }
       clearCart()
@@ -880,6 +918,32 @@ export function CheckoutPage() {
                     {zipLookupLoading && (
                       <p className="text-xs text-nude-500">Buscando endereço pelo CEP...</p>
                     )}
+
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="dest-cpf" className="text-2xs text-nude-500 uppercase tracking-wide font-medium">
+                        CPF do destinatário <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        id="dest-cpf"
+                        type="text"
+                        inputMode="numeric"
+                        value={cpf}
+                        disabled={shippingLoading}
+                        onChange={e => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 11)
+                          let fmt = digits
+                          if (digits.length > 9) fmt = `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
+                          else if (digits.length > 6) fmt = `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
+                          else if (digits.length > 3) fmt = `${digits.slice(0, 3)}.${digits.slice(3)}`
+                          setCpf(fmt)
+                          setCpfError('')
+                        }}
+                        placeholder="000.000.000-00"
+                        className={`input-luxury text-sm disabled:opacity-50 ${cpfError ? 'border-red-300' : ''}`}
+                      />
+                      <p className="text-2xs text-nude-400">Obrigatório para emissão da etiqueta pelos Correios</p>
+                      {cpfError && <p className="text-xs text-red-500">{cpfError}</p>}
+                    </div>
 
                     <Button variant="outline" onClick={handleQuoteShipping} loading={shippingLoading} fullWidth>
                       {shippingLoading ? 'Calculando frete...' : shippingQuotes.length > 0 ? 'Recalcular frete' : 'Calcular frete'}
